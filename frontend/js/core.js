@@ -44,7 +44,11 @@ export function shareUrl(path) { return HOSTED ? (window.IB_SHARE_URL || locatio
 
 // ---------- state ----------------------------------------------------------
 export const state = { user: null, meta: null, listeners: new Set() };
-export function setUser(u) { state.user = u; state.listeners.forEach((fn) => fn()); }
+export function setUser(u) {
+  // Saved offline copies may include things only this person should see, so drop them whenever the signed-in person changes.
+  if ((state.user?.id || null) !== (u?.id || null)) navigator.serviceWorker?.controller?.postMessage("clear-api");
+  state.user = u; state.listeners.forEach((fn) => fn());
+}
 export function onUserChange(fn) { state.listeners.add(fn); }
 
 // ---------- API ------------------------------------------------------------
@@ -82,6 +86,8 @@ export async function api(path, { method = "GET", body, form, query } = {}) {
   }
   let data = null;
   try { data = await res.json(); } catch { /* non-JSON */ }
+  if (res.headers.get("x-ib-offline") && !state.offlineNoted) { state.offlineNoted = true; toast("Showing saved projects. You're offline."); }
+  if (!res.headers.get("x-ib-offline")) state.offlineNoted = false;
   if (!res.ok) {
     if (res.status === 401 && state.user && path !== "/api/auth/login") { setUser(null); }
     throw new ApiError(res.status, data);

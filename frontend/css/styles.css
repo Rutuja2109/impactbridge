@@ -1190,7 +1190,7 @@ h1 { font-weight: 800; }
 @keyframes sheetup { from { transform: translateY(30px); opacity: 0; } }
 
 /* screen transitions: forward slides in from the right, Back from the left */
-.route-in { animation: routein .2s ease-out both; }
+.route-in { animation: routein .2s ease-out backwards; }
 .route-in.back { animation-name: routeback; }
 @keyframes routein { from { opacity: 0; transform: translateX(18px); } }
 @keyframes routeback { from { opacity: 0; transform: translateX(-18px); } }
@@ -1482,3 +1482,58 @@ html.in-app .site-footer { display: none; }
 .kc-actions { grid-template-columns: auto 1fr; }
 .kc-actions .btn { white-space: nowrap; }
 .kc-share { padding-inline: 12px; gap: 6px; }
+
+/* ===== v9: QA fixes ===== */
+/* 12: comfortable tap targets (44px) */
+.site-footer a { display: inline-block; padding: 12px 8px; }
+.foot-compact { display: flex; flex-wrap: wrap; justify-content: center; }
+.rail-head a { padding: 12px 6px; margin: -12px -6px; }
+.qchip { min-height: 44px; }
+.tabs5 button, .tabs button { min-height: 44px; }
+.brand { min-height: 44px; display: inline-flex; align-items: center; }
+.ph5-share-row .btn, .ph5-share-row button { min-height: 44px; }
+.field a, .linklike { display: inline-block; padding: 10px 0; }
+details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+@media (max-width: 700px) { .btn.small { min-height: 44px; } }
+
+/* 13: no text under 12px */
+.tabbar a, .tabbar button.more, .badge.demo, .kc-av, .i5-badges .bt, .me-av { font-size: .75rem; }
+.kc-av { min-width: 22px; height: 22px; }
+
+/* 15: sign-in / sign-up toggle stays on one line */
+.seg button { white-space: nowrap; padding: 10px 6px; font-size: .95rem; }
+
+/* 14: filters fit their column, cover chips never collide */
+.filters-panel input, .filters-panel select, .filters-panel .field { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.filters .row, .filters .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pc-cause { max-width: 60%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pc-city { max-width: 36%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 8: shorter signup role cards */
+.role-options { gap: 8px; }
+.role-options label { padding: 10px 12px; gap: 10px; align-items: center; }
+.role-options input { margin-top: 0; }
+.role-options .small { display: block; font-size: .82rem; line-height: 1.3; }
+
+/* 9: needs list is compact, extra needs fold away */
+.needs-grid .need { padding: 12px 14px; }
+.needs-grid .need h4 { margin: 2px 0 6px; font-size: 1rem; }
+.more-needs { margin-top: 10px; }
+.more-needs summary { font-weight: 700; color: var(--brand-2); }
+
+/* 10/11: badges are a tidy grid and fold away for a new user */
+.i5-badges summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; }
+.i5-badges summary::-webkit-details-marker { display: none; }
+.i5-badges ul { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; margin: 10px 0 0; padding: 0; overflow: visible; }
+.i5-badges li { width: auto; }
+.i5-go { margin-top: 12px; }
+.i5-go { background: #fff; color: #00807E; border-color: #fff; }
+.tabbar .tl, .tabbar a, .tabbar button.more { font-size: .75rem; }
+.kc-actions .btn, .pmini .kc-actions .btn, .kcard > .pc-body > .btn { min-height: 44px; }
+.cause-chip, input:not([type=checkbox]):not([type=radio]), select { min-height: 44px; }
+.searchbar .btn, .s5 .btn { min-height: 44px; }
+.pc-cause, .pc-city { box-sizing: border-box; }
+.pc-cause { max-width: 56%; }
+.pc-city { max-width: 34%; }
+.kc-meta { flex-wrap: wrap; row-gap: 2px; }
+.pc-first, .kc-when, .kc-meta .fresh { white-space: nowrap; }

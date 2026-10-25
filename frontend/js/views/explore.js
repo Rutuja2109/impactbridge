@@ -1,3 +1,4 @@
+import { icon } from "../art.js";
 import { $, setUrl, api, emptyState, errorState, html, mount, skeletonTiles, state, toast } from "../core.js";
 import { projectTile } from "../components.js";
 
@@ -25,7 +26,7 @@ export default async function explore({ el, query }) {
         <button class="btn primary" type="submit">Search</button>
       </form>
       <div class="qchips" role="group" aria-label="Quick filters">
-        <button class="qchip" type="button" id="nearme" aria-pressed="${q.city && state.user?.city && q.city.toLowerCase() === state.user.city.toLowerCase() ? "true" : "false"}">📍 Near me${state.user?.city ? html` (${state.user.city})` : ""}</button>
+        <button class="qchip" type="button" id="nearme" aria-pressed="${q.city && state.user?.city && q.city.toLowerCase() === state.user.city.toLowerCase() ? "true" : "false"}">${icon("pin")} Near me${state.user?.city ? html` (${state.user.city})` : ""}</button>
         <button class="qchip" type="button" data-quick="needs=money" aria-pressed="${q.needs === "money"}">Needs funding</button>
         <button class="qchip" type="button" data-quick="needs=volunteers" aria-pressed="${q.needs === "volunteers"}">Needs volunteers</button>
         <button class="qchip" type="button" data-quick="effort=light" aria-pressed="${q.effort === "light"}">Quick to help</button>

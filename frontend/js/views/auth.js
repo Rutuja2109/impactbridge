@@ -1,11 +1,11 @@
 import { $, HOSTED, api, busy, formData, html, mount, navigate, raw, setUser, showErrors, state, toast } from "../core.js";
 
 const ROLES = [
-  ["submitter", "Community group or need submitter", "You want to share a problem in your area and find help."],
-  ["club", "Rotary or Rotaract club", "Your club wants to find and support local projects."],
-  ["csr", "Corporate CSR team", "Your company has budget, employee volunteers or equipment to give."],
-  ["ngo", "NGO", "You run programmes and may post needs or support others."],
-  ["volunteer", "Individual volunteer", "You want to give your time or a professional skill."],
+  ["submitter", "Community group or need submitter", "Share a problem in your area."],
+  ["club", "Rotary or Rotaract club", "Find and support local projects."],
+  ["csr", "Corporate CSR team", "Give budget, volunteers or equipment."],
+  ["ngo", "NGO", "Post needs or support others."],
+  ["volunteer", "Individual volunteer", "Give your time or a skill."],
 ];
 const ORG_TYPES = {
   club: [["rotary", "Rotary club"], ["rotaract", "Rotaract club"]],
@@ -194,7 +194,7 @@ function register(el, next) {
   const fields = String(profileFields()).replace("__CREDENTIALS__", creds);
   mount(el, html`<div class="wrap"><div class="auth-card panel" style="max-width:620px">
     <h1>Create your account</h1>
-    <p class="muted">Choose what describes you best. Administrators and reviewers are added by the ImpactBridge team.</p>
+    <p class="muted">Pick what fits you best. It only sets up your dashboard.</p>
     <a class="btn" style="width:100%;margin-bottom:var(--s4)" href="/login?method=phone${next !== "/" ? `&next=${encodeURIComponent(next)}` : ""}">Sign up with your mobile number instead</a>
     <form id="f" novalidate>
       <div class="form-error notice bad" hidden></div>

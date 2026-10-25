@@ -133,6 +133,8 @@ async function changeLang(l) {
 /** First visit: language, then three short slides about what the app does (once per device). */
 function maybeAskLanguage() {
   if (hasChosenLang()) return;
+  // Someone opening a shared project link should see the project, not a language sheet (the language can be changed any time under More).
+  if (/^\/(projects|organizations|certificates)\//.test(location.pathname)) return;
   let seen = false; try { seen = !!localStorage.getItem("ib-onboarded"); } catch { /* ignore */ }
   const d = document.createElement("div");
   d.id = "onboard"; d.className = "ob5"; d.setAttribute("role", "dialog"); d.setAttribute("aria-modal", "true"); d.setAttribute("aria-label", "Welcome to ImpactBridge");
@@ -159,7 +161,7 @@ function maybeAskLanguage() {
   const finish = (to) => { try { localStorage.setItem("ib-onboarded", "1"); } catch { /* ignore */ } d.remove(); if (to) go(to); };
   d.addEventListener("click", async (e) => {
     const l = e.target.closest("[data-ob-lang]")?.dataset.obLang;
-    if (l) { await changeLang(l); if (seen) { finish(); return; } i = 1; draw(); return; }
+    if (l) { await changeLang(l); finish(); return; }
     const a = e.target.closest("[data-ob]")?.dataset.ob;
     if (a === "next") { i++; draw(); }
     if (a === "skip" || a === "browse") finish();
@@ -333,7 +335,7 @@ function renderFooter() {
     <div><h4>Trust &amp; safety</h4><a href="/help">Help &amp; support</a><a href="/guidelines">Community guidelines</a><a href="/terms">Terms of use</a><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/guidelines#reporting">Report a concern</a></div>
     <p class="foot-note">Reported is not the same as verified. Always check the verification badges.</p>
   </div>
-  <div class="wrap foot-compact"><a href="/help">Help</a><a href="/how-it-works">How it works</a><a href="/guidelines">Guidelines</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/delete-account">Delete account</a></div>`);
+  <div class="wrap foot-compact"><a href="/help">Help</a><a href="/how-it-works">How it works</a><a href="/guidelines">Guidelines</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a>${state.user ? html`<a href="/delete-account">Delete account</a>` : ""}</div>`);
 }
 
 export async function refreshUser() {
@@ -341,6 +343,7 @@ export async function refreshUser() {
 }
 
 onUserChange(renderHeader);
+onUserChange(renderFooter);
 
 async function bootHosted() {
   mount("#main", html`<div class="wrap state"><p>Loading ImpactBridge…</p></div>`);

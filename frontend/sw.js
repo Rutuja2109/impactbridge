@@ -1,6 +1,7 @@
 // ImpactBridge service worker: caches the app shell so the app opens offline.
-// API calls are never cached (they always reflect live data); navigations fall back to the cached shell.
-const VERSION = "ib-v6";
+// Live data wins: project lists and pages are fetched fresh and a copy is kept only as an offline fallback.
+const VERSION = "ib-v7";
+const API_CACHE = "ib-api-v1"; // last public project lists and pages, so Explore still shows something offline
 const SHELL = [
   "/", "/offline", "/static/css/styles.css", "/static/js/app.js", "/static/js/core.js", "/static/js/art.js",
   "/static/js/components.js", "/static/img/icons/icon-192.png", "/static/img/icon.svg",
@@ -14,17 +15,30 @@ self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== API_CACHE).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== location.origin) return;
-  if (url.pathname.startsWith("/api/")) return; // live data only
+  if (url.pathname.startsWith("/api/")) {
+    if (/^\/api\/(projects(\/[^/]+)?|meta|stats|activity)$/.test(url.pathname)) {
+      e.respondWith(fetch(req).then((res) => {
+        if (res.ok) { const copy = res.clone(); caches.open(API_CACHE).then((c) => c.put(req, copy)); }
+        return res;
+      }).catch(async () => {
+        const hit = await caches.match(req, { cacheName: API_CACHE });
+        if (!hit) return new Response(JSON.stringify({ error: "You appear to be offline. Check your connection and try again." }), { status: 503, headers: { "Content-Type": "application/json" } });
+        const h = new Headers(hit.headers); h.set("x-ib-offline", "1");
+        return new Response(await hit.blob(), { status: 200, headers: h });
+      }));
+    }
+    return; // everything else: live data only
+  }
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((res) => {
-      if (res.ok) caches.open(VERSION).then((c) => c.put("/", res.clone()));
+      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put("/", copy)); }
       return res;
     }).catch(async () => (await caches.match("/")) || (await caches.match("/offline")) ||
       new Response("<h1>You're offline</h1><p>Reconnect to use ImpactBridge.</p>", { status: 200, headers: { "Content-Type": "text/html" } })));
@@ -39,6 +53,8 @@ self.addEventListener("fetch", (e) => {
     }));
   }
 });
+
+self.addEventListener("message", (e) => { if (e.data === "clear-api") e.waitUntil(caches.delete(API_CACHE)); });
 
 // Push notifications carry no content: on a push, fetch the newest notification and show it.
 self.addEventListener("push", (e) => {

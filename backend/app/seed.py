@@ -6,7 +6,7 @@ Demo organizations are never verified and demo projects are never marked verifie
 from __future__ import annotations
 
 import secrets
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from . import db
 from .security import hash_password
@@ -104,6 +104,8 @@ def seed_demo() -> None:
         users[role] = uid
     orgs = {}
     for key, name, otype, owner in [("community", "Demo Neighbourhood Association", "community", "submitter"),
+                                    ("ward", "Demo Ward Residents Forum", "community", "submitter"),
+                                    ("shg", "Demo Women's Self-Help Group", "community", "submitter"),
                                     ("club", "Demo Rotaract Club", "rotaract", "club"),
                                     ("csr", "Demo Company CSR", "csr", "csr")]:
         oid = db.new_id()
@@ -112,17 +114,18 @@ def seed_demo() -> None:
                                     "created_by": users[owner], "is_demo": 1, "created_at": ts, "updated_at": ts})
         db.insert("org_members", {"org_id": oid, "user_id": users[owner], "member_role": "owner", "created_at": ts})
         orgs[key] = oid
+    poster = ["community", "ward", "shg", "community"]  # different posters, so the sample list doesn't look copied
     start = date.today() + timedelta(days=14)
     for i, spec in enumerate(DEMO_PROJECTS):
         pid = db.new_id()
         s = dict(spec)
         milestones, outcomes = s.pop("milestones"), s.pop("outcomes")
         db.insert("projects", {
-            **{k: v for k, v in s.items()}, "id": pid, "owner_id": users["submitter"], "org_id": orgs["community"],
+            **{k: v for k, v in s.items()}, "id": pid, "owner_id": users["submitter"], "org_id": orgs[poster[i % len(poster)]],
             "original_description": s["problem_statement"], "status": "published",
             "start_date": (start + timedelta(days=7 * i)).isoformat(),
             "allow_multiple_supporters": 1, "is_demo": 1, "created_at": ts, "updated_at": ts,
-            "submitted_at": ts, "published_at": ts,
+            "submitted_at": ts, "published_at": (datetime.now(timezone.utc) - timedelta(days=[1, 4, 9, 2][i % 4])).isoformat(timespec="seconds"),
         })
         for j, title in enumerate(milestones):
             db.insert("milestones", {"id": db.new_id(), "project_id": pid, "title": title, "status": "pending",

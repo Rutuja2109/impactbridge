@@ -1,3 +1,4 @@
+import { icon } from "../art.js";
 // Final impact report for a completed project, and shareable sponsor certificates.
 import { HOSTED, KIND_LABEL, api, causeLabel, date, describeCommitment, html, money, mount, num, raw, shareUrl, state, statusBadge, toast } from "../core.js";
 import { causeCover, drawLogo } from "../art.js";
@@ -73,7 +74,7 @@ async function finalReport(el, id) {
     </tbody></table></div></section>
     ${supporters.length ? html`<section class="panel"><h2>Thank you to our supporters</h2><ul class="list">${supporters.map((c) => html`<li class="row between">
       <span><strong translate="no">${c.organization?.name || c.supporter?.name}</strong> <span class="muted small">· ${KIND_LABEL[c.kind]}: ${describeCommitment(c)}</span></span>
-      <a class="btn small" href="/certificates/${c.id}">🏅 Certificate</a></li>`)}</ul></section>` : ""}
+      <a class="btn small" href="/certificates/${c.id}">${icon("award")} Certificate</a></li>`)}</ul></section>` : ""}
     ${photos.length ? html`<section class="panel"><h2>Photo proof</h2><div class="photo-grid">${photos.map((f) => html`<button type="button" class="ph" data-lightbox="${f.url}" aria-label="Open photo"><img src="${f.url}" alt="" loading="lazy"></button>`)}</div></section>` : ""}
     <p class="small muted">Generated ${date(new Date().toISOString())} from ImpactBridge records. Reported is not the same as verified. Always check the verification badges.</p>
   </div>`);

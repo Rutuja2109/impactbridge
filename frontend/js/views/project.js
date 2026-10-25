@@ -297,7 +297,7 @@ export default async function projectView({ el, params }) {
       const pc = req ? Math.min(100, (pledged / req) * 100) : 0;
       cards.push(html`<div class="need ${met ? "met" : ""}"><span class="k">${k}</span><h4>${name}</h4>
         ${req !== null && req !== undefined ? html`<div class="bar"><span style="width:${pc.toFixed(1)}%"></span></div>
-          <span class="small muted">${fmt(pledged)} of ${fmt(req)} pledged${met ? "" : `, ${fmt(req - pledged)} to go`}</span>`
+          <span class="small muted">${adopt.unit ? num(pledged) : fmt(pledged)} of ${fmt(req)} pledged${met ? "" : `, ${fmt(req - pledged)} to go`}</span>`
           : html`<span class="small muted">${pledged ? "Pledged" : "Amount not specified"}</span>`}
         ${can && !met ? html`<button class="btn small primary" data-adopt="${adopt.kind}" data-item="${adopt.item || ""}" data-unit="${adopt.unit || ""}" data-qty="${adopt.qty || ""}">I can give this</button>` : ""}</div>`);
     };
@@ -305,7 +305,9 @@ export default async function projectView({ el, params }) {
     if (r.volunteers.requested) card("People", "Volunteers", r.volunteers.requested, r.volunteers.pledged, num, { kind: "volunteers", qty: r.volunteers.gap });
     r.materials.forEach((m) => card("Materials", m.name, m.requested, m.pledged, (v) => `${num(v)}${m.unit ? " " + m.unit : ""}`, { kind: "materials", item: m.name, unit: m.unit, qty: m.gap }));
     r.skills.forEach((s) => card("Skill", s.skill, 1, s.pledged ? 1 : 0, (v) => (v ? "Covered" : "Needed"), { kind: "skills", item: s.skill, qty: 1 }));
-    return cards.length ? html`<section><h2>What's needed</h2><div class="needs-grid">${cards}</div></section>` : "";
+    const SHOW = 4;
+    return cards.length ? html`<section><h2>What's needed</h2><div class="needs-grid">${cards.slice(0, SHOW)}</div>
+      ${cards.length > SHOW ? html`<details class="more-needs"><summary>Show ${cards.length - SHOW} more</summary><div class="needs-grid">${cards.slice(SHOW)}</div></details>` : ""}</section>` : "";
   }
 
   function overview(box) {

@@ -59,6 +59,7 @@ export default async function dashboard({ el, feed }) {
   ];
   const earned = BADGES.filter((b) => b[3]).length;
   const anyImpact = st.money_pledged || st.volunteer_places || st.projects_supported || st.projects_managed || st.projects_completed;
+  const fresh = !anyImpact && !d.my_commitments.length && !active.length && !d.incoming_proposals.length && !d.organizations.length;
   const initials = u.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const invite = () => {
     const url = shareUrl("/");
@@ -83,9 +84,10 @@ export default async function dashboard({ el, feed }) {
         <div><strong>${st.projects_supported || 0}</strong><span>projects supported</span></div>
         ${st.projects_managed ? html`<div><strong>${st.projects_managed}</strong><span>needs you shared</span></div>` : ""}
         <div><strong>${st.projects_completed || 0}</strong><span>finished</span></div></div>`
-        : html`<div class="i5-empty"><strong>Your impact starts here</strong><span>${supporterRole ? "Find a need you can help with, or match your club's resources." : "Share a problem from your area and we'll help you find supporters."}</span></div>`}
-      <div class="i5-badges"><div class="row between"><span>Badges <strong>${earned}/${BADGES.length}</strong></span></div>
-        <ul>${BADGES.map(([e, t, dsc, ok]) => html`<li class="${ok ? "on" : ""}" title="${dsc}"><span class="be" aria-hidden="true">${e}</span><span class="bt">${t}</span></li>`)}</ul></div>
+        : html`<div class="i5-empty"><strong>Your impact starts here</strong><span>${supporterRole ? "Find a need you can help with, or match your club's resources." : "Share a problem from your area and we'll help you find supporters."}</span>
+          ${fresh ? html`<a class="btn primary i5-go" href="${supporterRole ? "/explore?needs=any" : "/share-a-need"}">${supporterRole ? "Find a need to help" : "Share a problem"}</a>` : ""}</div>`}
+      <details class="i5-badges" ${fresh ? "" : "open"}><summary>Badges <strong>${earned}/${BADGES.length}</strong></summary>
+        <ul>${BADGES.map(([e, t, dsc, ok]) => html`<li class="${ok ? "on" : ""}" title="${dsc}"><span class="be" aria-hidden="true">${e}</span><span class="bt">${t}</span></li>`)}</ul></details>
     </section>
 
     <nav class="quick5" aria-label="Quick actions">
@@ -108,7 +110,7 @@ export default async function dashboard({ el, feed }) {
       empty: u.city ? `No open needs in ${u.city} right now. Try "Explore" to see needs everywhere.` : "Add your city in your profile to see needs near you." })}
 
     <div class="blk-grid">
-    ${reviewer ? "" : html`<section class="blk"><div class="row between"><h2>Your offers & commitments</h2>${supporterRole ? html`<a href="/match">Match resources</a>` : ""}</div>
+    ${reviewer || fresh ? "" : html`<section class="blk"><div class="row between"><h2>Your offers & commitments</h2>${supporterRole ? html`<a href="/match">Match resources</a>` : ""}</div>
       ${d.my_commitments.length ? html`<ul class="rows">${d.my_commitments.slice(0, 8).map((c) => {
         const [label, cls] = COMMIT_STATUS[c.status] || [c.status, ""];
         return html`<li><div>${KIND_LABEL[c.kind]}: <strong>${describeCommitment(c)}</strong>
@@ -117,7 +119,7 @@ export default async function dashboard({ el, feed }) {
           <span class="badge ${cls}">${label}</span></li>`;
       })}</ul>` : html`<p class="muted">No offers yet. <a href="/explore?needs=any">Find a project that needs support</a>.</p>`}</section>`}
 
-    ${reviewer ? "" : html`<section class="blk"><div class="row between"><h2>Needs you shared</h2><a href="/share-a-need">Share a need</a></div>
+    ${reviewer || fresh ? "" : html`<section class="blk"><div class="row between"><h2>Needs you shared</h2><a href="/share-a-need">Share a need</a></div>
       ${active.length ? html`<ul class="rows">${active.map((p) => html`<li><div><a href="/projects/${p.id}" translate="no"><strong>${p.title}</strong></a>
         ${["published", "in_progress"].includes(p.status) ? html`<div class="small muted">${money(p.funding.pledged)} of ${money(p.funding.requested)} pledged, ${p.volunteers.pledged}${p.volunteers.requested ? ` of ${p.volunteers.requested}` : ""} volunteers</div>` : ""}
         ${p.status === "needs_information" && p.review_notes ? html`<div class="small notice warn" style="margin:6px 0 0">${p.review_notes}</div>` : ""}</div>${statusBadge(p.status)}</li>`)}</ul>`
@@ -128,7 +130,7 @@ export default async function dashboard({ el, feed }) {
       <span class="badge ${x.overdue ? "bad" : "info"}">${x.overdue ? "Overdue " : ""}${date(x.date)}</span></li>`)}</ul></section>` : ""}
 
     ${certs.certificates.length ? html`<section class="blk"><h2>Your impact certificates</h2><ul class="rows">${certs.certificates.map((c) => html`<li>
-      <div><strong translate="no">${c.project.title}</strong><div class="small muted" translate="no">${c.sponsor.name}</div></div><a class="btn small" href="/certificates/${c.id}">🏅 Open</a></li>`)}</ul></section>` : ""}
+      <div><strong translate="no">${c.project.title}</strong><div class="small muted" translate="no">${c.sponsor.name}</div></div><a class="btn small" href="/certificates/${c.id}">${icon("award")} Open</a></li>`)}</ul></section>` : ""}
 
     ${act.events.length ? html`<section class="blk"><h2>Recent activity</h2><ul class="rows act5">${act.events.slice(0, 6).map((e) => html`<li><div>${e.text}
       <div class="small"><a href="/projects/${e.project.id}" translate="no">${e.project.title}</a> <span class="muted">${ago(e.at)}</span></div></div></li>`)}</ul></section>` : ""}
@@ -136,10 +138,10 @@ export default async function dashboard({ el, feed }) {
     ${d.completed.length ? html`<section class="blk"><h2>Finished work</h2><ul class="rows">${d.completed.map((p) => html`<li><div><a href="/projects/${p.id}#impact" translate="no">${p.title}</a>
       ${p.as_supporter ? html`<div class="small muted">You supported this project</div>` : ""}</div>${statusBadge(p.status)}</li>`)}</ul></section>` : ""}
 
-    <section class="blk"><div class="row between"><h2>Your organizations</h2><a href="/profile#orgs">Manage</a></div>
+    ${fresh ? "" : html`<section class="blk"><div class="row between"><h2>Your organizations</h2><a href="/profile#orgs">Manage</a></div>
       ${d.organizations.length ? html`<ul class="rows">${d.organizations.map((o) => html`<li><a href="/organizations/${o.id}" translate="no">${o.name}</a>
         <span class="badge ${o.verification_status === "verified" ? "verified" : o.verification_status === "pending" ? "info" : ""}">${{ verified: "✓ Verified", pending: "Verification pending", rejected: "Not verified", unverified: "Unverified" }[o.verification_status]}</span></li>`)}</ul>`
-        : html`<p class="muted">You're not part of an organization. <a href="/profile#orgs">Create or join one</a>.</p>`}</section>
+        : html`<p class="muted">You're not part of an organization. <a href="/profile#orgs">Create or join one</a>.</p>`}</section>`}
     </div>
   </div>`);
   el.querySelector("#invite")?.addEventListener("click", invite);

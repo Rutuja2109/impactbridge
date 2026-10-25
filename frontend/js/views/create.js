@@ -1,3 +1,4 @@
+import { icon } from "../art.js";
 import { $, $$, setUrl, api, busy, causeLabel, esc, html, money, mount, navigate, raw, showErrors, state, toast, uploadFile } from "../core.js";
 import { currentLang } from "../i18n.js";
 
@@ -185,7 +186,7 @@ export default async function create({ el, params, opts }) {
       <fieldset><legend>Photos</legend>
         <p class="small muted">Add at least one real photo of the problem, like the blocked drain or the broken roof. Needs with real photos get far more help. You can add up to 4. Location data is removed when you upload them.</p>
         <label class="check"><input type="checkbox" id="consent" ${s.consent ? "checked" : ""}><span>These photos don't show identifiable children or vulnerable people, or I have their (or their guardian's) consent to share them publicly.</span></label>
-        <label class="btn photo-pick" for="photos">📷 Add photos</label>
+        <label class="btn photo-pick" for="photos">${icon("camera")} Add photos</label>
         <input type="file" id="photos" accept="image/*" multiple class="sr-only">
         <span id="voice-status" class="small muted" aria-live="polite"></span>
         <div class="thumbs" id="thumbs" style="margin-top:var(--s3)"></div>

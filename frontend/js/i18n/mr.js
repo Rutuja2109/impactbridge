@@ -1,6 +1,16 @@
 // Generated from translation tables. English source text -> Marathi.
 /* eslint-disable */
 export default {
+"Pick what fits you best. It only sets up your dashboard.": "तुम्हाला जे योग्य वाटते ते निवडा. यामुळे फक्त तुमचा डॅशबोर्ड तयार होतो.",
+"Share a problem in your area.": "तुमच्या भागातील समस्या मांडा.",
+"Find and support local projects.": "स्थानिक प्रकल्प शोधा आणि त्यांना मदत करा.",
+"Give budget, volunteers or equipment.": "बजेट, स्वयंसेवक किंवा साधने द्या.",
+"Post needs or support others.": "गरजा मांडा किंवा इतरांना मदत करा.",
+"Give your time or a skill.": "तुमचा वेळ किंवा कौशल्य द्या.",
+"Show {0} more": "आणखी {0} दाखवा",
+"Find a need to help": "मदत करण्यासाठी गरज शोधा",
+"Share a problem": "समस्या मांडा",
+"Showing saved projects. You're offline.": "तुम्ही ऑफलाइन आहात. जतन केलेले प्रकल्प दिसत आहेत.",
 "Please fill this in.": "कृपया हे भरा.",
 "Please fix the highlighted fields.": "कृपया चिन्हांकित रकाने दुरुस्त करा.",
 "Enter a number.": "एक संख्या लिहा.",
@@ -1606,6 +1616,7 @@ export default {
 };
 
 export const patterns = [
+[/^Show (\d+) more$/, (m) => `आणखी ${m[1]} दाखवा`],
   [/^Volunteers: (\d+) volunteers?(?:, (\d+) h each)?$/, (m) => `स्वयंसेवक: ${m[1]} स्वयंसेवक${m[2] ? `, प्रत्येकी ${m[2]} तास` : ""}`],
   [/^Funding: (.+)$/, (m) => `निधी: ${m[1]}`],
   [/^From (.+?)(?:, by (.+?))?\. Offered (.+)\.$/, (m, tr) => `${m[1]} यांच्याकडून${m[2] ? `, ${m[2]} पर्यंत` : ""}. ऑफर: ${tr(m[3])}.`],
