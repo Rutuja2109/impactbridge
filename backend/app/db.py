@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS projects (
     city TEXT,
     region TEXT,
     location_detail TEXT,
+    upi_id TEXT,
     cause TEXT,
     budget_required REAL,
     volunteers_required INTEGER,
@@ -167,6 +168,10 @@ CREATE TABLE IF NOT EXISTS commitments (
     spent_amount REAL NOT NULL DEFAULT 0,
     responsibility TEXT,
     is_anonymous INTEGER NOT NULL DEFAULT 0,
+    frequency TEXT NOT NULL DEFAULT 'once',
+    paid_claimed_at TEXT,
+    upi_ref TEXT,
+    last_reminded_at TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

@@ -77,6 +77,40 @@ async def propose(request: Request):
     return ok({"commitment": P.serialize_commitment(db.get("commitments", cid), user, p)}, 201)
 
 
+async def mark_paid(request: Request):
+    """Supporter says they have sent the money (e.g. by UPI). The project team still confirms receipt."""
+    user = require_user(request)
+    c, p = _load(request.path_params["cid"])
+    if c["supporter_id"] != user["id"]:
+        raise ApiError(403, "Only the supporter can say they have sent this.")
+    if c["kind"] != "money" or c["status"] in ("declined", "withdrawn", "cancelled"):
+        raise ApiError(409, "This pledge can't be marked as sent.")
+    body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
+    ref = str((body or {}).get("reference") or "").strip()[:60] or None
+    db.update("commitments", c["id"], {"paid_claimed_at": db.now(), "upi_ref": ref, "updated_at": db.now()})
+    audit(user["id"], "commitment.paid_claimed", "project", p["id"], commitment=c["id"])
+    notify(p["owner_id"], "support_proposal", f"{user['name']} says they sent {_describe(c)}",
+           "Please check your account and confirm once the money has arrived." + (f" Reference: {ref}." if ref else ""),
+           f"/projects/{p['id']}#commitments")
+    return ok({"commitment": P.serialize_commitment(db.get("commitments", c["id"]), user, p)})
+
+
+def monthly_reminders() -> int:
+    """Once a month, remind monthly supporters to send this month's help. Returns how many reminders went out."""
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat(timespec="seconds")
+    sent = 0
+    for c in db.query("""SELECT c.* FROM commitments c JOIN projects p ON p.id = c.project_id
+                         WHERE c.frequency = 'monthly' AND c.status = 'accepted' AND p.status IN ('published','in_progress')
+                         AND COALESCE(c.last_reminded_at, c.updated_at) < ?""", (cutoff,)):
+        p = db.get("projects", c["project_id"])
+        notify(c["supporter_id"], "support_reminder", f"Your monthly help for {p['title']}",
+               f"It's time for this month's {_describe(c)}. Thank you for staying with this community.", f"/projects/{p['id']}")
+        db.update("commitments", c["id"], {"last_reminded_at": db.now()})
+        sent += 1
+    return sent
+
+
 async def revise(request: Request):
     """Supporter edits their own proposal (only before it is accepted)."""
     user = require_user(request)
@@ -192,6 +226,7 @@ routes = [
     Route("/api/projects/{pid}/commitments", propose, methods=["POST"]),
     Route("/api/commitments/mine", mine, methods=["GET"]),
     Route("/api/commitments/{cid}", revise, methods=["PUT"]),
+    Route("/api/commitments/{cid}/paid", mark_paid, methods=["POST"]),
     Route("/api/commitments/{cid}/action", act, methods=["POST"]),
     Route("/api/commitments/{cid}/progress", progress, methods=["PATCH"]),
 ]

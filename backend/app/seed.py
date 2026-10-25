@@ -157,6 +157,16 @@ for _spec, _pl in zip(DEMO_PROJECTS, _BASE_PLEDGES):
     _spec["pledges"] = _pl
 
 
+_UPDATES = {
+    0: [("Site visit done", "We met the headmaster and marked where the four stations will go. The water line is only 12 metres away.")],
+    1: [("Ward office said yes", "The ward office will send a truck to collect the silt on the day. We only need hands and gloves.")],
+    4: [("Room is booked", "We have a room for the evening study space and the first 25 children have signed up.")],
+    5: [("Cooks recruited", "Eight home cooks have joined the rota. First tiffins go out next Monday.")],
+    6: [("Machines shortlisted", "The group picked four sturdy machines. A local dealer gave a discount for the bulk order.")],
+    7: [("Eye hospital confirmed", "A licensed eye hospital will send two doctors and a van on camp day.")],
+}
+
+
 def seed_demo() -> None:
     if db.scalar("SELECT COUNT(*) FROM projects WHERE is_demo = 1"):
         print("Demo data already present. Run remove-demo first to recreate it.")
@@ -213,6 +223,9 @@ def seed_demo() -> None:
             db.insert("milestones", {"id": db.new_id(), "project_id": pid, "title": title, "status": "pending",
                                      "due_date": (start + timedelta(days=7 * i + 10 * j)).isoformat(),
                                      "sort_order": j, "created_at": ts})
+        for t, b in _UPDATES.get(i, []):
+            db.insert("updates", {"id": db.new_id(), "project_id": pid, "author_id": users["submitter"], "kind": "progress",
+                                  "title": t, "body": b, "created_at": ts})
         for sk, kind, qty, anon, msg in pledges:
             db.insert("commitments", {"id": db.new_id(), "project_id": pid, "supporter_id": sup[sk], "kind": kind,
                                       "quantity": qty, "description": msg, "status": "accepted", "is_anonymous": int(anon),

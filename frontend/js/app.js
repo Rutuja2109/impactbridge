@@ -5,7 +5,7 @@ import { causeCover } from "./art.js";
 
 const routes = [
   ["/", () => import("./views/home.js")],
-  ["/explore", () => import("./views/explore.js")],
+  ["/explore", () => import("./views/explore.js"), { auth: true, gate: "explore" }],
   ["/match", () => import("./views/match.js"), { auth: true }],
   ["/how-it-works", () => import("./views/info.js"), { page: "how" }],
   ["/guidelines", () => import("./views/info.js"), { page: "guidelines" }],
@@ -22,7 +22,7 @@ const routes = [
   ["/share-a-need", () => import("./views/create.js"), { auth: true }],
   ["/projects/:id/edit", () => import("./views/create.js"), { auth: true, edit: true }],
   ["/projects/:id/report", () => import("./views/report.js"), { page: "report" }],
-  ["/projects/:id", () => import("./views/project.js")],
+  ["/projects/:id", () => import("./views/project.js"), { auth: true, gate: "project" }],
   ["/certificates/:id", () => import("./views/report.js"), { page: "certificate" }],
   ["/dashboard", () => import("./views/dashboard.js"), { auth: true }],
   ["/notifications", () => import("./views/notifications.js"), { auth: true }],
@@ -58,8 +58,8 @@ async function router() {
     document.title = "Not found — ImpactBridge";
     return;
   }
-  if (r.opts.auth && !state.user) {
-    go(`/login?next=${encodeURIComponent(path + search)}`, true);
+  if (r.opts.auth && !state.user && !(HOSTED && r.opts.gate)) {
+    go(r.opts.gate ? `/register?why=${r.opts.gate}&next=${encodeURIComponent(path + search)}` : `/login?next=${encodeURIComponent(path + search)}`, true);
     return;
   }
   if (r.opts.reviewer && !["admin", "verifier"].includes(state.user.role)) {
@@ -327,15 +327,20 @@ function closeDrawer() { $("#drawer").classList.remove("open"); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 
 function renderFooter() {
-  mount("#footer", html`<div class="wrap footer-grid">
+  const invite = `Join me on ImpactBridge, where neighbours help neighbours: ${location.origin}`;
+  mount("#footer", html`<section class="thx6"><div class="wrap">
+    <p class="thx6-h">Thank you for being here. 💛</p>
+    <p>Every pledge, share and kind word moves a neighbour closer to help. Small acts, done together, are how communities change.</p>
+    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(invite)}">Invite a friend on WhatsApp</a></div></section>
+  <div class="wrap footer-grid">
     <div class="foot-brand"><a class="brand" href="/">${raw(LOGO)}<span>ImpactBridge</span></a>
       <p class="muted">Turn community problems into collective action, with clubs, companies and volunteers. Every number comes from recorded data; demo projects are labelled.</p></div>
     <div><h4>Platform</h4><a href="/explore">Explore projects</a><a href="/match">Match my resources</a><a href="/share-a-need">Share a community need</a><a href="/how-it-works">How it works</a></div>
     <div><h4>For</h4><a href="/register">Community organizations</a><a href="/register">Rotary &amp; Rotaract clubs</a><a href="/register">Corporate CSR teams</a><a href="/register">Individual volunteers</a></div>
-    <div><h4>Trust &amp; safety</h4><a href="/help">Help &amp; support</a><a href="/guidelines">Community guidelines</a><a href="/terms">Terms of use</a><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/guidelines#reporting">Report a concern</a></div>
+    <div><h4>Trust &amp; safety</h4><a href="/help">Help &amp; support</a><a href="/guidelines">Community guidelines</a><a href="/terms">Terms of use</a><a href="/privacy">Privacy policy</a><a href="/guidelines#reporting">Report a concern</a></div>
     <p class="foot-note">Reported is not the same as verified. Always check the verification badges.</p>
   </div>
-  <div class="wrap foot-compact"><a href="/help">Help</a><a href="/how-it-works">How it works</a><a href="/guidelines">Guidelines</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a>${state.user ? html`<a href="/delete-account">Delete account</a>` : ""}</div>`);
+  <div class="wrap foot-compact"><a href="/help">Help</a><a href="/how-it-works">How it works</a><a href="/guidelines">Guidelines</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a></div>`);
 }
 
 export async function refreshUser() {

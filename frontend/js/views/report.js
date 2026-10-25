@@ -12,7 +12,7 @@ export default async function report({ el, params, opts }) {
 // ------------------------------------------------------------------ final impact report
 async function finalReport(el, id) {
   mount(el, html`<div class="wrap"><div class="skeleton" style="height:280px"></div></div>`);
-  const { project: p } = await api(`/api/projects/${id}`);
+  const { project: p } = await api(`/api/projects/${id}?public=1`);
   document.title = `Impact report: ${p.title} — ImpactBridge`;
   const r = p.impact_report;
   if (!["completed", "verified"].includes(p.status) || !r) {

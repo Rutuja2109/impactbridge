@@ -71,9 +71,11 @@ export default async function dashboard({ el, feed }) {
     else { navigator.clipboard?.writeText(`${text} ${url}`); toast("Invite link copied"); }
   };
 
+  queueMicrotask(() => import("./stories.js").then((m) => m.storiesRail(el.querySelector("#stories"))).catch(() => {}));
   mount(el, html`<div class="wrap feed5">
     <header class="greet"><span class="me-av" aria-hidden="true">${initials}</span>
       <div><h1>Hello, ${u.name.split(" ")[0]}</h1><p>${title}</p></div></header>
+    <div id="stories"></div>
 
     ${reviewer ? html`<div class="counts" style="margin-bottom:var(--s4)">
       <a href="/admin#queue"><b>${d.review_counts?.projects_to_review ?? 0}</b>projects to review</a>

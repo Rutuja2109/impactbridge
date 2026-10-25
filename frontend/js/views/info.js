@@ -43,7 +43,7 @@ function privacy(el) {
     <h2>Security</h2>
     <p>All traffic is encrypted (HTTPS). Passwords are hashed. Private files are only available to the people allowed to see them.</p>
     <h2 id="deletion">Deleting your account and data</h2>
-    <p>You can delete your account at any time from <strong>Profile → Delete my account</strong>, in the app or on the website. <a href="/delete-account">How account deletion works</a>.</p>
+    <p>To close your account and remove your personal data, <a href="/delete-account">send us a request</a>.</p>
     <h2>Children</h2>
     <p>ImpactBridge is not intended for anyone under 18. Projects involving children follow our <a href="/guidelines#safeguarding">safeguarding rules</a>.</p>
     <h2>Contact</h2>
@@ -60,7 +60,7 @@ function help(el) {
     ["How do I know a need is real?", "Look for the badges. \"Need verified\" means a reviewer checked it, for example by calling or visiting. \"Completion verified\" means the results were checked with evidence. No badge means not checked yet."],
     ["I shared a need. What happens next?", "A reviewer checks it, usually within a few days. You'll get a notification when it's approved, or if they need more information. Then you publish it and supporters can offer help."],
     ["How do I get a certificate for my club or company?", "When a project you supported is completed and its results are checked, a shareable impact certificate appears on your Home screen and on the project."],
-    ["How do I delete my account?", "Go to Profile, then Delete my account. Your personal details are removed straight away."],
+    ["How do I delete my account?", "Write to our support team from the email on your account. We remove your personal details within 30 days."],
   ];
   const mail = state.meta?.support_email;
   const wa = state.meta?.support_whatsapp;
@@ -90,7 +90,7 @@ function terms(el) {
       Badges show what a reviewer checked; they are not a guarantee.</p>
     <h2>Your content</h2>
     <p>You're responsible for what you post: needs, updates, photos, documents and messages. It must be accurate and you must have the right to share it.
-      You let ImpactBridge show it on the service so the platform can work. You can delete your account at any time (<a href="/delete-account">how</a>).</p>
+      You let ImpactBridge show it on the service so the platform can work. You can ask us to close your account at any time (<a href="/delete-account">how</a>).</p>
     <h2>Not allowed</h2>
     <ul>
       <li>False or exaggerated needs, numbers or results, or claiming partners or approvals you don't have.</li>
@@ -116,16 +116,11 @@ function terms(el) {
 function deleteInfo(el) {
   document.title = "Delete your account — ImpactBridge";
   mount(el, html`<div class="wrap prose" style="max-width:820px">
-    <div class="page-head"><h1>Delete your ImpactBridge account</h1><p class="lede">You can delete your account and personal data yourself, at any time.</p></div>
+    <div class="page-head"><h1>Delete your ImpactBridge account</h1><p class="lede">Ask us to close your account and remove your personal data, at any time.</p></div>
     ${hostedNote()}
-    <h2>How to delete</h2>
-    <ol>
-      <li>Sign in to the ImpactBridge app or website.</li>
-      <li>Open <strong>Profile</strong> and scroll to <strong>Delete my account</strong>.</li>
-      <li>Enter your password, type DELETE, and confirm. You're signed out straight away.</li>
-    </ol>
-    <p>${HOSTED ? "" : state.user ? html`<a class="btn danger" href="/profile#delete">Go to Delete my account</a>` : html`<a class="btn primary" href="/login?next=/profile">Sign in to delete your account</a>`}</p>
-    <p>Can't sign in? Email ${contact()} from the address on your account and we'll delete it within 30 days.</p>
+    <h2>How to ask</h2>
+    <p>Email ${contact()} from the address on your account, with the subject "Close my account".</p>
+    <p>We confirm it is you, then remove your personal details within 30 days.</p>
     <h2>What is deleted immediately</h2>
     <ul>
       <li>Your name, email, phone, city, region, bio, skills and password.</li>

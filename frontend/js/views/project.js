@@ -7,7 +7,7 @@ import { refreshUser } from "../app.js";
 import { causeCover, causeIcon, icon, styleFor } from "../art.js";
 import { t } from "../i18n.js";
 import { freshness, journey } from "../components.js";
-import { openQuickPledge } from "./pledge.js";
+import { openQuickPledge, openThanks } from "./pledge.js";
 
 const TABS = [["overview", "Story"], ["support", "Support"], ["updates", "Proof & updates"], ["plan", "Plan & progress"],
   ["resources", "Resources"], ["impact", "Impact"], ["chat", "Chat"], ["history", "History"]];
@@ -70,6 +70,9 @@ export default async function projectView({ el, params }) {
           <a class="btn wa small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`${p.title} — help this community project on ImpactBridge: ${shareUrl(`/projects/${p.id}`)}`)}">${icon("whatsapp")} WhatsApp</a>
           <button class="btn small" type="button" id="share-img2">${icon("share")} Share as image</button>
           <button class="btn small" id="copy-link">${icon("link")} Copy link</button></div>` : ""}
+        ${live && p.permissions.can_manage && !HOSTED ? html`<form class="upi6" id="upi-form" novalidate><label for="upi-id">UPI ID where supporters send money</label>
+          <div class="row"><input id="upi-id" value="${p.upi_id || ""}" placeholder="yourgroup@bank" autocapitalize="none" autocomplete="off"><button class="btn small" type="submit">Update UPI</button></div>
+          <span class="hint">Shown only to people who pledge. Use an account in your group's name.</span></form>` : ""}
       </div></div>
     </div>
     <div class="wrap">
@@ -123,6 +126,11 @@ export default async function projectView({ el, params }) {
     });
     $$("[data-adopt]", el).forEach((b) => b.addEventListener("click", () => openOffer(b.dataset.adopt, b.dataset.item, b.dataset.unit, b.dataset.qty)));
     $("#report-btn", el)?.addEventListener("click", reportDialog);
+    $("#upi-form", el)?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try { await api(`/api/projects/${p.id}/upi`, { method: "PUT", body: { upi_id: $("#upi-id", el).value.trim() } }); toast("UPI ID saved"); }
+      catch (err) { toast(err.message, "bad"); }
+    });
     if (!el.dataset.blockWired) {
       el.dataset.blockWired = "1";
       el.addEventListener("click", async (e) => {
@@ -139,9 +147,8 @@ export default async function projectView({ el, params }) {
   function quickPledge() {
     openQuickPledge({
       project: p, onOther: () => openOffer(),
-      onDone: () => {
-        const text = `I just pledged to help "${p.title}" on ImpactBridge. Join me: ${shareUrl(`/projects/${p.id}`)}`;
-        celebrate("Thank you for helping!", "Your pledge is with the team. They'll reply here soon.", { label: "Tell friends on WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(text)}` });
+      onDone: (r) => {
+        openThanks({ project: p, kind: r.kind, amount: r.amount, people: r.people, monthly: r.monthly, commitment: r.res?.commitment });
         load();
         setTimeout(() => import("../prefs.js").then((m) => m.askForUpdates("We'll tell you when the team answers your pledge and when the work is done.")), 9800);
       },

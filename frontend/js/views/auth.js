@@ -21,7 +21,7 @@ export default async function auth({ el, opts, query }) {
   if (opts.page === "login") return login(el, next, query.method === "phone" ? "phone" : "email");
   if (opts.page === "forgot") return forgot(el);
   if (opts.page === "reset") return resetPassword(el, query);
-  return register(el, next);
+  return register(el, next, query.why === "explore" || query.why === "project" ? query.why : "");
 }
 
 const TERMS = html`I agree to the <a href="/terms" target="_blank" rel="noopener">terms of use</a>, <a href="/guidelines" target="_blank" rel="noopener">community guidelines</a> and <a href="/privacy" target="_blank" rel="noopener">privacy policy</a>.`;
@@ -186,13 +186,15 @@ function phoneSignup(pane, next, ticket, phone) {
   });
 }
 
-function register(el, next) {
+function register(el, next, why = "") {
   document.title = "Create an account — ImpactBridge";
   const creds = `<div class="field full"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
         <div class="field full"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
           <span class="hint">At least 8 characters, mixing letters with numbers or symbols.</span></div>`;
   const fields = String(profileFields()).replace("__CREDENTIALS__", creds);
   mount(el, html`<div class="wrap"><div class="auth-card panel" style="max-width:620px">
+    ${why ? html`<div class="gate7"><strong>${why === "project" ? "Create a free account to see this need" : "Create a free account to explore needs"}</strong>
+      <span>We ask everyone to sign up so that every need and every pledge comes from a real person. It takes a minute.</span></div>` : ""}
     <h1>Create your account</h1>
     <p class="muted">Pick what fits you best. It only sets up your dashboard.</p>
     <a class="btn" style="width:100%;margin-bottom:var(--s4)" href="/login?method=phone${next !== "/" ? `&next=${encodeURIComponent(next)}` : ""}">Sign up with your mobile number instead</a>

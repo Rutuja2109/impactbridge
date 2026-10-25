@@ -52,6 +52,8 @@ async def _deadline_loop():
     while True:
         try:
             sweep_deadlines()
+            from .routes.commitments import monthly_reminders
+            monthly_reminders()
         except Exception as exc:  # keep the loop alive
             log.warning("Deadline sweep failed: %s", exc)
         await asyncio.sleep(3600)

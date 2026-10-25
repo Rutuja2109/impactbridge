@@ -260,6 +260,7 @@ def detail(p: dict, user: dict | None) -> dict:
         "beneficiaries": p["beneficiaries"],
         "beneficiary_count": p["beneficiary_count"],
         "location_detail": p["location_detail"] if (team or not sensitive) else None,
+        "upi_id": p.get("upi_id") if p["status"] in ("published", "in_progress") else None,
         "location_detail_hidden": bool(sensitive and not team and p["location_detail"]),
         "time_commitment": p["time_commitment"],
         "end_date": p["end_date"],
@@ -294,6 +295,7 @@ def detail(p: dict, user: dict | None) -> dict:
         "wall": _wall(commitments),
         "permissions": {
             "is_manager": manager, "is_team": team, "is_reviewer": reviewer,
+            "can_manage": bool(manager),
             "can_edit": manager and p["status"] in ("draft", "needs_information"),
             "can_support": bool(user) and not manager and p["status"] in ("published", "in_progress") and p["owner_id"] not in _blocked,
         },
@@ -354,6 +356,8 @@ def serialize_commitment(c: dict, user, p: dict, manager: bool | None = None) ->
                              "deadline", "status", "received_quantity", "spent_amount", "responsibility",
                              "created_at", "updated_at")}
     out["is_anonymous"] = bool(c.get("is_anonymous"))
+    out["frequency"] = c.get("frequency") or "once"
+    out["paid_claimed_at"] = c.get("paid_claimed_at")
     out["supporter"] = _user_summary(c["supporter_id"])
     out["organization"] = _org_summary(c["org_id"])
     out["is_mine"] = mine

@@ -17,7 +17,7 @@ from ..services.notify import audit, notify, notify_many, reviewers
 from ..web import ok, parse, qfloat, qint
 
 PROJECT_FIELDS = ("title", "story", "problem_statement", "proposed_solution", "beneficiaries", "beneficiary_count", "city",
-                  "region", "location_detail", "cause", "budget_required", "volunteers_required", "materials",
+                  "region", "location_detail", "upi_id", "cause", "budget_required", "volunteers_required", "materials",
                   "skills", "time_commitment", "duration_weeks", "start_date", "end_date", "missing_info",
                   "follow_up_questions", "allow_multiple_supporters", "involves_children", "involves_vulnerable",
                   "safeguarding_notes", "org_id")
@@ -89,6 +89,8 @@ async def create_project(request: Request):
 async def get_project(request: Request):
     user = current_user(request)
     p = P.get_or_404(request.path_params["pid"])
+    if not user and not (request.query_params.get("public") == "1" and p["status"] in ("completed", "verified")):
+        raise ApiError(401, "Create a free account or sign in to see this need.")
     P.require_view(user, p)
     return ok({"project": P.detail(p, user)})
 
@@ -368,6 +370,9 @@ async def explore(request: Request):
         out.sort(key=lambda t: t[0]["start_date"] or "9999")
     page = qint(request, "page", 1, lo=1)
     per = qint(request, "per_page", 12, lo=1, hi=50)
+    if not user:
+        page = 1
+        per = min(per, 8)  # signed-out visitors only get a small teaser for the home page
     total = len(out)
     items = [P.summary(p, res) for p, res in out[(page - 1) * per: page * per]]
     return ok({"projects": items, "total": total, "page": page, "per_page": per, "search_mode": mode,
@@ -571,7 +576,45 @@ async def project_audit(request: Request):
     return ok({"history": rows})
 
 
+async def set_upi(request: Request):
+    """Owner adds or changes the UPI ID where supporters send money, even after the need is published."""
+    user = require_user(request)
+    p = P.get_or_404(request.path_params["pid"])
+    P.require_manager(user, p)
+    body = await request.json()
+    upi = str(body.get("upi_id") or "").strip()
+    if upi:
+        import re
+        if not re.fullmatch(r"[A-Za-z0-9._-]{2,50}@[A-Za-z][A-Za-z0-9]{1,30}", upi):
+            raise ApiError(422, "Enter a UPI ID like name@bank.", field="upi_id")
+    db.update("projects", p["id"], {"upi_id": upi or None, "updated_at": db.now()})
+    audit(user["id"], "project.upi_changed", "project", p["id"])
+    return ok({"upi_id": upi or None})
+
+
+async def stories(request: Request):
+    """Story circles for the home screen: projects with recent updates, ones the member backed first."""
+    user = require_user(request)
+    demo_ok = config.settings.show_demo_publicly or is_reviewer(user)
+    backed = {r["project_id"] for r in db.query("SELECT project_id FROM commitments WHERE supporter_id = ? AND status IN ('proposed','accepted','fulfilled')", (user["id"],))}
+    rows = db.query("""SELECT u.project_id, u.title, u.body, u.created_at FROM updates u JOIN projects p ON p.id = u.project_id
+                       WHERE u.is_hidden = 0 AND p.is_hidden = 0 AND p.status IN ('published','in_progress','completed','verified')
+                       AND (p.is_demo = 0 OR ?) ORDER BY u.created_at DESC LIMIT 80""", (1 if demo_ok else 0,))
+    by: dict[str, list] = {}
+    for r in rows:
+        by.setdefault(r["project_id"], []).append({"title": r["title"], "body": r["body"][:420], "created_at": r["created_at"]})
+    out = []
+    for pid, ups in by.items():
+        p = db.get("projects", pid)
+        res = resources.compute(p)
+        out.append({"project": P.summary(p, res), "updates": ups[:3], "backed": pid in backed})
+    out.sort(key=lambda x: (not x["backed"]))
+    return ok({"stories": out[:14]})
+
+
 routes = [
+    Route("/api/stories", stories, methods=["GET"]),
+    Route("/api/projects/{pid}/upi", set_upi, methods=["PUT"]),
     Route("/api/projects", explore, methods=["GET"]),
     Route("/api/projects", create_project, methods=["POST"]),
     Route("/api/projects/mine", my_projects, methods=["GET"]),

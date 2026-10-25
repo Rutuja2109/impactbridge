@@ -49,6 +49,10 @@ def _session_response(user: dict, status: int = 200) -> JSONResponse:
 async def register(request: Request):
     data = await parse(request, RegisterIn)
     validate_password_strength(data.password)
+    fwd = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    from ..security import check_signup_allowed
+    if db.one("SELECT id FROM users WHERE email = ?", (data.email,)) is None:
+        check_signup_allowed(data.email, fwd or (request.client.host if request.client else "local"))
     if db.one("SELECT id FROM users WHERE email = ?", (data.email,)):
         raise ApiError(409, "An account with this email already exists. Try signing in.", field="email")
     if data.organization and data.role in ROLE_TO_ORG_TYPE and data.organization.org_type not in ROLE_TO_ORG_TYPE[data.role]:

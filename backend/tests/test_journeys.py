@@ -14,6 +14,7 @@ from datetime import date, timedelta
 
 TMP = tempfile.mkdtemp(prefix="ib-test-")
 os.environ["DATA_DIR"] = TMP
+os.environ["SIGNUPS_PER_HOUR"] = "100000"
 os.environ["REQUIRE_PROJECT_PHOTO"] = "0"  # most journeys skip photos; one test turns the rule on
 os.environ.pop("ANTHROPIC_API_KEY", None)
 os.environ.pop("OPENAI_API_KEY", None)
@@ -70,6 +71,11 @@ class Api:
                            headers=self._h())
 
 
+def secrets_token():
+    import secrets
+    return secrets.token_hex(3)
+
+
 class Base(unittest.TestCase):
     db_name = "base"
 
@@ -94,6 +100,14 @@ class Base(unittest.TestCase):
         self.assertEqual(r.status_code, 201, r.text)
         data = r.json()
         return Api(self.app, data["token"], data["user"])
+
+    @property
+    def viewer(self):
+        """A signed-in ordinary member: browsing needs requires an account."""
+        if not hasattr(type(self), "_viewer") or type(self)._viewer is None or getattr(type(self), "_viewer_db", None) != self.db_name:
+            type(self)._viewer = self.register(f"viewer-{self.db_name}-{secrets_token()}@example.org", role="volunteer")
+            type(self)._viewer_db = self.db_name
+        return type(self)._viewer
 
     def make_staff(self, email, role="admin"):
         ts = db.now()
@@ -219,7 +233,7 @@ class ProjectLifecycleTests(Base):
         self.assertEqual(p["original_description"], "One tap for 180 kids. Need handwash stations.")
 
         # drafts are private
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").status_code, 404)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").status_code, 404)
         self.assertEqual(stranger.get(f"/api/projects/{pid}").status_code, 404)
         self.assertEqual(stranger.put(f"/api/projects/{pid}", self.project_body()).status_code, 403)
 
@@ -260,11 +274,11 @@ class ProjectLifecycleTests(Base):
         self.assertEqual(owner.put(f"/api/projects/{pid}", body).status_code, 200)
         self.assertEqual(owner.post(f"/api/projects/{pid}/transition", {"status": "submitted"}).status_code, 200)
         self.assertEqual(reviewer.post(f"/api/projects/{pid}/transition", {"status": "approved"}).status_code, 200)
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").status_code, 404, "approved is not yet public")
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").status_code, 404, "approved is not yet public")
         self.assertEqual(stranger.post(f"/api/projects/{pid}/transition", {"status": "published"}).status_code, 403)
         self.assertEqual(owner.post(f"/api/projects/{pid}/transition", {"status": "published"}).status_code, 200)
 
-        pub = self.anon.get(f"/api/projects/{pid}").json()["project"]
+        pub = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         self.assertEqual(pub["status"], "published")
         self.assertNotIn("original_description", pub, "original description is visible to owner/reviewers only")
         self.assertFalse(pub["need_verified"])
@@ -296,7 +310,7 @@ class ProjectLifecycleTests(Base):
         reviewer = self.make_staff("sg-rev@example.org", "verifier")
         for actor, st in ((owner, "submitted"), (reviewer, "approved"), (owner, "published")):
             self.assertEqual(actor.post(f"/api/projects/{pid}/transition", {"status": st}).status_code, 200)
-        pub = self.anon.get(f"/api/projects/{pid}").json()["project"]
+        pub = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         self.assertIsNone(pub["location_detail"], "exact location hidden from the public on sensitive projects")
         self.assertTrue(pub["location_detail_hidden"])
         self.assertIsNone(pub["safeguarding_notes"])
@@ -390,14 +404,42 @@ class CommitmentTests(Base):
         self.csr_org = self.csr.user["organizations"][0]["id"]
 
     def money(self, pid):
-        return self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]["money"]
+        return self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]["money"]
+
+    def test_login_wall_upi_monthly_paid_and_stories(self):
+        pid = self.published_project(self.owner, self.reviewer)
+        # signed-out visitors can't open a need or page through the list
+        self.assertEqual(self.anon.get(f"/api/projects/{pid}").status_code, 401)
+        self.assertLessEqual(self.anon.get("/api/projects?per_page=50").json()["per_page"], 8)
+        self.assertEqual(self.anon.get("/api/stories").status_code, 401)
+        # UPI id must look like one, and shows once the need is live
+        self.assertEqual(self.owner.put(f"/api/projects/{pid}/upi", {"upi_id": "not a upi"}).status_code, 422)
+        self.assertEqual(self.owner.put(f"/api/projects/{pid}/upi", {"upi_id": "ward12@okbank"}).status_code, 200)
+        self.assertEqual(self.vol.put(f"/api/projects/{pid}/upi", {"upi_id": "x@okbank"}).status_code, 403)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").json()["project"]["upi_id"], "ward12@okbank")
+        # monthly pledge, then "I sent it"
+        r = self.vol.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 300, "frequency": "monthly"})
+        self.assertEqual(r.status_code, 201, r.text)
+        cid = r.json()["commitment"]["id"]
+        self.assertEqual(r.json()["commitment"]["frequency"], "monthly")
+        self.assertEqual(self.csr.post(f"/api/commitments/{cid}/paid", {}).status_code, 403)
+        paid = self.vol.post(f"/api/commitments/{cid}/paid", {"reference": "UTR123"})
+        self.assertEqual(paid.status_code, 200, paid.text)
+        self.assertTrue(paid.json()["commitment"]["paid_claimed_at"])
+        self.assertEqual(self.vol.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 5, "frequency": "weekly"}).status_code, 422)
+        self.owner.post(f"/api/commitments/{cid}/action", {"action": "accept"})
+        self.assertEqual(self.vol.get("/api/stories").status_code, 200)
+        # throw-away email addresses are refused
+        r = TestClient(self.app).post("/api/auth/register", json={"email": "x@mailinator.com", "password": "Secure#pass1", "name": "X Y",
+                                                                  "role": "volunteer", "city": "Pune", "region": "Maharashtra", "accept_terms": True})
+        self.assertEqual(r.status_code, 422, r.text)
 
     def test_anonymous_pledge_stays_anonymous_and_messages_show(self):
         pid = self.published_project(self.owner, self.reviewer)
         cid = self.vol.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 500, "description": "Proud to help.",
                                                                   "is_anonymous": True}).json()["commitment"]["id"]
         self.assertEqual(self.owner.post(f"/api/commitments/{cid}/action", {"action": "accept"}).status_code, 200)
-        public = Api(self.app).get(f"/api/projects/{pid}").json()["project"]
+        public = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         self.assertEqual(len(public["wall"]), 1)
         w = public["wall"][0]
         self.assertEqual((w["name"], w["anonymous"], w["message"]), ("A kind neighbour", True, "Proud to help."))
@@ -431,14 +473,14 @@ class CommitmentTests(Base):
             self.assertEqual(self.owner.post(f"/api/commitments/{cid}/action", {"action": "accept"}).status_code, 200)
         m = self.money(pid)
         self.assertEqual((m["pledged"], m["gap"], m["proposed"]), (90000, 0, 0))
-        res = self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]
+        res = self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]
         self.assertEqual(res["volunteers"]["pledged"], 4)
         self.assertEqual(res["volunteers"]["gap"], 2)
         self.assertEqual(res["volunteers"]["pledged_hours"], 24)
         self.assertEqual(res["materials"][0]["pledged"], 2, "fuzzy item matching: 'handwash units' ~ 'Handwash unit'")
         self.assertEqual(res["materials"][0]["gap"], 2)
         self.assertEqual(res["supporter_count"], 3)
-        self.assertEqual(len(self.anon.get(f"/api/projects/{pid}").json()["project"]["participants"]), 3)
+        self.assertEqual(len(self.viewer.get(f"/api/projects/{pid}").json()["project"]["participants"]), 3)
         self.assertEqual(self.club.get("/api/notifications").json()["notifications"][0]["title"],
                          "Your support offer was accepted")
 
@@ -458,7 +500,7 @@ class CommitmentTests(Base):
         m = self.money(pid)
         self.assertEqual((m["pledged"], m["received"], m["spent"]), (30000, 20000, 15000))
         self.assertEqual(self.owner.post(f"/api/commitments/{c3}/action", {"action": "fulfil"}).status_code, 200)
-        res = self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]
+        res = self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]
         self.assertEqual(res["volunteers"]["received"], 4)
         self.assertEqual(res["volunteers"]["pledged"], 4, "fulfilled commitments still count")
 
@@ -475,7 +517,7 @@ class CommitmentTests(Base):
         self.assertEqual(self.owner.post(f"/api/commitments/{cid}/action", {"action": "accept"}).status_code, 200)
         self.assertEqual(self.vol.put(f"/api/commitments/{cid}", {"kind": "volunteers", "quantity": 9}).status_code, 409,
                          "accepted commitments can't be silently changed")
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 3)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 3)
 
         c2 = self.club.post(f"/api/projects/{pid}/commitments", {"kind": "skills", "quantity": 1, "item": "Plumbing"}).json()["commitment"]["id"]
         self.assertEqual(self.owner.post(f"/api/commitments/{c2}/action", {"action": "decline", "message": "Already covered"}).status_code, 200)
@@ -688,7 +730,7 @@ class ExecutionVerificationTests(Base):
             "verified_people_reached": 160, "verified_funds_spent": 88000,
             "verified_outcomes": {outcome_id: 160}})
         self.assertEqual(r.status_code, 200, r.text)
-        p = self.anon.get(f"/api/projects/{pid}").json()["project"]
+        p = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         self.assertEqual(p["status"], "verified")
         self.assertTrue(p["completion_verified"])
         self.assertEqual(p["impact_report"]["people_reached"], 175)
@@ -738,7 +780,7 @@ class ExecutionVerificationTests(Base):
         self.assertEqual(owner.post("/api/verifications", {"kind": "project_need", "subject_id": pid}).status_code, 201)
         for v in ver.get("/api/admin/verifications").json()["verifications"]:
             ver.post(f"/api/admin/verifications/{v['id']}/decide", {"decision": "approve", "notes": "Checked on call with school."})
-        p = self.anon.get(f"/api/projects/{pid}").json()["project"]
+        p = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         self.assertTrue(p["need_verified"] and p["financial_verified"])
         self.assertEqual(self.anon.get("/api/projects", params={"verified": "need"}).json()["total"], 1)
 
@@ -775,7 +817,7 @@ class ModerationTests(Base):
         r = admin.post(f"/api/admin/reports/{rid}", {"status": "resolved", "resolution": "Hidden pending checks", "hide_subject": True})
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(pid, [p["id"] for p in self.anon.get("/api/projects").json()["projects"]])
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").status_code, 404)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").status_code, 404)
         self.assertEqual(owner.get(f"/api/projects/{pid}").status_code, 200, "owner can still see it")
         self.assertTrue(any(n["type"] == "report" for n in reporter2.get("/api/notifications").json()["notifications"]))
 
@@ -913,7 +955,7 @@ class ProofAndActivityTests(Base):
         for c in (c1, c2):
             owner.post(f"/api/commitments/{c}/action", {"action": "accept"})
         owner.post(f"/api/projects/{pid}/updates", {"title": "Site visit done", "body": "Met the headmaster and measured the space."})
-        p = self.anon.get(f"/api/projects/{pid}").json()["project"]
+        p = self.viewer.get(f"/api/projects/{pid}").json()["project"]
         kinds = [e["kind"] for e in p["timeline"]]
         self.assertIn("published", kinds); self.assertIn("update", kinds); self.assertEqual(kinds.count("pledge"), 2)
         titles = " ".join(e["title"] for e in p["timeline"])
@@ -948,7 +990,7 @@ class AccountDeletionAndAppTests(Base):
         c_acc = vol.post(f"/api/projects/{pid}/commitments", {"kind": "volunteers", "quantity": 2, "hours": 3}).json()["commitment"]["id"]
         c_open = vol.post(f"/api/projects/{pid}/commitments", {"kind": "volunteers", "quantity": 1, "hours": 2}).json()["commitment"]["id"]
         owner.post(f"/api/commitments/{c_acc}/action", {"action": "accept"})
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 2)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 2)
 
         self.assertEqual(self.anon.post("/api/auth/delete-account", {"password": "x", "confirm": "DELETE"}).status_code, 401)
         self.assertEqual(vol.post("/api/auth/delete-account", {"password": "Secure#pass1", "confirm": "nope"}).status_code, 422)
@@ -965,15 +1007,15 @@ class AccountDeletionAndAppTests(Base):
         self.assertEqual(login.status_code, 401)
         self.assertEqual(db.get("commitments", c_acc)["status"], "cancelled")
         self.assertEqual(db.get("commitments", c_open)["status"], "withdrawn")
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 0)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").json()["project"]["resources"]["volunteers"]["pledged"], 0)
         if up.status_code == 201:
             self.assertIsNone(db.get("files", up.json()["file"]["id"]))
         self.assertTrue(any("deleted their account" in n["title"] for n in owner.get("/api/notifications").json()["notifications"]))
-        self.assertNotIn("Ravi", json.dumps(self.anon.get(f"/api/projects/{pid}").json()))
+        self.assertNotIn("Ravi", json.dumps(self.viewer.get(f"/api/projects/{pid}").json()))
         # the project owner deletes: draft is removed, the published project stays
         self.assertEqual(owner.post("/api/auth/delete-account", {"password": "Secure#pass1", "confirm": "DELETE"}).status_code, 200)
         self.assertIsNone(db.get("projects", draft))
-        self.assertEqual(self.anon.get(f"/api/projects/{pid}").status_code, 200)
+        self.assertEqual(self.viewer.get(f"/api/projects/{pid}").status_code, 200)
         # org ownership: sole owner leaves, org remains without members
         self.assertEqual(club.post("/api/auth/delete-account", {"password": "Secure#pass1", "confirm": "DELETE"}).status_code, 200)
         self.assertEqual(db.scalar("SELECT COUNT(*) FROM org_members WHERE user_id = ?", (club.user["id"],)), 0)

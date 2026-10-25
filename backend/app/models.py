@@ -177,6 +177,18 @@ class ProjectIn(Strict):
     city: Optional[str] = Field(default=None, max_length=80)
     region: Optional[str] = Field(default=None, max_length=80)
     location_detail: Optional[str] = Field(default=None, max_length=300)
+    upi_id: Optional[str] = Field(default=None, max_length=80)
+
+    @field_validator("upi_id")
+    @classmethod
+    def _upi(cls, v):
+        v = (v or "").strip()
+        if not v:
+            return None
+        if not re.fullmatch(r"[A-Za-z0-9._-]{2,50}@[A-Za-z][A-Za-z0-9]{1,30}", v):
+            raise ValueError("Enter a UPI ID like name@bank")
+        return v
+
     cause: Optional[str] = None
     budget_required: Optional[float] = Field(default=None, ge=0, le=1e12)
     volunteers_required: Optional[int] = Field(default=None, ge=0, le=100_000)
@@ -250,7 +262,15 @@ class CommitmentIn(Strict):
     deadline: Optional[str] = None
     org_id: Optional[str] = None
     is_anonymous: bool = False
+    frequency: str = "once"
     _d = field_validator("deadline")(lambda cls, v: _date(v))
+
+    @field_validator("frequency")
+    @classmethod
+    def _freq(cls, v):
+        if v not in ("once", "monthly"):
+            raise ValueError("Choose one-time or monthly")
+        return v
 
     @field_validator("kind")
     @classmethod

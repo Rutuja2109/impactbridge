@@ -75,7 +75,7 @@ async def main():
     await shot(m,"1_submitted_mobile")
     # anonymous can't see it
     a = await ctx(b); await a.goto(BASE+f"/projects/{pid}")
-    await expect(a.get_by_text("Project not found")).to_be_visible(); ok("submitted project is not public")
+    await expect(a.get_by_text("Create a free account to see this need")).to_be_visible(); ok("signed-out visitors are asked to create an account first")
 
     # 2. Verifier asks for info, then approves
     v = await ctx(b)
@@ -94,8 +94,8 @@ async def main():
 
     # 3. Owner publishes
     await m.goto(BASE+f"/projects/{pid}"); await m.get_by_role("button", name="Publish project").click(); await toast(m,"Published")
-    await a.goto(BASE+f"/explore?q=Kasarwadi+{U}"); await expect(a.locator(".pcard", has_text=U)).to_have_count(1, timeout=8000); ok("published project is searchable publicly")
-    await shot(a,"2_explore")
+    await m.goto(BASE+f"/explore?q=Kasarwadi+{U}"); await expect(m.locator(".pcard", has_text=U)).to_have_count(1, timeout=8000); ok("published project is searchable publicly")
+    await shot(m,"2_explore")
 
     # 4. Club registers, matches resources, offers support
     c = await ctx(b)
@@ -159,22 +159,22 @@ async def main():
     await vc.get_by_role("button", name="Approve").click()
     await v.get_by_label(re.compile("How did you check")).fill("Visited market 2 Nov; spoke to committee.")
     await v.get_by_label("People reached (verified)").fill("250"); await v.get_by_role("button", name="Confirm decision").click(); await toast(v,"Decision recorded")
-    await a.goto(BASE+f"/projects/{pid}#impact")
-    await expect(a.locator(".badge.verified", has_text="Completion verified")).to_be_visible(); await expect(a.locator(".status")).to_have_text("Completed")
-    row = a.locator("tr", has_text="People reached"); await expect(row).to_contain_text("300"); await expect(row).to_contain_text("250")
-    await expect(a.locator("tr", has_text="Volunteers involved")).to_contain_text("Not checked"); ok("public sees reported (300) vs verified (250); unchecked figures say 'Not checked'")
-    await shot(a,"5_impact")
+    await m.goto(BASE+f"/projects/{pid}#impact")
+    await expect(m.locator(".badge.verified", has_text="Completion verified")).to_be_visible(); await expect(m.locator(".status")).to_have_text("Completed")
+    row = m.locator("tr", has_text="People reached"); await expect(row).to_contain_text("300"); await expect(row).to_contain_text("250")
+    await expect(m.locator("tr", has_text="Volunteers involved")).to_contain_text("Not checked"); ok("public sees reported (300) vs verified (250); unchecked figures say 'Not checked'")
+    await shot(m,"5_impact")
     # 8. Unauthorized: club cannot reach admin; stranger cannot see team action
     await c.goto(BASE+"/admin"); await expect(c.get_by_text("Reviewers only")).to_be_visible(); ok("non-reviewer blocked from admin UI")
     await a.goto(BASE+"/dashboard"); await expect(a).to_have_url(re.compile("/login")); ok("anonymous user redirected to sign in")
     await a.goto(BASE+"/"); await expect(a.locator(".stats5")).to_be_visible(); ok("home shows real impact figures once data exists")
     # 9. Redesign features
-    await a.goto(BASE+f"/projects/{pid}"); await expect(a.locator(".journey li.done")).to_have_count(7); ok("journey tracker shows all 7 steps done on a verified project")
-    await expect(a.locator("a.wa")).to_have_attribute("href", re.compile("wa.me")); ok("WhatsApp share link present")
-    await a.get_by_role("tab", name="Proof & updates").click()
-    await expect(a.locator(".proof li", has_text="Completion independently verified")).to_be_visible()
-    await expect(a.locator(".proof li", has_text="Milestone completed")).to_be_visible()
-    await expect(a.locator(".proof li", has_text="Rahul committed")).to_have_count(2); ok("proof timeline lists pledges, milestones, verification (individuals by first name)")
+    await m.goto(BASE+f"/projects/{pid}"); await expect(m.locator(".journey li.done")).to_have_count(7); ok("journey tracker shows all 7 steps done on a verified project")
+    await expect(m.locator(".ph5-share-row a.wa")).to_have_attribute("href", re.compile("wa.me")); ok("WhatsApp share link present")
+    await m.get_by_role("tab", name="Proof & updates").click()
+    await expect(m.locator(".proof li", has_text="Completion independently verified")).to_be_visible()
+    await expect(m.locator(".proof li", has_text="Milestone completed")).to_be_visible()
+    await expect(m.locator(".proof li", has_text="Rahul committed")).to_have_count(2); ok("proof timeline lists pledges, milestones, verification (individuals by first name)")
     await a.goto(BASE+"/"); await expect(a.locator("#live-card")).to_contain_text("Completion verified"); ok("home live card shows the latest real event")
     await shot(a,"6_home")
     import json as _j
@@ -184,7 +184,7 @@ async def main():
     await expect(c.get_by_label("What are you offering?")).to_have_value("materials")
     await expect(c.get_by_label("Item or skill")).to_have_value(demo["materials"][0]["name"])
     await expect(c.get_by_label("Quantity")).to_have_value(re.compile(r"\d")); ok("'I can give this' prefills the offer form with item and remaining quantity")
-    mm = await ctx(b, True); await mm.goto(BASE+f"/projects/{demo['id']}")
+    mm = m; await mm.goto(BASE+f"/projects/{demo['id']}")
     await expect(mm.locator(".sticky-cta")).to_be_visible(); ok("sticky support bar on mobile")
     await shot(mm,"7_project_mobile"); await shot(c,"8_project_desktop")
     await mm.goto(BASE+"/explore"); await expect(mm.locator(".sticky-cta")).to_have_count(0); ok("sticky bar removed after navigating away")

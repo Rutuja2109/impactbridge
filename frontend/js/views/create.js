@@ -308,6 +308,8 @@ export default async function create({ el, params, opts }) {
       <section class="wiz-page" data-page="2">
 
       <fieldset><legend>What's needed</legend><div class="form-grid">
+        <div class="field full ${flag("upi_id")}"><label for="upi">UPI ID to receive money (optional)</label><input id="upi" name="upi_id" value="${v(p.upi_id)}" placeholder="yourgroup@bank" autocapitalize="none" autocomplete="off" inputmode="email">
+          <span class="hint">Supporters see it only after they pledge. Use an account in your group's name, never a personal one you don't control.</span></div>
         <div class="field ${flag("budget_required")}"><label for="bud">Budget needed (${state.meta.currency})</label><input id="bud" name="budget_required" type="number" min="0" step="1" value="${v(p.budget_required)}" inputmode="numeric"><span class="hint">Leave empty if you don't know yet.</span>
           ${p.budget_estimate?.amount && !p.budget_required ? html`<div class="estimate"><span><strong>AI estimate: about ${money(p.budget_estimate.amount)}</strong><br><span class="small" translate="no">${p.budget_estimate.basis}</span><br>
             <span class="small muted">A rough guess from typical costs, not a quote. Check prices locally before you use it.</span></span>
@@ -447,7 +449,7 @@ export default async function create({ el, params, opts }) {
         title: g("title").value.trim(), story: g("story").value.trim(), problem_statement: g("problem_statement").value.trim(),
         proposed_solution: g("proposed_solution").value.trim(), beneficiaries: g("beneficiaries").value.trim(),
         beneficiary_count: numOrNull("beneficiary_count"), cause: g("cause").value || null, org_id: g("org_id").value || null,
-        city: g("city").value.trim() || null, region: g("region").value.trim() || null, location_detail: g("location_detail").value.trim() || null,
+        city: g("city").value.trim() || null, region: g("region").value.trim() || null, location_detail: g("location_detail").value.trim() || null, upi_id: g("upi_id").value.trim() || null,
         budget_required: numOrNull("budget_required"), volunteers_required: numOrNull("volunteers_required"),
         time_commitment: g("time_commitment").value.trim() || null, duration_weeks: numOrNull("duration_weeks"),
         start_date: g("start_date").value || null, end_date: g("end_date").value || null,

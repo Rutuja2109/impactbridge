@@ -148,3 +148,27 @@ def record_failed_login(key: str) -> None:
 def clear_login_attempts(key: str) -> None:
     with _attempt_lock:
         _attempts.pop(key, None)
+
+
+# ----------------------------------------------------------------- sign-up abuse protection
+DISPOSABLE_DOMAINS = {
+    "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com", "trashmail.com",
+    "getnada.com", "sharklasers.com", "throwawaymail.com", "dispostable.com", "maildrop.cc", "fakeinbox.com", "mailnesia.com",
+    "mohmal.com", "emailondeck.com", "tempinbox.com", "mintemail.com", "spamgourmet.com", "burnermail.io", "moakt.com",
+}
+_signups: dict[str, list[float]] = {}
+
+
+def check_signup_allowed(email: str, ip: str) -> None:
+    """Blocks throw-away email addresses and bursts of sign-ups from one network (5 per hour)."""
+    import time
+    from .errors import ApiError
+    domain = email.rsplit("@", 1)[-1].lower()
+    if domain in DISPOSABLE_DOMAINS:
+        raise ApiError(422, "Please use your own email address. Temporary email services aren't accepted.", field="email")
+    now = time.time()
+    recent = [t for t in _signups.get(ip, []) if now - t < 3600]
+    if len(recent) >= int(os.environ.get("SIGNUPS_PER_HOUR", "5")):
+        raise ApiError(429, "Too many accounts were created from this network. Please try again in an hour.")
+    recent.append(now)
+    _signups[ip] = recent
