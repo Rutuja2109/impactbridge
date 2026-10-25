@@ -48,6 +48,20 @@ export function causeIcon(cause, size = 28) {
 
 /** Decorative poster cover: a bold cause-coloured field, sun disc, layered hills and a big white cause icon.
  *  Same cause always gives the same layout; the project id varies the composition slightly so lists don't repeat. */
+/** A small group of neighbours standing together: gives the cover illustrations a human face. */
+function crowd(H, r) {
+  const skins = ["#8D5A3B", "#C68B59", "#E0AC82", "#6E4429", "#D9A066"];
+  const tops = ["#FFFFFF", "#FFE08A", "#FF9F8E", "#BFE9E7", "#E4D4FF"];
+  const base = H * 0.9, n = 4 + r(2), x0 = 200 - n * 17;
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const kid = i % 3 === 1, sc = kid ? 0.72 : 1, x = x0 + i * 34 + r(6), skin = skins[r(skins.length)], top = tops[r(tops.length)];
+    out += `<g transform="translate(${x} ${base - 34 * sc}) scale(${sc})"><circle cx="0" cy="-2" r="7.5" fill="${skin}"/>
+      <path d="M-9 30 V14 a9 9 0 0 1 18 0 V30 Z" fill="${top}"/><rect x="-6" y="30" width="4.5" height="9" rx="2" fill="#243b36" opacity=".8"/><rect x="1.5" y="30" width="4.5" height="9" rx="2" fill="#243b36" opacity=".8"/></g>`;
+  }
+  return `<g class="crowd" opacity=".96">${out}</g>`;
+}
+
 export function causeCover(cause, { height = 168, label = "", seed = "" } = {}) {
   const s = styleFor(cause);
   let h = 0; for (const ch of String(seed || cause)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -61,6 +75,7 @@ export function causeCover(cause, { height = 168, label = "", seed = "" } = {}) 
     <circle cx="${sx}" cy="${sy}" r="${16 + r(10)}" fill="#fff" opacity=".35"/>
     ${hill(H * 0.72, 26 + r(16), s.deep, ".55")}
     ${hill(H * 0.86, 18 + r(12), s.ink, ".35")}
+    ${H >= 140 ? crowd(H, r) : ""}
     <g transform="translate(${200 - iconSize / 2} ${H * 0.5 - iconSize / 2 - 4})">
       <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${P[cause] || P.community_infrastructure}</svg></g>
   </svg>`);
@@ -75,6 +90,7 @@ export const ICON = {
   clock: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   camera: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   award: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="m9 13-1.5 8 4.5-2.5 4.5 2.5L15 13"/></svg>',
+  heart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z"/></svg>',
   pin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
   people: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-6 6.5-6s5.9 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c3 0 5 2 5.5 5"/></svg>',
   shield: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>',

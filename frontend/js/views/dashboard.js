@@ -58,6 +58,9 @@ export default async function dashboard({ el, feed }) {
     ["🏅", "Verified impact", "Earned an impact certificate", certs.certificates.length > 0],
   ];
   const earned = BADGES.filter((b) => b[3]).length;
+  const LEVELS = ["Neighbour", "Helper", "Changemaker", "Champion"];
+  const level = Math.min(3, Math.floor((earned - 1) / 2));
+  const nextBadge = BADGES.find((b) => !b[3]);
   const anyImpact = st.money_pledged || st.volunteer_places || st.projects_supported || st.projects_managed || st.projects_completed;
   const fresh = !anyImpact && !d.my_commitments.length && !active.length && !d.incoming_proposals.length && !d.organizations.length;
   const initials = u.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -86,6 +89,7 @@ export default async function dashboard({ el, feed }) {
         <div><strong>${st.projects_completed || 0}</strong><span>finished</span></div></div>`
         : html`<div class="i5-empty"><strong>Your impact starts here</strong><span>${supporterRole ? "Find a need you can help with, or match your club's resources." : "Share a problem from your area and we'll help you find supporters."}</span>
           ${fresh ? html`<a class="btn primary i5-go" href="${supporterRole ? "/explore?needs=any" : "/share-a-need"}">${supporterRole ? "Find a need to help" : "Share a problem"}</a>` : ""}</div>`}
+      ${nextBadge ? html`<p class="i5-next"><span class="i5-lv">Level ${level + 1} · ${LEVELS[level]}</span> Next: <strong>${nextBadge[1]}</strong>, ${nextBadge[2].charAt(0).toLowerCase() + nextBadge[2].slice(1)}.</p>` : html`<p class="i5-next"><span class="i5-lv">Level 4 · Champion</span> You've earned every badge. Thank you!</p>`}
       <details class="i5-badges" ${fresh ? "" : "open"}><summary>Badges <strong>${earned}/${BADGES.length}</strong></summary>
         <ul>${BADGES.map(([e, t, dsc, ok]) => html`<li class="${ok ? "on" : ""}" title="${dsc}"><span class="be" aria-hidden="true">${e}</span><span class="bt">${t}</span></li>`)}</ul></details>
     </section>

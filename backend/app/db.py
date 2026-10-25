@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS commitments (
     received_quantity REAL NOT NULL DEFAULT 0,
     spent_amount REAL NOT NULL DEFAULT 0,
     responsibility TEXT,
+    is_anonymous INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

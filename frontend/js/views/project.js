@@ -7,6 +7,7 @@ import { refreshUser } from "../app.js";
 import { causeCover, causeIcon, icon, styleFor } from "../art.js";
 import { t } from "../i18n.js";
 import { freshness, journey } from "../components.js";
+import { openQuickPledge } from "./pledge.js";
 
 const TABS = [["overview", "Story"], ["support", "Support"], ["updates", "Proof & updates"], ["plan", "Plan & progress"],
   ["resources", "Resources"], ["impact", "Impact"], ["chat", "Chat"], ["history", "History"]];
@@ -62,7 +63,8 @@ export default async function projectView({ el, params }) {
           <div><strong>${p.supporter_count}</strong><span>supporter${p.supporter_count === 1 ? "" : "s"}</span></div>
           <div><strong>${r.open_gaps.length}</strong><span>open need${r.open_gaps.length === 1 ? "" : "s"}</span></div>
         </div>
-        ${percent !== null ? html`<div class="pc-bar big" role="img" aria-label="${percent}% of funding pledged"><span style="width:${Math.max(percent, 2)}%"></span></div>` : ""}` : ""}
+        ${percent !== null ? html`<div class="pc-bar big" role="img" aria-label="${percent}% of funding pledged"><span style="width:${Math.max(percent, 2)}%"></span></div>` : ""}
+        ${milestoneChip(percent ?? 0)}` : ""}
         ${journey(p)}
         ${live ? html`<div class="ph5-share-row">
           <a class="btn wa small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`${p.title} — help this community project on ImpactBridge: ${shareUrl(`/projects/${p.id}`)}`)}">${icon("whatsapp")} WhatsApp</a>
@@ -112,8 +114,8 @@ export default async function projectView({ el, params }) {
       const n = bs[(i + (e.key === "ArrowRight" ? 1 : bs.length - 1)) % bs.length];
       tab = n.dataset.tab; draw(); $(`#tab-${tab}`, el).focus();
     });
-    $("#support-btn", el)?.addEventListener("click", () => openOffer());
-    $("#sticky-support", el)?.addEventListener("click", () => openOffer());
+    $("#support-btn", el)?.addEventListener("click", quickPledge);
+    $("#sticky-support", el)?.addEventListener("click", quickPledge);
     $("#copy-link", el)?.addEventListener("click", async () => {
       const link = shareUrl(`/projects/${p.id}`);
       try { await navigator.clipboard.writeText(link); toast(HOSTED ? "Link to ImpactBridge copied" : "Link copied"); }
@@ -132,6 +134,59 @@ export default async function projectView({ el, params }) {
         catch (err) { toast(err.message, "bad"); }
       });
     }
+  }
+
+  function quickPledge() {
+    openQuickPledge({
+      project: p, onOther: () => openOffer(),
+      onDone: () => {
+        const text = `I just pledged to help "${p.title}" on ImpactBridge. Join me: ${shareUrl(`/projects/${p.id}`)}`;
+        celebrate("Thank you for helping!", "Your pledge is with the team. They'll reply here soon.", { label: "Tell friends on WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(text)}` });
+        load();
+        setTimeout(() => import("../prefs.js").then((m) => m.askForUpdates("We'll tell you when the team answers your pledge and when the work is done.")), 9800);
+      },
+    });
+  }
+
+  const milestoneChip = (percent) => {
+    const m = percent >= 100 ? ["Fully pledged. Thank you!", "done"] : percent >= 75 ? ["Almost there: " + percent + "% pledged", "hot"] : percent >= 50 ? ["Halfway there: " + percent + "% pledged", "hot"]
+      : percent >= 25 ? ["Picking up: " + percent + "% pledged", ""] : p.supporter_count ? [`${p.supporter_count} ${p.supporter_count === 1 ? "neighbour has" : "neighbours have"} joined`, ""] : null;
+    return m ? html`<span class="mile5 ${m[1]}">${icon(m[1] === "done" ? "check" : "people")} ${m[0]}</span>` : "";
+  };
+
+  function wallSection() {
+    const wall = p.wall || [];
+    const hue = (t) => { let h = 0; for (const c of t) h = (h * 33 + c.charCodeAt(0)) % 360; return h; };
+    const ini = (n) => (n || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    const what = (w) => w.kind === "money" ? `pledged ${money(w.quantity)}` : w.kind === "volunteers" ? `offered ${num(w.quantity)} ${w.quantity === 1 ? "volunteer" : "volunteers"}`
+      : w.kind === "skills" ? `offered ${w.item || "a skill"}` : `offered ${num(w.quantity)} ${w.unit || ""} ${w.item || ""}`.replace(/\s+/g, " ").trim();
+    const live = ["published", "in_progress"].includes(p.status);
+    const mineWaiting = (p.commitments || []).find((c) => c.is_mine && c.status === "proposed");
+    return html`${mineWaiting ? html`<p class="notice good">Your pledge${mineWaiting.kind === "money" ? ` of ${money(mineWaiting.quantity)}` : ""} is waiting for the team to accept it. We'll tell you when they do.</p>` : ""}
+      <section class="wall5"><h2>Supporters ${wall.length ? html`<span class="wall5-n">${wall.length}</span>` : ""}</h2>
+      ${wall.length ? html`<ul>${wall.map((w) => html`<li>
+        <span class="wall5-av ${w.anonymous ? "anon" : ""}" aria-hidden="true" style="${w.anonymous ? "" : `background:hsl(${hue(w.name)} 55% 90%);color:hsl(${hue(w.name)} 60% 26%)`}">${w.anonymous ? icon("heart") : ini(w.name)}</span>
+        <div><strong translate="no">${w.org_id ? raw(`<a href="/organizations/${encodeURIComponent(w.org_id)}">${esc(w.name)}</a>`) : w.name}</strong> <span class="muted">${what(w)}</span>
+          ${w.message ? html`<p class="wall5-msg" translate="no">“${w.message}”</p>` : ""}<span class="small muted">${ago(w.at)}</span></div></li>`)}</ul>`
+        : html`<div class="wall5-empty"><span class="wall5-heart" aria-hidden="true">${icon("heart")}</span>
+          <strong>${live ? "Be the first neighbour to help" : "No supporters yet"}</strong>
+          ${live ? html`<span>Your pledge starts the momentum. Everyone who follows will see your name, or stay hidden if you prefer.</span>
+            ${p.permissions.can_support ? html`<button class="btn primary" type="button" id="wall-cta">Pledge now</button>`
+              : !state.user ? html`<a class="btn primary" href="/login?next=/projects/${p.id}">Sign in to pledge</a>` : ""}` : ""}</div>`}
+    </section>`;
+  }
+
+  function trustSection() {
+    const items = [
+      p.need_verified ? "A reviewer checked this need" : !p.is_demo ? "A reviewer approved this before it went public" : null,
+      p.organization?.verification_status === "verified" ? "Posted by a verified organization" : null,
+      p.photos.length ? `${p.photos.length} real ${p.photos.length === 1 ? "photo" : "photos"} from the place` : null,
+      "Every pledge and delivery is recorded on this page",
+      "0% platform fee. ImpactBridge never holds your money",
+    ].filter(Boolean);
+    return html`<section class="trust5"><h2>Why you can trust this</h2>
+      <ul>${items.map((x) => html`<li>${icon("check")}<span>${x}</span></li>`)}</ul>
+      <p class="small muted">Something looks wrong? ${state.user && !p.permissions.is_manager ? html`<button class="linklike" type="button" id="trust-report">Report this project</button>` : html`<a href="/login?next=/projects/${p.id}">Sign in to report it</a>`}. A person reads every report.</p></section>`;
   }
 
   function openOffer(kind, item, unit, qty) {
@@ -318,11 +373,8 @@ export default async function projectView({ el, params }) {
     mount(box, html`
       ${story ? html`<p class="story5" translate="no">${story}</p>` : ""}
       ${needsCards()}
-      <section class="helpers5"><h2>Who's helping</h2>
-        ${helpers.length ? html`<ul>${helpers.map((x) => html`<li><span class="me-av sm" aria-hidden="true">${ini(x.name)}</span>
-          ${x.type === "organization" ? html`<a href="/organizations/${x.id}" translate="no">${x.name}</a>${x.verification_status === "verified" ? html` <span class="tick" title="Verified organization">${icon("check")}</span>` : ""}` : html`<span translate="no">${x.name}</span>`}</li>`)}</ul>`
-          : html`<p class="muted">No one yet. Your help could be the first, and the team will see it straight away.</p>`}
-      </section>
+      ${wallSection()}
+      ${trustSection()}
       ${latest ? html`<section class="latest5"><div class="row between"><h2>Latest from the ground</h2><a href="#updates" data-tab-link="updates">See all</a></div>
         <div class="card"><div class="small muted">${date(latest.at)}${latest.author ? html`, by <span translate="no">${latest.author}</span>` : ""}</div><strong>${latest.title}</strong>
         ${latest.body ? html`<p class="small" style="margin:6px 0 0">${latest.body.slice(0, 220)}${latest.body.length > 220 ? "…" : ""}</p>` : ""}</div></section>` : ""}
@@ -341,6 +393,8 @@ export default async function projectView({ el, params }) {
         ${p.original_description !== undefined ? html`<h3>Original description</h3><p class="small muted">Visible to the project team and reviewers.</p><div class="original">${p.original_description || "—"}</div>
           ${p.missing_info?.length ? html`<p class="small" style="margin-top:var(--s3)"><strong>Noted as missing when drafted:</strong> ${p.missing_info.join("; ")}</p>` : ""}` : ""}
       </details>`);
+    $("#wall-cta", box)?.addEventListener("click", quickPledge);
+    $("#trust-report", box)?.addEventListener("click", reportDialog);
     $$("[data-tab-link]", box).forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); tab = a.dataset.tabLink; setAnchor(tab); draw(); $("#panel", el)?.scrollIntoView({ behavior: "smooth", block: "start" }); }));
   }
 

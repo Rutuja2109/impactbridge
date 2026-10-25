@@ -127,6 +127,7 @@ function lastActivity(p) {
   return c.length ? c.sort().at(-1) : null;
 }
 function supporterLabel(c) {
+  if (c.is_anonymous) return "A kind neighbour";
   if (c.org_id) { const o = S.get("orgs", c.org_id); if (o) return o.name; }
   const u = S.get("members", c.supporter_id);
   return u ? u.name.split(" ")[0] : "A supporter";
@@ -151,7 +152,7 @@ function summary(p, res) {
     funding: { requested: res.money.requested, pledged: res.money.pledged, gap: res.money.gap },
     volunteers: { requested: res.volunteers.requested, pledged: res.volunteers.pledged, gap: res.volunteers.gap },
     supporter_count: res.supporter_count,
-    supporters_preview: [...new Set(commitsOf(p.id).filter((c) => COUNTED.includes(c.status)).map(supporterLabel))].slice(0, 3),
+    supporters_preview: [...new Set(commitsOf(p.id).filter((c) => COUNTED.includes(c.status) && !c.is_anonymous).map(supporterLabel))].slice(0, 3),
     cover_photo: coverPhoto(p.id), updated_at: p.updated_at, published_at: p.published_at ?? null,
     last_activity_at: lastActivity(p),
     open_items: res.materials.filter((m) => m.gap === null || m.gap > 0).slice(0, 4).map((m) => ({ name: m.name, gap: m.gap, unit: m.unit })),
@@ -164,7 +165,9 @@ function serializeCommitment(c, u, p, manager) {
   const out = {};
   for (const k of ["id", "project_id", "kind", "quantity", "item", "unit", "hours", "description", "deadline", "status", "received_quantity", "spent_amount", "responsibility", "created_at", "updated_at"]) out[k] = c[k] ?? null;
   out.received_quantity = c.received_quantity || 0; out.spent_amount = c.spent_amount || 0;
+  out.is_anonymous = !!c.is_anonymous;
   out.supporter = userSummary(c.supporter_id); out.organization = orgSummary(c.org_id); out.is_mine = mine;
+  if (out.is_anonymous && !(manager || mine || isReviewer(u))) { out.supporter = { id: null, name: "A kind neighbour", role: null }; out.organization = null; }
   if (manager || mine || isReviewer(u)) out.owner_message = c.owner_message ?? null;
   return out;
 }
@@ -188,13 +191,21 @@ function timeline(p, u) {
   if (p.impact_report) ev.push({ at: p.impact_report.submitted_at, kind: "report", title: "Impact report submitted", body: (p.impact_report.summary || "").slice(0, 300) });
   return ev.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
 }
+function wall(commitments) {
+  return commitments.filter((c) => COUNTED.includes(c.status)).map((c) => {
+    const anon = !!c.is_anonymous, org = !anon && c.org_id ? orgSummary(c.org_id) : null, u = userSummary(c.supporter_id) || {};
+    return { name: anon ? "A kind neighbour" : org ? org.name : u.name, type: org ? "organization" : "individual", org_id: org ? org.id : null, anonymous: anon,
+      kind: c.kind, quantity: c.quantity, unit: c.unit ?? null, item: c.item ?? null, message: (c.description || "").slice(0, 200) || null, at: c.updated_at || c.created_at };
+  }).sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+}
 function participants(commitments) {
   const seen = new Set(), out = [];
   for (const c of commitments.filter((c) => COUNTED.includes(c.status))) {
     const key = c.org_id || c.supporter_id;
     if (seen.has(key)) continue;
     seen.add(key);
-    if (c.org_id) out.push({ type: "organization", ...(orgSummary(c.org_id) || {}) });
+    if (c.is_anonymous) out.push({ type: "individual", id: null, name: "A kind neighbour", role: null });
+    else if (c.org_id) out.push({ type: "organization", ...(orgSummary(c.org_id) || {}) });
     else { const s = userSummary(c.supporter_id) || {}; out.push({ type: "individual", ...s }); }
   }
   return out;
@@ -219,6 +230,7 @@ function detail(p, u) {
     impact_report: report, timeline: timeline(p, u),
     verifications: manager || reviewer ? S.where("verifications", (v) => v.subject_type === "project" && v.subject_id === p.id).sort((a, b) => b.created_at.localeCompare(a.created_at)).map((v) => ({ id: v.id, kind: v.kind, status: v.status, reviewer_notes: v.reviewer_notes ?? null, created_at: v.created_at, reviewed_at: v.reviewed_at ?? null })) : [],
     participants: participants(commitments),
+    wall: wall(commitments),
     permissions: { is_manager: manager, is_team: team, is_reviewer: reviewer, can_edit: manager && EDITABLE.includes(p.status),
       can_support: !!u && CTX.canWrite && !manager && !reviewer && SUPPORTABLE.includes(p.status) },
   };
@@ -632,7 +644,7 @@ function commitmentFields(b) {
   if (["materials", "equipment", "skills"].includes(b.kind) && !str(b.item, { max: 120 })) E(422, "Say which item or skill you are offering", "item");
   if (b.kind === "volunteers" && quantity !== Math.round(quantity)) E(422, "Volunteer count must be a whole number", "quantity");
   return { kind: b.kind, quantity, item: str(b.item, { max: 120 }), unit: b.kind === "money" ? null : str(b.unit, { max: 40 }), hours: numv(b.hours, { field: "hours", gt: true, min: 0, max: 10000 }),
-    description: str(b.description, { max: 2000 }), deadline: datev(b.deadline, "deadline"), org_id: b.org_id || null };
+    description: str(b.description, { max: 2000 }), deadline: datev(b.deadline, "deadline"), org_id: b.org_id || null, is_anonymous: !!b.is_anonymous };
 }
 async function propose(pid, b) {
   const u = requireUser(); const p = getProject(pid); requireView(u, p);

@@ -392,6 +392,19 @@ class CommitmentTests(Base):
     def money(self, pid):
         return self.anon.get(f"/api/projects/{pid}").json()["project"]["resources"]["money"]
 
+    def test_anonymous_pledge_stays_anonymous_and_messages_show(self):
+        pid = self.published_project(self.owner, self.reviewer)
+        cid = self.vol.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 500, "description": "Proud to help.",
+                                                                  "is_anonymous": True}).json()["commitment"]["id"]
+        self.assertEqual(self.owner.post(f"/api/commitments/{cid}/action", {"action": "accept"}).status_code, 200)
+        public = Api(self.app).get(f"/api/projects/{pid}").json()["project"]
+        self.assertEqual(len(public["wall"]), 1)
+        w = public["wall"][0]
+        self.assertEqual((w["name"], w["anonymous"], w["message"]), ("A kind neighbour", True, "Proud to help."))
+        self.assertNotIn("Vol", str(public["participants"]) + str(public["commitments"]).replace("A kind neighbour", ""))
+        owner_view = self.owner.get(f"/api/projects/{pid}").json()["project"]
+        self.assertNotEqual(owner_view["commitments"][0]["supporter"]["name"], "A kind neighbour")  # the team still knows who
+
     def test_totals_follow_commitment_changes(self):
         pid = self.published_project(self.owner, self.reviewer)
         r = self.club.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 30000, "org_id": self.club_org})

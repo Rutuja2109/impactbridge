@@ -314,16 +314,18 @@ export async function uploadFile(file, fields) {
 export const navigate = (path) => window.dispatchEvent(new CustomEvent("ib:navigate", { detail: path }));
 
 /** A short celebration after a meaningful action (pledge sent, project published). Skipped with reduced motion. */
-export function celebrate(title, body = "") {
+export function celebrate(title, body = "", action = null) {
   const box = document.createElement("div");
   box.className = "cele5"; box.setAttribute("role", "status");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const colors = ["#F4B63E", "#1E9BBF", "#E8505B", "#3FA34D", "#9C6ADE", "#F07A2B"];
   const bits = reduce ? "" : Array.from({ length: 36 }, (_, i) =>
     `<i style="left:${(i * 37) % 100}%;background:${colors[i % colors.length]};animation-delay:${(i % 9) * 45}ms;--dx:${((i * 53) % 120) - 60}px;--r:${(i * 47) % 360}deg"></i>`).join("");
-  box.innerHTML = `<div class="cele5-bits" aria-hidden="true">${bits}</div><div class="cele5-card"><span class="cele5-ic" aria-hidden="true">🎉</span><strong>${esc(title)}</strong>${body ? `<span>${esc(body)}</span>` : ""}</div>`;
+  box.innerHTML = `<div class="cele5-bits" aria-hidden="true">${bits}</div><div class="cele5-card"><span class="cele5-ic" aria-hidden="true">🎉</span><strong>${esc(title)}</strong>${body ? `<span>${esc(body)}</span>` : ""}${action ? `<a class="btn primary cele5-act" target="_blank" rel="noopener" href="${esc(action.href)}">${esc(action.label)}</a><button type="button" class="cele5-skip">Not now</button>` : ""}</div>`;
   document.body.appendChild(box);
-  setTimeout(() => box.classList.add("out"), 2200);
-  setTimeout(() => box.remove(), 2700);
+  const life = action ? 9000 : 2200;
+  setTimeout(() => box.classList.add("out"), life);
+  setTimeout(() => box.remove(), life + 500);
+  box.querySelector(".cele5-skip")?.addEventListener("click", (e) => { e.stopPropagation(); box.remove(); });
   box.addEventListener("click", () => box.remove());
 }

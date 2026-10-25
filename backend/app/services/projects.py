@@ -144,8 +144,8 @@ def summary(p: dict, res: dict | None = None) -> dict:
 def supporters_preview(project_id: str, limit: int = 3) -> list[str]:
     """Names shown as small avatars on project cards: organisation name, or a person's first name only."""
     out: list[str] = []
-    for c in db.query("""SELECT supporter_id, org_id FROM commitments WHERE project_id = ? AND status IN ('accepted','fulfilled')
-                         ORDER BY created_at""", (project_id,)):
+    for c in db.query("""SELECT supporter_id, org_id, is_anonymous FROM commitments WHERE project_id = ? AND status IN ('accepted','fulfilled')
+                         AND is_anonymous = 0 ORDER BY created_at""", (project_id,)):
         label = None
         if c["org_id"]:
             o = db.get("organizations", c["org_id"])
@@ -171,7 +171,9 @@ def last_activity(p: dict) -> str | None:
 
 
 def supporter_label(c: dict) -> str:
-    """Organizations are named; individuals are shown by first name only on public surfaces."""
+    """Organizations are named; individuals are shown by first name only on public surfaces; anonymous pledges stay anonymous."""
+    if c.get("is_anonymous"):
+        return "A kind neighbour"
     if c.get("org_id"):
         o = db.get("organizations", c["org_id"])
         if o:
@@ -289,6 +291,7 @@ def detail(p: dict, user: dict | None) -> dict:
             "SELECT id, kind, status, reviewer_notes, created_at, reviewed_at FROM verifications WHERE subject_type='project' AND subject_id = ? ORDER BY created_at DESC",
             (p["id"],)) if (manager or reviewer) else [],
         "participants": _participants(commitments),
+        "wall": _wall(commitments),
         "permissions": {
             "is_manager": manager, "is_team": team, "is_reviewer": reviewer,
             "can_edit": manager and p["status"] in ("draft", "needs_information"),
@@ -315,7 +318,9 @@ def _participants(commitments: list[dict]) -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
-        if c["org_id"]:
+        if c.get("is_anonymous"):
+            out.append({"type": "individual", "id": None, "name": "A kind neighbour", "role": None})
+        elif c["org_id"]:
             org = _org_summary(c["org_id"])
             out.append({"type": "organization", **(org or {})})
         else:
@@ -324,15 +329,37 @@ def _participants(commitments: list[dict]) -> list[dict]:
     return out
 
 
+def _wall(commitments: list[dict]) -> list[dict]:
+    """The public 'supporters' list: who stepped in, what they gave and the kind words they left (anonymous people stay anonymous)."""
+    out = []
+    for c in commitments:
+        if c["status"] not in ("accepted", "fulfilled"):
+            continue
+        anon = bool(c.get("is_anonymous"))
+        org = None if anon else _org_summary(c["org_id"]) if c["org_id"] else None
+        u = _user_summary(c["supporter_id"])
+        out.append({
+            "name": "A kind neighbour" if anon else (org["name"] if org else u["name"]),
+            "type": "organization" if org else "individual", "org_id": org["id"] if org else None,
+            "anonymous": anon, "kind": c["kind"], "quantity": c["quantity"], "unit": c["unit"], "item": c["item"],
+            "message": (c["description"] or "")[:200] or None, "at": c["updated_at"],
+        })
+    return sorted(out, key=lambda x: x["at"] or "", reverse=True)
+
+
 def serialize_commitment(c: dict, user, p: dict, manager: bool | None = None) -> dict:
     manager = is_manager(user, p) if manager is None else manager
     mine = bool(user) and c["supporter_id"] == user["id"]
     out = {k: c[k] for k in ("id", "project_id", "kind", "quantity", "item", "unit", "hours", "description",
                              "deadline", "status", "received_quantity", "spent_amount", "responsibility",
                              "created_at", "updated_at")}
+    out["is_anonymous"] = bool(c.get("is_anonymous"))
     out["supporter"] = _user_summary(c["supporter_id"])
     out["organization"] = _org_summary(c["org_id"])
     out["is_mine"] = mine
+    if out["is_anonymous"] and not (manager or mine or is_reviewer(user)):
+        out["supporter"] = {"id": None, "name": "A kind neighbour", "role": None}
+        out["organization"] = None
     if manager or mine or is_reviewer(user):
         out["owner_message"] = c["owner_message"]
     return out

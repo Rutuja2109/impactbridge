@@ -249,6 +249,7 @@ class CommitmentIn(Strict):
     description: Optional[str] = Field(default=None, max_length=2000)
     deadline: Optional[str] = None
     org_id: Optional[str] = None
+    is_anonymous: bool = False
     _d = field_validator("deadline")(lambda cls, v: _date(v))
 
     @field_validator("kind")
