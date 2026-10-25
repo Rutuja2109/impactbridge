@@ -92,7 +92,7 @@ class Base(unittest.TestCase):
         db.reset_connection()
 
     def register(self, email, role="submitter", org=None, name=None, city="Pune"):
-        body = {"email": email, "password": "Secure#pass1", "name": name or email.split("@")[0].title(),
+        body = {"email": email, "password": "Secure#pass1", "name": name or "Tester " + "".join(c for c in email.split("@")[0] if c.isalpha()).title(),
                 "role": role, "city": city, "region": "Maharashtra", "accept_terms": True}
         if org:
             body["organization"] = org
@@ -433,6 +433,10 @@ class CommitmentTests(Base):
         r = TestClient(self.app).post("/api/auth/register", json={"email": "x@mailinator.com", "password": "Secure#pass1", "name": "X Y",
                                                                   "role": "volunteer", "city": "Pune", "region": "Maharashtra", "accept_terms": True})
         self.assertEqual(r.status_code, 422, r.text)
+        for bad in ({"name": "asdf"}, {"name": "aaaa"}, {"name": "Raj99"}, {"city": ""}, {"city": "12345"}, {"region": "Atlantis"}):
+            body = {"email": "real.person@example.org", "password": "Secure#pass1", "name": "Real Person", "role": "volunteer",
+                    "city": "Pune", "region": "Maharashtra", "accept_terms": True} | bad
+            self.assertEqual(TestClient(self.app).post("/api/auth/register", json=body).status_code, 422, bad)
 
     def test_anonymous_pledge_stays_anonymous_and_messages_show(self):
         pid = self.published_project(self.owner, self.reviewer)

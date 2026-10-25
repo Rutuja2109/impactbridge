@@ -1,5 +1,5 @@
 import { icon } from "../art.js";
-import { $, setUrl, api, emptyState, errorState, html, mount, skeletonTiles, state, toast } from "../core.js";
+import { $, $$, setUrl, api, emptyState, errorState, html, mount, skeletonTiles, state, toast } from "../core.js";
 import { projectTile } from "../components.js";
 
 const FIELDS = ["q", "cause", "city", "region", "min_budget", "max_budget", "min_volunteers", "max_volunteers",
@@ -13,6 +13,7 @@ export default async function explore({ el, query }) {
   const semanticOK = state.meta?.integrations?.semantic_search?.configured;
   const sel = (name, opts, label) => html`<div class="field"><label for="f-${name}">${label}</label>
     <select id="f-${name}" name="${name}">${opts.map(([v, t]) => html`<option value="${v}" ${q[name] === v ? "selected" : ""}>${t}</option>`)}</select></div>`;
+  const rad = (name, opts) => html`<div class="fs7-opts" role="radiogroup">${opts.map(([v, t]) => html`<label class="fs7-opt"><input type="radio" name="${name}" value="${v}" ${(q[name] || "") === v ? "checked" : ""}><span>${t}</span></label>`)}</div>`;
   const inp = (name, label, type = "text", extra = "") => html`<div class="field"><label for="f-${name}">${label}</label>
     <input id="f-${name}" name="${name}" type="${type}" value="${q[name] || ""}" ${extra}></div>`;
 
@@ -29,9 +30,6 @@ export default async function explore({ el, query }) {
         <input id="f-q" name="q" type="search" placeholder="Search problems, places, skills" value="${q.q || ""}">
         <button class="sr-only" type="submit">Search</button>
       </form>
-      <button class="ex6-filter" type="button" id="ftoggle" aria-expanded="false" aria-controls="filters" aria-label="Filters">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
-        <span class="ex6-n" id="fcount" hidden></span></button>
     </div>
     <div class="ex6-cats" role="group" aria-label="Browse by cause">
       <button type="button" class="ex6-cat" data-cause="" aria-pressed="${!q.cause}"><span class="ex6-dot">✨</span><span>All</span></button>
@@ -50,31 +48,45 @@ export default async function explore({ el, query }) {
     <div class="ex6-active" id="active" aria-label="Active filters"></div>
     <section aria-live="polite" aria-busy="false" id="results-wrap">
       <div class="ex6-row"><p id="count" class="muted small"></p>
-        <label class="ex6-sort"><span class="sr-only">Sort by</span><select id="sortq">${sortOpts.map(([v, t]) => html`<option value="${v}" ${(q.sort || "") === v ? "selected" : ""}>${t}</option>`)}</select></label></div>
+</div>
       <div id="results">${skeletonTiles(6)}</div></section>
+    <nav class="sf7" aria-label="Sort and filter">
+      <button type="button" id="stoggle"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg> Sort</button>
+      <button type="button" id="ftoggle" aria-expanded="false" aria-controls="filters"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg> Filter <span class="ex6-n" id="fcount" hidden></span></button>
+    </nav>
+    <div class="fs6" id="sortsheet" role="dialog" aria-modal="true" aria-label="Sort by" hidden>
+      <div class="fs6-back" data-sclose></div>
+      <div class="fs6-card"><div class="fs6-head"><h2>Sort by</h2><button class="qp5-x" type="button" data-sclose aria-label="Close">×</button></div>
+        <div class="fs6-body"><div class="fs7-opts" role="radiogroup">${sortOpts.map(([v, t]) => html`<label class="fs7-opt"><input type="radio" name="sortopt" value="${v}" ${(q.sort || "") === v ? "checked" : ""}><span>${t}</span></label>`)}</div></div></div>
+    </div>
     <div class="fs6" id="filters" role="dialog" aria-modal="true" aria-label="Filters" hidden>
       <div class="fs6-back" data-fclose></div>
-      <div class="fs6-card">
+      <div class="fs6-card fs7-card">
         <div class="fs6-head"><h2>Filters</h2><button class="qp5-x" type="button" data-fclose aria-label="Close">×</button></div>
-        <form id="filterform" class="filters fs6-body">
-          ${sel("cause", [["", "All causes"], ...causes], "Cause")}
-          ${inp("city", "City or town")}
-          ${inp("region", "State / region")}
-          ${sel("needs", [["", "Any"], ["any", "Still needs support"], ["money", "Needs funding"], ["volunteers", "Needs volunteers"]], "Open needs")}
-          ${sel("sort", sortOpts, "Sort by")}
-          <div class="form-grid">${inp("min_budget", "Budget from", "number", 'min="0" inputmode="numeric"')}${inp("max_budget", "Budget to", "number", 'min="0" inputmode="numeric"')}</div>
-          <div class="form-grid">${inp("min_volunteers", "Volunteers from", "number", 'min="0"')}${inp("max_volunteers", "Volunteers to", "number", 'min="0"')}</div>
-          ${sel("effort", [["", "Any effort"], ["light", "Light: up to 2 weeks, a few people"], ["medium", "Medium"], ["heavy", "Big: over 2 months or 20+ people"]], "Effort required")}
-          ${inp("max_duration_weeks", "Maximum duration (weeks)", "number", 'min="1"')}
-          <div class="form-grid">${inp("available_from", "I'm available from", "date")}${inp("available_until", "until", "date")}</div>
-          ${inp("skill", "Skill needed", "text", 'placeholder="e.g. plumbing, teaching"')}
-          ${inp("material", "Material needed", "text", 'placeholder="e.g. saplings, gloves"')}
-          ${sel("verified", [["", "Any"], ["any", "Any verification"], ["need", "Need verified"], ["completion", "Completion verified"]], "Verification")}
-          ${sel("status", [["", "All public stages"], ["published,in_progress", "Open or in progress"], ["published", "Open for support"], ["in_progress", "In progress"], ["completed,verified", "Finished"]], "Stage")}
-          <label class="check"><input type="checkbox" name="include_demo" ${q.include_demo === "0" ? "" : "checked"}><span>Show sample projects</span></label>
-        </form>
+        <div class="fs7-split">
+          <div class="fs7-nav" role="tablist" aria-label="Filter groups">
+            ${[["cause", "Cause"], ["where", "Location"], ["needs", "What's needed"], ["money", "Budget & people"], ["when", "Time"], ["skills", "Skills & items"], ["trust", "Trust & stage"]].map(([g, t], i) =>
+              html`<button type="button" role="tab" data-g="${g}" aria-selected="${i === 0}">${t}<i class="fs7-dot" hidden></i></button>`)}
+          </div>
+          <form id="filterform" class="filters fs7-pane">
+            <input type="hidden" name="sort" value="${q.sort || ""}">
+            <div data-pane="cause">${rad("cause", [["", "All causes"], ...causes])}</div>
+            <div data-pane="where" hidden>${inp("city", "City or town")}${inp("region", "State / region")}</div>
+            <div data-pane="needs" hidden><h3 class="fs7-h">Open needs</h3>${rad("needs", [["", "Any"], ["any", "Still needs support"], ["money", "Needs funding"], ["volunteers", "Needs volunteers"]])}
+              <h3 class="fs7-h">Effort</h3>${rad("effort", [["", "Any effort"], ["light", "Light: up to 2 weeks, a few people"], ["medium", "Medium"], ["heavy", "Big: over 2 months or 20+ people"]])}</div>
+            <div data-pane="money" hidden><div class="form-grid">${inp("min_budget", "Budget from (₹)", "number", 'min="0" inputmode="numeric"')}${inp("max_budget", "Budget to (₹)", "number", 'min="0" inputmode="numeric"')}</div>
+              <div class="form-grid">${inp("min_volunteers", "Volunteers from", "number", 'min="0"')}${inp("max_volunteers", "Volunteers to", "number", 'min="0"')}</div></div>
+            <div data-pane="when" hidden>${inp("max_duration_weeks", "Maximum duration (weeks)", "number", 'min="1"')}
+              <div class="form-grid">${inp("available_from", "I'm available from", "date")}${inp("available_until", "until", "date")}</div></div>
+            <div data-pane="skills" hidden>${inp("skill", "Skill needed", "text", 'placeholder="e.g. plumbing, teaching"')}${inp("material", "Material needed", "text", 'placeholder="e.g. saplings, gloves"')}</div>
+            <div data-pane="trust" hidden><h3 class="fs7-h">Verification</h3>${rad("verified", [["", "Any"], ["any", "Any verification"], ["need", "Need verified"], ["completion", "Completion verified"]])}
+              <h3 class="fs7-h">Stage</h3>${rad("status", [["", "All public stages"], ["published,in_progress", "Open or in progress"], ["published", "Open for support"], ["in_progress", "In progress"], ["completed,verified", "Finished"]])}
+              <label class="check"><input type="checkbox" name="include_demo" ${q.include_demo === "0" ? "" : "checked"}><span>Show sample projects</span></label></div>
+          </form>
+        </div>
         <div class="fs6-foot"><button class="btn ghost" type="button" id="clear">Clear all</button><button class="btn primary" type="button" id="fshow" data-fclose>Show projects</button></div>
       </div>
+    </div>
     </div></div>`);
 
   const filterForm = $("#filterform", el);
@@ -83,6 +95,7 @@ export default async function explore({ el, query }) {
     for (const elx of filterForm.elements) {
       if (!elx.name) continue;
       if (elx.type === "checkbox") { if (!elx.checked) out[elx.name] = "0"; }
+      else if (elx.type === "radio") { if (elx.checked && elx.value) out[elx.name] = elx.value; }
       else if (elx.value) out[elx.name] = elx.value;
     }
     const qv = $("#f-q", el).value.trim();
@@ -102,9 +115,10 @@ export default async function explore({ el, query }) {
       if (["q", "page", "semantic", "include_demo"].includes(k) || !v) continue;
       if (k === "sort" && !v) continue;
       const f = filterForm.elements[k];
-      let text = f?.tagName === "SELECT" ? f.selectedOptions[0]?.textContent : `${LBL[k] || k}: ${v}`;
+      const radio = f && !f.tagName ? [...f].find((x) => x.checked) : null;
+      let text = radio ? radio.parentElement.textContent.trim() : `${LBL[k] || k}: ${v}`;
       if (k === "cause") text = (state.meta?.causes || {})[v] || v;
-      if (k === "sort") text = "Sorted: " + text;
+      if (k === "sort") text = "Sorted: " + (sortOpts.find(([x]) => x === v)?.[1] || v);
       pills.push([k, text]);
     }
     if (params.include_demo === "0") pills.push(["include_demo", "Hiding samples"]);
@@ -113,9 +127,13 @@ export default async function explore({ el, query }) {
     $("#active", el).querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => {
       const f = filterForm.elements[b.dataset.rm];
       if (f?.type === "checkbox") f.checked = true; else if (f) f.value = "";
+      if (b.dataset.rm === "sort") $$("[name=sortopt]", el).forEach((x) => { x.checked = x.value === ""; });
       load(collect());
     }));
-    const sq = $("#sortq", el); if (sq) sq.value = params.sort || "";
+    el.querySelectorAll("[name=sortopt]").forEach((x) => { x.checked = x.value === (params.sort || ""); });
+    const groups = { cause: ["cause"], where: ["city", "region"], needs: ["needs", "effort"], money: ["min_budget", "max_budget", "min_volunteers", "max_volunteers"],
+      when: ["max_duration_weeks", "available_from", "available_until"], skills: ["skill", "material"], trust: ["verified", "status", "include_demo"] };
+    el.querySelectorAll(".fs7-nav [data-g]").forEach((b) => { b.querySelector(".fs7-dot").hidden = !groups[b.dataset.g].some((k) => params[k]); });
     $("#fshow", el).textContent = `Show ${total} project${total === 1 ? "" : "s"}`;
   }
 
@@ -151,7 +169,12 @@ export default async function explore({ el, query }) {
     }
   }
   function resetAll() {
-    for (const x of filterForm.elements) { if (x.type === "checkbox") x.checked = true; else if (x.name) x.value = ""; }
+    for (const x of filterForm.elements) {
+      if (x.type === "checkbox") x.checked = true;
+      else if (x.type === "radio") x.checked = x.value === "";
+      else if (x.name) x.value = "";
+    }
+    el.querySelectorAll("[name=sortopt]").forEach((x) => { x.checked = x.value === ""; });
     load({});
   }
 
@@ -159,7 +182,7 @@ export default async function explore({ el, query }) {
   filterForm.addEventListener("submit", (e) => {
     e.preventDefault(); load(collect()); openSheet(false);
   });
-  filterForm.addEventListener("change", (e) => { if (e.target.tagName === "SELECT" || e.target.type === "checkbox") load(collect()); });
+  filterForm.addEventListener("change", (e) => { if (e.target.type === "radio" || e.target.type === "checkbox") load(collect()); });
   $("#clear", el).addEventListener("click", resetAll);
   el.querySelectorAll("[data-quick]").forEach((b) => b.addEventListener("click", () => {
     const [k, v] = b.dataset.quick.split("=");
@@ -178,20 +201,28 @@ export default async function explore({ el, query }) {
     }
     const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
     e.currentTarget.setAttribute("aria-pressed", String(on));
-    $("#f-city", el).value = on ? city : "";
+    filterForm.elements.city.value = on ? city : "";
     load(collect());
   });
   $("#f-semantic", el)?.addEventListener("change", () => { if ($("#f-q", el).value) load(collect()); });
-  const sheet = $("#filters", el);
-  const openSheet = (on) => {
-    sheet.hidden = !on; document.body.classList.toggle("qp-open", on);
-    $("#ftoggle", el).setAttribute("aria-expanded", String(on));
-    if (on) requestAnimationFrame(() => sheet.classList.add("in")); else sheet.classList.remove("in");
+  const sheet = $("#filters", el), sortSheet = $("#sortsheet", el);
+  const openSheet = (on, which = sheet) => {
+    which.hidden = !on; document.body.classList.toggle("qp-open", on);
+    $("#ftoggle", el).setAttribute("aria-expanded", String(on && which === sheet));
+    if (on) requestAnimationFrame(() => which.classList.add("in")); else which.classList.remove("in");
   };
   $("#ftoggle", el).addEventListener("click", () => openSheet(true));
+  $("#stoggle", el).addEventListener("click", () => openSheet(true, sortSheet));
   sheet.querySelectorAll("[data-fclose]").forEach((b) => b.addEventListener("click", () => { if (b.id === "fshow") load(collect()); openSheet(false); }));
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) openSheet(false); });
-  el.querySelectorAll(".ex6-cat").forEach((b) => b.addEventListener("click", () => { filterForm.elements.cause.value = b.dataset.cause; load(collect()); }));
-  $("#sortq", el).addEventListener("change", (e) => { filterForm.elements.sort.value = e.target.value; load(collect()); });
+  sortSheet.querySelectorAll("[data-sclose]").forEach((b) => b.addEventListener("click", () => openSheet(false, sortSheet)));
+  sortSheet.addEventListener("change", (e) => { filterForm.elements.sort.value = e.target.value; load(collect()); openSheet(false, sortSheet); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!sheet.hidden) openSheet(false); if (!sortSheet.hidden) openSheet(false, sortSheet); } });
+  el.querySelectorAll(".fs7-nav [data-g]").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll(".fs7-nav [data-g]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    el.querySelectorAll("[data-pane]").forEach((x) => { x.hidden = x.dataset.pane !== b.dataset.g; });
+  }));
+  el.querySelectorAll(".ex6-cat").forEach((b) => b.addEventListener("click", () => {
+    const r = [...filterForm.elements.cause].find((x) => x.value === b.dataset.cause); if (r) r.checked = true; load(collect());
+  }));
   load(Object.fromEntries(Object.entries(q).filter(([k]) => FIELDS.includes(k))));
 }

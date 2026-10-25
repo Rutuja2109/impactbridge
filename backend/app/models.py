@@ -63,6 +63,26 @@ class OrgCreate(Strict):
         return v or None
 
 
+INDIAN_STATES = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
+                 "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+                 "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+                 "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+                 "Ladakh", "Lakshadweep", "Puducherry"]
+_JUNK_WORDS = {"test", "testing", "asdf", "asdfgh", "qwerty", "abc", "abcd", "xyz", "none", "null", "na", "nil", "admin", "user", "name", "demo", "fake", "xxx"}
+
+
+def _real_name(v: str, label: str = "name") -> str:
+    v = " ".join((v or "").split())
+    letters = [c for c in v if c.isalpha()]
+    if len(letters) < 2:
+        raise ValueError(f"Please enter your real {label}.")
+    if any(x in v.lower() for x in ("http", "www.", ".com", "@")) or any(c.isdigit() for c in v):
+        raise ValueError(f"Please enter your real {label}, without links or numbers.")
+    if v.lower() in _JUNK_WORDS or len(set(v.lower().replace(" ", ""))) < 2:
+        raise ValueError(f"That doesn't look like a real {label}. Please check it.")
+    return v
+
+
 class RegisterIn(Strict):
     email: str
     password: str = Field(min_length=8, max_length=200)
@@ -74,6 +94,26 @@ class RegisterIn(Strict):
     accept_terms: bool = False
 
     _e = field_validator("email")(lambda cls, v: _email(v))
+
+    @field_validator("name")
+    @classmethod
+    def _nm(cls, v):
+        return _real_name(v, "name")
+
+    @field_validator("city")
+    @classmethod
+    def _ct(cls, v):
+        if not (v or "").strip():
+            raise ValueError("Tell us your city or town so we can show needs near you.")
+        return _real_name(v, "city or town")
+
+    @field_validator("region")
+    @classmethod
+    def _rg(cls, v):
+        match = {x.lower(): x for x in INDIAN_STATES}.get((v or "").strip().lower())
+        if not match:
+            raise ValueError("Choose your state or union territory from the list.")
+        return match
 
     @field_validator("role")
     @classmethod

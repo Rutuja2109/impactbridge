@@ -117,16 +117,45 @@ function codeStep(pane, next, phone, devCode) {
   });
 }
 
+const STATES = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+  "Ladakh", "Lakshadweep", "Puducherry"];
+const TYPOS = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gamil.com": "gmail.com", "gmail.co": "gmail.com", "gmail.con": "gmail.com", "gnail.com": "gmail.com",
+  "yahooo.com": "yahoo.com", "yaho.com": "yahoo.com", "yahoo.con": "yahoo.com", "hotmial.com": "hotmail.com", "hotmail.con": "hotmail.com", "outlok.com": "outlook.com", "outlook.con": "outlook.com" };
+
+/** Friendly checks while typing, so mistakes are caught before the form is sent. */
+function liveChecks(f) {
+  const say = (input, msg) => {
+    let h = input.parentElement.querySelector(".live-err");
+    if (!msg) { h?.remove(); input.removeAttribute("aria-invalid"); return; }
+    if (!h) { h = document.createElement("span"); h.className = "live-err err"; h.setAttribute("role", "alert"); input.parentElement.append(h); }
+    h.textContent = msg; input.setAttribute("aria-invalid", "true");
+  };
+  const name = f.elements.name, city = f.elements.city, email = f.elements.email;
+  name?.addEventListener("blur", () => {
+    const v = name.value.trim();
+    say(name, !v ? "" : /\d|@|http|www\./i.test(v) ? "Use your real name, without numbers or links." : v.replace(/[^\p{L}]/gu, "").length < 2 ? "Please enter your full name." : v.split(/\s+/).length < 2 ? "Add your surname too, so people know who you are." : "");
+  });
+  city?.addEventListener("blur", () => { const v = city.value.trim(); say(city, v && (/\d/.test(v) || v.replace(/[^\p{L}]/gu, "").length < 2) ? "Enter a real city or town name." : ""); });
+  email?.addEventListener("blur", () => {
+    const v = email.value.trim().toLowerCase(), dom = v.split("@")[1];
+    if (v && TYPOS[dom]) { say(email, `Did you mean ${v.split("@")[0]}@${TYPOS[dom]}? Tap here to fix it.`); email.parentElement.querySelector(".live-err").style.cursor = "pointer";
+      email.parentElement.querySelector(".live-err").onclick = () => { email.value = `${v.split("@")[0]}@${TYPOS[dom]}`; say(email, ""); }; }
+    else say(email, v && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v) ? "That email doesn't look right. Check for a missing @ or dot." : "");
+  });
+}
+
 function profileFields(withOrgToggle = true) {
   return html`<fieldset><legend>I am joining as</legend><div class="role-options">
         ${ROLES.map(([v, t, d], i) => html`<label><input type="radio" name="role" value="${v}" ${i === 0 ? "checked" : ""}>
           <span><strong>${t}</strong><br><span class="small muted">${d}</span></span></label>`)}
       </div></fieldset>
       <div class="form-grid">
-        <div class="field full"><label for="name">Your name</label><input id="name" name="name" autocomplete="name" required></div>
+        <div class="field full"><label for="name">Your full name</label><input id="name" name="name" autocomplete="name" placeholder="As on your ID, e.g. Asha Patil" required><span class="hint">Supporters and project teams see this name.</span></div>
         __CREDENTIALS__
-        <div class="field"><label for="city">City or town</label><input id="city" name="city" autocomplete="address-level2"></div>
-        <div class="field"><label for="region">State / region</label><input id="region" name="region" autocomplete="address-level1"></div>
+        <div class="field"><label for="city">City or town</label><input id="city" name="city" autocomplete="address-level2" placeholder="e.g. Pune" required></div>
+        <div class="field"><label for="region">State</label><select id="region" name="region" autocomplete="address-level1" required><option value="">Choose your state</option>${STATES.map((x) => html`<option value="${x}" ${x === "Maharashtra" ? "selected" : ""}>${x}</option>`)}</select></div>
       </div>
       <fieldset id="orgset"><legend>Your organization</legend>
         <label class="check" id="org-optional"><input type="checkbox" id="has-org"><span>I'm registering on behalf of an organization or group</span></label>
@@ -207,6 +236,7 @@ function register(el, next, why = "") {
   </div></div>`);
   const f = $("#f", el);
   wireOrg(f, el);
+  liveChecks(f);
   f.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = f.querySelector("button[type=submit]");

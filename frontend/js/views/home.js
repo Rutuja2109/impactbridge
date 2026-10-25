@@ -46,7 +46,6 @@ export default async function home(ctx) {
       <li><strong>Direct</strong><span>help goes to the team</span></li>
       <li><strong>Checked</strong><span>by a real person</span></li>
     </ul>
-    <div class="h5-live" id="live-card" aria-live="polite" hidden></div>
   </div></section>
 
   <div class="wrap h5-main">
@@ -79,15 +78,6 @@ export default async function home(ctx) {
       <div class="row"><a class="btn primary pill lg" href="/register">Create a free account</a><a class="btn pill lg" href="/explore">Browse needs first</a></div>
     </section>
   </div>`);
-
-  api("/api/activity").then(({ events }) => {
-    const card = document.getElementById("live-card");
-    const e = events[0];
-    if (!card || !e) return;
-    card.hidden = false;
-    mount(card, html`<span class="live-dot" aria-hidden="true"></span><span class="live-t"><strong>Live</strong> <span>${e.text}</span>:
-      <a href="/projects/${e.project.id}" translate="no">${e.project.title}</a>${e.project.is_demo ? " (demo)" : ""} <span class="muted">${ago(e.at)}</span></span>`);
-  }).catch(() => {});
 
   api("/api/projects", { query: { status: "published,in_progress,completed,verified", per_page: 40 } }).then((r) => {
     const all = r.projects;

@@ -39,8 +39,8 @@ async def main():
     m = await ctx(b, True)
     await m.goto(BASE+"/"); await m.locator(".tabbar").get_by_role("button", name="More").click()
     await m.locator("#drawer").get_by_role("link", name="Create an account").click()
-    await m.get_by_label("Your name").fill("Sunita Patil"); await m.get_by_label("Email").fill(f"sunita{U}@test.org")
-    await m.get_by_label("Password").fill("Secure#pass1"); await m.get_by_label("City or town").fill("Pune"); await m.get_by_label("State / region").fill("Maharashtra")
+    await m.get_by_label("Your full name").fill("Sunita Patil"); await m.get_by_label("Email").fill(f"sunita{U}@test.org")
+    await m.get_by_label("Password").fill("Secure#pass1"); await m.get_by_label("City or town").fill("Pune"); await m.get_by_label("State").select_option("Maharashtra")
     await expect(m.get_by_label("Organization name")).to_be_hidden(); ok("organization box is off by default for a community member")
     await m.get_by_text("registering on behalf").click()
     await m.get_by_label("Organization name").fill(f"Kasarwadi Residents {U}")
@@ -100,7 +100,7 @@ async def main():
     # 4. Club registers, matches resources, offers support
     c = await ctx(b)
     await c.goto(BASE+"/register"); await c.get_by_label(re.compile("Rotary or Rotaract")).check()
-    await c.get_by_label("Your name").fill("Rahul Deshmukh"); await c.get_by_label("Email").fill(f"rahul{U}@test.org"); await c.get_by_label("Password").fill("Secure#pass1")
+    await c.get_by_label("Your full name").fill("Rahul Deshmukh"); await c.get_by_label("Email").fill(f"rahul{U}@test.org"); await c.get_by_label("Password").fill("Secure#pass1")
     await c.get_by_label("City or town").fill("Pune"); await c.get_by_label("Organization name").fill(f"Rotaract Club of Pimpri {U}"); await c.get_by_label("Type").select_option("rotaract")
     await c.get_by_label(re.compile("I agree")).check(); await c.get_by_role("button", name="Create account").click()
     await expect(c.get_by_role("heading", name="Hello, Rahul")).to_be_visible(timeout=8000)
@@ -175,7 +175,6 @@ async def main():
     await expect(m.locator(".proof li", has_text="Completion independently verified")).to_be_visible()
     await expect(m.locator(".proof li", has_text="Milestone completed")).to_be_visible()
     await expect(m.locator(".proof li", has_text="Rahul committed")).to_have_count(2); ok("proof timeline lists pledges, milestones, verification (individuals by first name)")
-    await a.goto(BASE+"/"); await expect(a.locator("#live-card")).to_contain_text("Completion verified"); ok("home live card shows the latest real event")
     await shot(a,"6_home")
     import json as _j
     demo = [x for x in _j.loads(await (await c.request.get(BASE+"/api/projects")).text())["projects"] if x["is_demo"] and x["materials"]][0]
