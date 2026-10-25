@@ -54,6 +54,8 @@ function Shell() {
       <WebView
         ref={web}
         source={{ uri: url }}
+        cacheEnabled={false}
+        cacheMode="LOAD_NO_CACHE"
         style={{ flex: 1 }}
         applicationNameForUserAgent="ImpactBridgeApp/1.0"
         onNavigationStateChange={(s) => setCanGoBack(s.canGoBack)}
