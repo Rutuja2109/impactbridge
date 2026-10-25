@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "ImpactBridge",
+    "slug": "impactbridge",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00918F"
+    },
+    "android": {
+      "package": "org.impactbridge.app",
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#00918F" },
+      "permissions": ["CAMERA", "RECORD_AUDIO"]
+    },
+    "ios": {
+      "bundleIdentifier": "org.impactbridge.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take a photo of the problem you want to share.",
+        "NSMicrophoneUsageDescription": "Describe a need by voice in Hindi, Marathi or English."
+      }
+    },
+    "extra": {
+      "webUrl": "http://192.168.1.11:8000"
+    }
+  }
+}

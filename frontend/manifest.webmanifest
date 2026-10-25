@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "ImpactBridge",
+  "short_name": "ImpactBridge",
+  "description": "Turn community problems into collective action. Share local needs and connect them with Rotary and Rotaract clubs, NGOs, CSR teams and volunteers.",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#00918F",
+  "theme_color": "#00918F",
+  "lang": "en-IN",
+  "categories": ["social", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/img/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Share a need", "url": "/share-a-need", "icons": [{ "src": "/static/img/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Explore projects", "url": "/explore", "icons": [{ "src": "/static/img/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Dashboard", "url": "/dashboard", "icons": [{ "src": "/static/img/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

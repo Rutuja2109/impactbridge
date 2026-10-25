@@ -1,0 +1,11 @@
+**/__pycache__
+**/*.pyc
+backend/data
+backend/.env
+backend/tests
+dist
+screenshots
+store
+tests_ui
+*.zip
+frontend-dist

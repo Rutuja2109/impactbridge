@@ -1,0 +1,38 @@
+# Render Blueprint: New > Blueprint > pick this repository.
+# Uses a paid instance because the free tier has no persistent disk (your database would be wiped on each deploy).
+services:
+  - type: web
+    name: impactbridge
+    runtime: docker
+    plan: starter
+    region: singapore
+    healthCheckPath: /api/meta
+    disk:
+      name: impactbridge-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PUBLIC_URL
+        sync: false          # e.g. https://impactbridge.onrender.com or your own domain
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false          # shown on the privacy and delete-account pages (Play Store requires a contact)
+      - key: ANTHROPIC_API_KEY
+        sync: false          # optional: AI drafting
+      - key: OPENAI_API_KEY
+        sync: false          # optional: voice transcription + semantic search
+      - key: RESEND_API_KEY
+        sync: false          # optional: email notifications
+      - key: ANDROID_PACKAGE_NAME
+        sync: false          # set after packaging the Android app, e.g. org.impactbridge.app
+      - key: ANDROID_CERT_SHA256
+        sync: false          # from Play Console > App integrity > App signing key certificate (SHA-256)

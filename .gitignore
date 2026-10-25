@@ -1,0 +1,18 @@
+# build output
+frontend-dist/
+dist/
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# local data and secrets
+backend/data/
+backend/.env
+*.db
+*.db-*
+# mobile
+mobile/node_modules/
+mobile/.expo/
+node_modules/
+.DS_Store
