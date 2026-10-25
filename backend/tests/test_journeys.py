@@ -138,6 +138,18 @@ class AuthTests(Base):
     def setUp(self):
         self.anon = Api(self.app)
 
+    def test_validation_messages_are_plain_sentences(self):
+        r = self.anon.post("/api/auth/register", {"email": "x@example.org", "password": "abc", "name": "Xy", "role": "submitter",
+                                                  "accept_terms": True, "organization": {"name": None, "org_type": "community"}})
+        self.assertEqual(r.status_code, 422)
+        text = r.text
+        for jargon in ("valid string", "String should", "Input should", "Field required"):
+            self.assertNotIn(jargon, text)
+        fields = {d["field"]: d["message"] for d in r.json()["details"]}
+        self.assertIn("Use at least 8 characters.", fields.get("password", ""))
+        self.assertEqual(fields.get("organization.name"), "Please fill this in.")
+        self.assertEqual(r.json()["error"], "Please fix the highlighted fields.")
+
     def test_registration_login_and_roles(self):
         u = self.register("asha@example.org", "submitter",
                           org={"name": "Ward 12 Residents", "org_type": "community"})

@@ -1,6 +1,17 @@
 // Generated from translation tables. English source text -> Marathi.
 /* eslint-disable */
 export default {
+"Please fill this in.": "कृपया हे भरा.",
+"Please fix the highlighted fields.": "कृपया चिन्हांकित रकाने दुरुस्त करा.",
+"Enter a number.": "एक संख्या लिहा.",
+"Please choose one of the options.": "कृपया एक पर्याय निवडा.",
+"Please check this.": "कृपया हे तपासा.",
+"Please tick or untick this.": "कृपया हे निवडा किंवा काढा.",
+"Please add at least one real photo of the problem before you continue.": "पुढे जाण्यापूर्वी समस्येचा किमान एक खरा फोटो जोडा.",
+"We couldn't find that": "ते सापडले नाही",
+"The link may be old, or the project isn't public yet.": "लिंक जुनी असू शकते, किंवा प्रकल्प अजून सार्वजनिक नाही.",
+"Next you'll fill in the proposal. What you wrote is kept as it is.": "आता तुम्ही प्रस्ताव भराल. तुम्ही लिहिलेले जसे आहे तसे ठेवले जाते.",
+"Organization type": "संस्थेचा प्रकार",
 "(at least {0} needed)": "(किमान {0} आवश्यक)",
 "(email isn't configured on this server yet)": "(या सर्व्हरवर अजून ईमेल सेट केलेले नाही)",
 "(kept unchanged, visible to you and reviewers)": "(बदल न करता, तुम्हाला आणि पुनरावलोककांना दिसते)",

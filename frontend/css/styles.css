@@ -1477,3 +1477,8 @@ h3 { font-size: 1.06rem; }
 }
 .pc-first { color: var(--teal-deep); }
 html.in-app .site-footer { display: none; }
+
+/* v9: the Share and Help buttons never wrap, even in narrow carousel cards */
+.kc-actions { grid-template-columns: auto 1fr; }
+.kc-actions .btn { white-space: nowrap; }
+.kc-share { padding-inline: 12px; gap: 6px; }

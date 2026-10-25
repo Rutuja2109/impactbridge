@@ -77,6 +77,7 @@ async function router() {
   } catch (err) {
     if (token !== navToken) return;
     if (![403, 404].includes(err.status)) console.error(err);
+    if (err.status === 404) document.title = "Not found — ImpactBridge";
     mount(el, html`<div class="wrap">${errorState(err)}</div>`);
   }
   if (anchor) document.getElementById(anchor)?.scrollIntoView();

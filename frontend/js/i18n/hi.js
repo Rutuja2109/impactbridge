@@ -1,6 +1,17 @@
 // Generated from translation tables. English source text -> Hindi.
 /* eslint-disable */
 export default {
+"Please fill this in.": "कृपया इसे भरें।",
+"Please fix the highlighted fields.": "कृपया चिह्नित खाने ठीक करें।",
+"Enter a number.": "एक संख्या लिखें।",
+"Please choose one of the options.": "कृपया कोई एक विकल्प चुनें।",
+"Please check this.": "कृपया इसे जाँचें।",
+"Please tick or untick this.": "कृपया इसे चुनें या हटाएँ।",
+"Please add at least one real photo of the problem before you continue.": "आगे बढ़ने से पहले समस्या की कम से कम एक असली फ़ोटो जोड़ें।",
+"We couldn't find that": "यह नहीं मिला",
+"The link may be old, or the project isn't public yet.": "लिंक पुराना हो सकता है, या प्रोजेक्ट अभी सार्वजनिक नहीं है।",
+"Next you'll fill in the proposal. What you wrote is kept as it is.": "अब आप प्रस्ताव भरेंगे। आपने जो लिखा है वह जैसा है वैसा रखा जाता है।",
+"Organization type": "संस्था का प्रकार",
 "(at least {0} needed)": "(कम से कम {0} ज़रूरी)",
 "(email isn't configured on this server yet)": "(इस सर्वर पर अभी ईमेल सेट नहीं है)",
 "(kept unchanged, visible to you and reviewers)": "(बिना बदलाव, आपको और समीक्षकों को दिखता है)",

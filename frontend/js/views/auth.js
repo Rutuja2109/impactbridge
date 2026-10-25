@@ -129,7 +129,7 @@ function profileFields(withOrgToggle = true) {
         <div class="field"><label for="region">State / region</label><input id="region" name="region" autocomplete="address-level1"></div>
       </div>
       <fieldset id="orgset"><legend>Your organization</legend>
-        <label class="check" id="org-optional"><input type="checkbox" id="has-org" checked><span>I'm registering on behalf of an organization or group</span></label>
+        <label class="check" id="org-optional"><input type="checkbox" id="has-org"><span>I'm registering on behalf of an organization or group</span></label>
         <div id="orgfields" class="form-grid">
           <div class="field full"><label for="org-name">Organization name</label><input id="org-name" name="organization.name"></div>
           <div class="field"><label for="org-type">Type</label><select id="org-type" name="organization.org_type"></select></div>
@@ -141,7 +141,7 @@ function profileFields(withOrgToggle = true) {
 }
 
 function wireOrg(f, el) {
-  const syncOrg = () => {
+  const syncOrg = (e) => {
     const role = f.querySelector("input[name=role]:checked").value;
     const set = $("#orgset", el);
     set.hidden = role === "volunteer";
@@ -149,9 +149,10 @@ function wireOrg(f, el) {
     mount($("#org-type", el), html`${types.map(([v, t]) => html`<option value="${v}">${t}</option>`)}`);
     $("#org-optional", el).hidden = role !== "submitter";
     if (role !== "submitter") $("#has-org", el).checked = true;
+    else if (e?.target?.name === "role") $("#has-org", el).checked = false;
     $("#orgfields", el).hidden = !$("#has-org", el).checked;
   };
-  f.addEventListener("change", (e) => { if (e.target.name === "role" || e.target.id === "has-org") syncOrg(); });
+  f.addEventListener("change", (e) => { if (e.target.name === "role" || e.target.id === "has-org") syncOrg(e); });
   syncOrg();
 }
 

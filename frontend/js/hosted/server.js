@@ -37,18 +37,18 @@ export const hostedContext = () => CTX;
 // ------------------------------------------------------------------ validation helpers
 const str = (v, { field, min = 0, max = 4000, required = false, label } = {}) => {
   if (v === null || v === undefined || String(v).trim() === "") {
-    if (required || min > 0) E(422, `${label || field}: This field is required`, field);
+    if (required || min > 0) E(422, `${label || field}: Please fill this in.`, field);
     return null;
   }
   const s = String(v).trim();
-  if (s.length < min) E(422, `${label || field}: Must be at least ${min} characters`, field);
-  if (s.length > max) E(422, `${label || field}: Must be at most ${max} characters`, field);
+  if (s.length < min) E(422, `${label || field}: Use at least ${min} characters.`, field);
+  if (s.length > max) E(422, `${label || field}: Keep this under ${max + 1} characters.`, field);
   return s;
 };
 const numv = (v, { field, min = 0, max = 1e12, int = false, gt = false, label } = {}) => {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
-  if (Number.isNaN(n)) E(422, `${label || field}: Must be a number`, field);
+  if (Number.isNaN(n)) E(422, `${label || field}: Enter a number.`, field);
   if (gt ? n <= min : n < min) E(422, `${label || field}: Must be ${gt ? "greater than" : "at least"} ${min}`, field);
   if (n > max) E(422, `${label || field}: Too large`, field);
   return int ? Math.round(n) : n;
@@ -628,7 +628,7 @@ const describeC = (c) => c.kind === "money" ? `Funding: ${Number(c.quantity).toL
 function commitmentFields(b) {
   if (!COMMITMENT_KINDS[b.kind]) E(422, "kind: Choose money, volunteers, materials, equipment or skills", "kind");
   const quantity = numv(b.quantity, { field: "quantity", gt: true, min: 0, label: "Quantity" });
-  if (quantity === null) E(422, "quantity: This field is required", "quantity");
+  if (quantity === null) E(422, "quantity: Please fill this in.", "quantity");
   if (["materials", "equipment", "skills"].includes(b.kind) && !str(b.item, { max: 120 })) E(422, "Say which item or skill you are offering", "item");
   if (b.kind === "volunteers" && quantity !== Math.round(quantity)) E(422, "Volunteer count must be a whole number", "quantity");
   return { kind: b.kind, quantity, item: str(b.item, { max: 120 }), unit: b.kind === "money" ? null : str(b.unit, { max: 40 }), hours: numv(b.hours, { field: "hours", gt: true, min: 0, max: 10000 }),

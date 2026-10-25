@@ -190,7 +190,7 @@ export default async function create({ el, params, opts }) {
         <span id="voice-status" class="small muted" aria-live="polite"></span>
         <div class="thumbs" id="thumbs" style="margin-top:var(--s3)"></div>
       </fieldset>
-      ${aiOK ? "" : html`<p class="notice warn">AI drafting isn't configured on this server yet, so you'll fill in the proposal form yourself. Your description is kept as the original.</p>`}
+      ${aiOK ? "" : html`<p class="small muted">Next you'll fill in the proposal. What you wrote is kept as it is.</p>`}
       <div class="wiz-nav"><button type="button" class="btn ghost" id="back1">Back</button>
         <div class="row">${aiOK ? html`<button class="btn primary" type="submit" data-mode="ai">Draft my proposal with AI</button>` : ""}
         <button class="btn ${aiOK ? "" : "primary"}" type="submit" data-mode="manual">${aiOK ? "Fill in the form myself" : "Next: the proposal"}</button></div></div>
@@ -213,6 +213,7 @@ export default async function create({ el, params, opts }) {
       }
       $("#voice-status", f).textContent = "";
       e.target.value = "";
+      if (s.photos.length) $(".form-error", f).hidden = true;
       drawThumbs(); saveLocal();
     });
     function drawThumbs() {
@@ -230,6 +231,12 @@ export default async function create({ el, params, opts }) {
       e.preventDefault();
       const mode = e.submitter?.dataset.mode || "manual";
       keep();
+      if (state.meta?.require_project_photo !== false && !s.photos.length) {
+        const box = $(".form-error", f);
+        box.hidden = false; box.textContent = "Please add at least one real photo of the problem before you continue.";
+        $("#photos", f).closest("fieldset").scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
       if (mode === "manual") {
         s.proposal = s.proposal && !s.aiProvider ? s.proposal : { title: "", problem_statement: s.description, city: s.city, region: s.region, cause: s.cause || null,
           materials: [], skills: [], milestones: [], outcomes: [] };

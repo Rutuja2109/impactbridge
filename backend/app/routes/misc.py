@@ -22,7 +22,7 @@ async def meta(request: Request):
     return ok({
         "causes": CAUSES, "org_types": ORG_TYPES, "commitment_kinds": COMMITMENT_KINDS,
         "statuses": PROJECT_STATUSES, "report_reasons": REPORT_REASONS, "currency": config.settings.currency,
-        "roles": {k: ROLE_LABELS[k] for k in SELF_SERVICE_ROLES}, "integrations": config.settings.integrations(),
+        "roles": {k: ROLE_LABELS[k] for k in SELF_SERVICE_ROLES}, "integrations": config.settings.integrations(), "require_project_photo": config.settings.require_project_photo,
         "support_email": config.settings.support_email or None,
         "support_whatsapp": config.settings.support_whatsapp or None,
     })

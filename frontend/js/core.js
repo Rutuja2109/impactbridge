@@ -147,9 +147,12 @@ export function toast(msg, kind = "") {
 }
 export const loading = (label = "Loading") => html`<div class="state" aria-busy="true"><p>${label}…</p></div>`;
 export const skeletonTiles = (n = 3) => html`<div class="tiles">${Array.from({ length: n }, () => html`<div class="skeleton"></div>`)}</div>`;
-export const errorState = (err, retry = true) => html`
-  <div class="state" role="alert"><h3>That didn't load</h3><p>${err.message}</p>
-  ${retry ? html`<button class="btn" data-action="reload">Try again</button>` : ""}</div>`;
+export const errorState = (err, retry = true) => err.status === 404
+  ? html`<div class="state" role="alert"><h3>We couldn't find that</h3><p>${err.message}</p>
+      <p class="small muted">The link may be old, or the project isn't public yet.</p>
+      <a class="btn primary" href="/explore">Browse projects</a></div>`
+  : html`<div class="state" role="alert"><h3>That didn't load</h3><p>${err.message}</p>
+      ${retry ? html`<button class="btn" data-action="reload">Try again</button>` : ""}</div>`;
 export const emptyState = (title, body, action = "") => html`<div class="state"><h3>${title}</h3><p>${body}</p>${action}</div>`;
 
 /** Bridge meter: requested vs pledged vs received. */
