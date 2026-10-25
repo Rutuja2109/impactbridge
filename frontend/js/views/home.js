@@ -42,9 +42,9 @@ export default async function home(ctx) {
         <span class="act-d">Money, time or a skill, near you.</span></a>
     </div>
     <ul class="trust6" aria-label="Our promises">
-      <li><strong>0%</strong><span>platform fee</span></li>
-      <li><strong>0</strong><span>sales calls</span></li>
-      <li><strong>100%</strong><span>needs checked by a person</span></li>
+      <li><strong>Free</strong><span>no platform fee</span></li>
+      <li><strong>Direct</strong><span>help goes to the team</span></li>
+      <li><strong>Checked</strong><span>by a real person</span></li>
     </ul>
     <div class="h5-live" id="live-card" aria-live="polite" hidden></div>
   </div></section>

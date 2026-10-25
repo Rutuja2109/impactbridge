@@ -57,7 +57,7 @@ export function openQuickPledge({ project: p, onDone, onOther }) {
         <label class="check qp5-anon"><input type="checkbox" name="is_anonymous"><span>Hide my name from the public list</span></label>
         <div class="form-error notice bad" hidden></div>
         <button class="btn primary qp5-go" type="submit">${icon("hand")} ${label}</button>
-        <p class="qp5-note">A pledge is a promise, not a payment. The team accepts it and tells you how to send your help straight to them. ImpactBridge takes 0%.</p>
+        <p class="qp5-note">A pledge is a promise, not a payment. The team accepts it and tells you how to send your help straight to them. ImpactBridge charges no fee.</p>
         <button class="linklike qp5-other" type="button" data-other>Other ways to help: items, skills, equipment</button>
       </form>`);
     $$("[data-close]", d).forEach((b) => b.addEventListener("click", close));

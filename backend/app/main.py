@@ -61,6 +61,9 @@ async def _deadline_loop():
 async def lifespan(app):
     db.init_db()
     bootstrap_admin()
+    if config.settings.env != "production" and config.settings.show_demo_publicly and not db.scalar("SELECT COUNT(*) FROM projects"):
+        from .seed import seed_demo  # first run on a laptop: show sample projects instead of an empty app
+        seed_demo()
     task = asyncio.create_task(_deadline_loop())
     try:
         yield

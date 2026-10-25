@@ -83,6 +83,80 @@ DEMO_PROJECTS = [
 ]
 
 
+def _p(title, story, cause, city, budget, vols, weeks, beneficiaries, count, skills, pledges, **kw):
+    """Compact sample project. pledges = [(supporter_key, kind, quantity, anonymous, message)]."""
+    return {"title": title, "story": story, "cause": cause, "city": city, "region": "Maharashtra",
+            "problem_statement": story, "proposed_solution": kw.pop("solution"), "beneficiaries": beneficiaries,
+            "beneficiary_count": count, "budget_required": budget, "volunteers_required": vols, "duration_weeks": weeks,
+            "materials": [], "skills": skills, "time_commitment": kw.pop("time", "A few weekends"),
+            "milestones": kw.pop("milestones"), "outcomes": [(kw.pop("metric"), count, kw.pop("unit"))],
+            "pledges": pledges, **kw}
+
+
+DEMO_PROJECTS += [
+    _p("Evening study room for 40 children in a slum lane",
+       "Children in this lane share one small room with no light after dark, so homework waits until morning. A study room with lamps, mats and a volunteer teacher gives them a place to learn every evening.",
+       "education", "Pimpri-Chinchwad", 45000, 10, 24, "Children aged 8 to 14", 40, ["Teaching"],
+       [("a", "money", 15000, False, "Education changed my life. Happy to give a child that chance."),
+        ("b", "money", 5000, True, None), ("c", "volunteers", 2, False, "We can take Tuesdays and Thursdays."),
+        ("d", "money", 2500, False, "Keep us posted with photos!")],
+       solution="Rent a room, fit lamps and mats, and run a volunteer-taught homework hour on weekday evenings.",
+       milestones=["Room and lights ready", "First month of classes", "Mid-term check with parents"],
+       metric="Children attending 3+ evenings a week", unit="children", involves_children=1,
+       safeguarding_notes="Two adults present at all times. No photos of children's faces."),
+    _p("Fresh meals for 25 elderly people living alone",
+       "Many older neighbours here cook only once a day because standing at the stove tires them. A neighbourhood kitchen team can deliver a warm dal-rice tiffin on weekdays.",
+       "hunger_nutrition", "Pune", 36000, 12, 12, "Elderly people living alone", 25, ["Cooking", "Delivery"],
+       [("a", "money", 12000, False, "For my grandmother's neighbours."), ("c", "money", 8000, False, None),
+        ("d", "volunteers", 4, False, "Delivery on bike every Saturday."), ("b", "money", 3000, True, None)],
+       solution="A rota of home cooks and delivery volunteers supplies a weekday tiffin for 12 weeks.",
+       milestones=["Recruit cooks and delivery team", "Tiffin service begins", "Feedback round"],
+       metric="Tiffins delivered", unit="meals", involves_vulnerable=1),
+    _p("Sewing machines for a women's self-help group",
+       "Twelve women in this group stitch by hand and finish one blouse a day. Four machines would triple their output and let them take bulk orders from local boutiques.",
+       "livelihoods", "Chakan", 52000, 3, 8, "Twelve women in the group", 12, ["Tailoring"],
+       [("b", "money", 20000, False, "Proud to back women entrepreneurs."), ("c", "money", 10000, False, None),
+        ("a", "money", 4000, True, None)],
+       solution="Buy four machines and fund a short skill upgrade so the group can take regular orders.",
+       milestones=["Machines purchased", "Skill training", "First bulk order delivered"],
+       metric="Women earning a regular income", unit="women"),
+    _p("Eye-check camp for a village of 300 families",
+       "Many older villagers squint through years of blurred vision because the nearest eye clinic is 30 km away. A one-day camp brings the checks and spectacles to them.",
+       "health", "Maval", 40000, 15, 4, "Villagers aged 40 and above", 300, ["Nursing", "Registration"],
+       [("a", "money", 18000, False, "Glad to help."), ("d", "money", 6000, False, None),
+        ("c", "volunteers", 5, False, "Our Rotaract team will manage registration.")],
+       solution="Partner with a licensed eye hospital for a one-day camp with free checks and subsidised glasses.",
+       milestones=["Hospital partner confirmed", "Camp day", "Spectacle distribution"],
+       metric="People screened", unit="people"),
+    _p("Safe play area with swings for a housing society",
+       "Children here play next to the parking lot because there is no safe play area. Two swings, a slide and soft flooring would give about 70 children a safe place.",
+       "community_infrastructure", "Wakad", 90000, 8, 6, "Children living in the society", 70, ["Carpentry"],
+       [("c", "money", 30000, False, None), ("a", "money", 12000, False, "Every child needs to play."),
+        ("b", "money", 6000, True, None)],
+       solution="Install play equipment and rubber flooring in the unused corner, with residents helping on installation day.",
+       milestones=["Society approval", "Equipment ordered", "Installation day"],
+       metric="Children using the play area weekly", unit="children", involves_children=1,
+       safeguarding_notes="Equipment installed by a certified vendor."),
+    _p("Rescue and vaccination drive for street dogs",
+       "Strays in this ward are not vaccinated, which puts both dogs and residents at risk of rabies. A trained vet team can vaccinate and tag 150 dogs in two weekends.",
+       "animal_welfare", "Hinjewadi", 28000, 10, 3, "Residents and street animals", 150, ["Veterinary"],
+       [("b", "money", 9000, False, "Dog mom here, count me in."), ("d", "volunteers", 3, False, None)],
+       solution="A vet team vaccinates and tags dogs while volunteers guide them in humanely.",
+       milestones=["Vet team booked", "Vaccination weekends", "Tag registry shared with ward"],
+       metric="Dogs vaccinated", unit="dogs"),
+]
+
+
+_BASE_PLEDGES = [
+    [("a", "money", 25000, False, "Clean water for kids. Count me in."), ("c", "money", 10000, False, None), ("b", "money", 2000, True, None)],
+    [("d", "volunteers", 6, False, "Our building group will come on Sunday."), ("b", "money", 3000, False, None)],
+    [("b", "volunteers", 3, False, "I teach on weekends."), ("a", "money", 4000, False, "Great idea.")],
+    [("c", "money", 15000, False, None), ("d", "volunteers", 12, False, "Our college NSS unit.")],
+]
+for _spec, _pl in zip(DEMO_PROJECTS, _BASE_PLEDGES):
+    _spec["pledges"] = _pl
+
+
 def seed_demo() -> None:
     if db.scalar("SELECT COUNT(*) FROM projects WHERE is_demo = 1"):
         print("Demo data already present. Run remove-demo first to recreate it.")
@@ -96,6 +170,13 @@ def seed_demo() -> None:
         ("demo.volunteer@example.org", "Demo Volunteer", "volunteer"),
     ]
     users = {}
+    sup = {}
+    for key, nm in [("a", "Aarav Kulkarni"), ("b", "Priya Deshmukh"), ("c", "Rotaract Club of Akurdi"), ("d", "Neha Patil")]:
+        uid = db.new_id()
+        db.insert("users", {"id": uid, "email": f"demo.{key}@example.org", "password_hash": hash_password(password), "name": nm,
+                            "role": "volunteer", "city": "Pune", "region": "Maharashtra", "skills": "[]", "is_demo": 1,
+                            "created_at": ts, "updated_at": ts})
+        sup[key] = uid
     for email, name, role in accounts:
         uid = db.new_id()
         db.insert("users", {"id": uid, "email": email, "password_hash": hash_password(password), "name": name,
@@ -114,23 +195,28 @@ def seed_demo() -> None:
                                     "created_by": users[owner], "is_demo": 1, "created_at": ts, "updated_at": ts})
         db.insert("org_members", {"org_id": oid, "user_id": users[owner], "member_role": "owner", "created_at": ts})
         orgs[key] = oid
-    poster = ["community", "ward", "shg", "community"]  # different posters, so the sample list doesn't look copied
+    poster = ["community", "ward", "shg", "club", "csr", "community"]  # different posters, so the sample list doesn't look copied
     start = date.today() + timedelta(days=14)
     for i, spec in enumerate(DEMO_PROJECTS):
         pid = db.new_id()
         s = dict(spec)
         milestones, outcomes = s.pop("milestones"), s.pop("outcomes")
+        pledges = s.pop("pledges", [])
         db.insert("projects", {
             **{k: v for k, v in s.items()}, "id": pid, "owner_id": users["submitter"], "org_id": orgs[poster[i % len(poster)]],
             "original_description": s["problem_statement"], "status": "published",
             "start_date": (start + timedelta(days=7 * i)).isoformat(),
             "allow_multiple_supporters": 1, "is_demo": 1, "created_at": ts, "updated_at": ts,
-            "submitted_at": ts, "published_at": (datetime.now(timezone.utc) - timedelta(days=[1, 4, 9, 2][i % 4])).isoformat(timespec="seconds"),
+            "submitted_at": ts, "published_at": (datetime.now(timezone.utc) - timedelta(days=[1, 4, 9, 2, 3, 6, 5, 8, 12, 7][i % 10])).isoformat(timespec="seconds"),
         })
         for j, title in enumerate(milestones):
             db.insert("milestones", {"id": db.new_id(), "project_id": pid, "title": title, "status": "pending",
                                      "due_date": (start + timedelta(days=7 * i + 10 * j)).isoformat(),
                                      "sort_order": j, "created_at": ts})
+        for sk, kind, qty, anon, msg in pledges:
+            db.insert("commitments", {"id": db.new_id(), "project_id": pid, "supporter_id": sup[sk], "kind": kind,
+                                      "quantity": qty, "description": msg, "status": "accepted", "is_anonymous": int(anon),
+                                      "created_at": ts, "updated_at": ts})
         for metric, target, unit in outcomes:
             db.insert("outcomes", {"id": db.new_id(), "project_id": pid, "metric": metric, "target": target,
                                    "unit": unit, "created_at": ts})
