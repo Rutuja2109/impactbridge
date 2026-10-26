@@ -147,13 +147,16 @@ function liveChecks(f) {
 }
 
 function profileFields(withOrgToggle = true) {
-  return html`<fieldset><legend>I am joining as</legend><div class="role-options">
+  return html`<div class="su-step" data-step="1"><fieldset><legend>I am joining as</legend><div class="role-options">
         ${ROLES.map(([v, t, d], i) => html`<label><input type="radio" name="role" value="${v}" ${i === 0 ? "checked" : ""}>
           <span><strong>${t}</strong><br><span class="small muted">${d}</span></span></label>`)}
       </div></fieldset>
       <div class="form-grid">
         <div class="field full"><label for="name">Your full name</label><input id="name" name="name" autocomplete="name" placeholder="As on your ID, e.g. Asha Patil" required><span class="hint">Supporters and project teams see this name.</span></div>
         __CREDENTIALS__
+      </div></div>
+      <div class="su-step" data-step="2">
+      <div class="form-grid">
         <div class="field"><label for="city">City or town</label><input id="city" name="city" autocomplete="address-level2" placeholder="e.g. Pune" required></div>
         <div class="field"><label for="region">State</label><select id="region" name="region" autocomplete="address-level1" required><option value="">Choose your state</option>${STATES.map((x) => html`<option value="${x}" ${x === "Maharashtra" ? "selected" : ""}>${x}</option>`)}</select></div>
       </div>
@@ -166,7 +169,7 @@ function profileFields(withOrgToggle = true) {
             <span class="hint">Only reviewers and your members see this.</span></div>
         </div>
       </fieldset>
-      <label class="check"><input type="checkbox" name="accept_terms"><span>${TERMS}</span></label>`;
+      <label class="check"><input type="checkbox" name="accept_terms"><span>${TERMS}</span></label></div>`;
 }
 
 function wireOrg(f, el) {
@@ -225,18 +228,43 @@ function register(el, next, why = "") {
     ${why ? html`<div class="gate7"><strong>${why === "project" ? "Create a free account to see this need" : "Create a free account to explore needs"}</strong>
       <span>We ask everyone to sign up so that every need and every pledge comes from a real person. It takes a minute.</span></div>` : ""}
     <h1>Create your account</h1>
-    <p class="muted">Pick what fits you best. It only sets up your dashboard.</p>
+    <div class="su-dots" aria-label="Step"><span class="on" id="su-d1"></span><span id="su-d2"></span></div>
+    <p class="muted" id="su-sub">Step 1 of 2: who you are.</p>
     <a class="btn" style="width:100%;margin-bottom:var(--s4)" href="/login?method=phone${next !== "/" ? `&next=${encodeURIComponent(next)}` : ""}">Sign up with your mobile number instead</a>
     <form id="f" novalidate>
       <div class="form-error notice bad" hidden></div>
       ${raw(fields)}
-      <button class="btn primary" type="submit" style="width:100%">Create account</button>
+      <div class="su-nav"><button class="btn" type="button" id="su-back" hidden>Back</button><button class="btn primary" type="button" id="su-next">Continue</button>
+        <button class="btn primary" type="submit" id="su-go" hidden>Create account</button></div>
     </form>
     <p class="muted" style="margin-top:var(--s4)">Already registered? <a href="/login${qs(next)}">Sign in</a></p>
   </div></div>`);
   const f = $("#f", el);
   wireOrg(f, el);
   liveChecks(f);
+  // Two short steps: who you are, then where you are.
+  const stepTo = (n) => {
+    el.querySelectorAll(".su-step").forEach((x) => { x.hidden = x.dataset.step !== String(n); });
+    $("#su-back", el).hidden = n === 1; $("#su-next", el).hidden = n === 2; $("#su-go", el).hidden = n === 1;
+    $("#su-d2", el).classList.toggle("on", n === 2);
+    const alt = el.querySelector(".auth-card > a.btn"); if (alt) alt.hidden = n === 2;
+    $("#su-sub", el).textContent = n === 1 ? "Step 1 of 2: who you are." : "Step 2 of 2: where you are.";
+    el.querySelector("h1").scrollIntoView({ block: "start" });
+  };
+  stepTo(1);
+  $("#su-back", el).addEventListener("click", () => stepTo(1));
+  $("#su-next", el).addEventListener("click", () => {
+    const bad = [];
+    const nm = f.elements.name.value.trim(), em = f.elements.email.value.trim(), pw = f.elements.password.value;
+    if (nm.replace(/[^\p{L}]/gu, "").length < 2 || /\d|@|http/i.test(nm)) bad.push([f.elements.name, "Enter your real full name."]);
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(em)) bad.push([f.elements.email, "Enter a valid email address."]);
+    if (pw.length < 8) bad.push([f.elements.password, "Use at least 8 characters."]);
+    f.querySelectorAll(".live-err").forEach((x) => x.remove());
+    for (const [input, msg] of bad) { const h = document.createElement("span"); h.className = "live-err err"; h.setAttribute("role", "alert"); h.textContent = msg; input.parentElement.append(h); input.setAttribute("aria-invalid", "true"); }
+    if (bad.length) { bad[0][0].focus(); return; }
+    stepTo(2);
+  });
+  f.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName !== "TEXTAREA" && !$("#su-next", el).hidden) { e.preventDefault(); $("#su-next", el).click(); } });
   f.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = f.querySelector("button[type=submit]");
@@ -244,7 +272,11 @@ function register(el, next, why = "") {
     try {
       const r = await api("/api/auth/register", { method: "POST", body: bodyFrom(f, el, (d) => ({ email: d.email, password: d.password })) });
       signedIn(r.user, next, "Your account is ready");
-    } catch (err) { showErrors(f, err); } finally { busy(btn, false); }
+    } catch (err) {
+      showErrors(f, err);
+      const badField = f.querySelector("[aria-invalid]");
+      if (badField?.closest(".su-step")) stepTo(Number(badField.closest(".su-step").dataset.step));
+    } finally { busy(btn, false); }
   });
 }
 

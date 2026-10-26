@@ -120,3 +120,7 @@ export function drawLogo(g, x, y, size) {
   g.lineWidth = 32; g.stroke(new Path2D("M84 372H428"));
   g.restore();
 }
+
+export const CAUSE_EMOJI = { education: "📚", health: "🩺", maternal_child_health: "🤱", water_sanitation: "💧", environment: "🌳", livelihoods: "🧵",
+  hunger_nutrition: "🍲", disaster_relief: "🆘", elderly_care: "👵", disability_inclusion: "♿", women_empowerment: "💪",
+  peacebuilding: "🕊️", community_infrastructure: "🏘️", animal_welfare: "🐕" };

@@ -1,5 +1,5 @@
 import { ago, api, html, money, mount, num, raw, state } from "../core.js";
-import { causeIcon, icon, styleFor } from "../art.js";
+import { CAUSE_EMOJI, causeIcon, icon, styleFor } from "../art.js";
 import { carousel, pct } from "../components.js";
 
 const PROMISES = [
@@ -50,32 +50,26 @@ export default async function home(ctx) {
 
   <div class="wrap h5-main">
     <div id="rail-open">${html`<section class="rail"><div class="rail-head"><h2>Needs looking for help</h2></div><div class="rail-track">${[1, 2, 3].map(() => html`<span class="pmini skeleton"></span>`)}</div></section>`}</div>
-    <section class="rail"><div class="rail-head"><h2>Pick a cause</h2></div>
-      <div class="chip-rail">${causes.map(([k, v]) => html`<a class="cause-chip" href="/explore?cause=${k}&needs=any" style="--cc:${styleFor(k).soft};--ci:${styleFor(k).deep}">${causeIcon(k, 18)}<span>${v}</span></a>`)}</div></section>
+    <section class="rail"><div class="rail-head"><h2>Browse by cause</h2></div>
+      <div class="ex6-cats home7-cats">${causes.map(([k, v], i) => html`<a class="ex6-cat" href="/explore?cause=${k}&needs=any"><span class="ex6-dot">${CAUSE_EMOJI[k] || "💛"}</span><span>${v.split(/ & |, /)[0]}</span></a>`)}</div></section>
     <div id="rail-almost"></div>
     <div id="rail-done"></div>
     <div id="stats"></div>
 
-    <section class="how5" aria-labelledby="how-h">
+    <section class="how7" aria-labelledby="how-h">
       <h2 id="how-h">How it works</h2>
-      <ol>
-        <li><span class="n">1</span><div><h3>Share the problem</h3><p>In your own words, with a photo.</p></div></li>
-        <li><span class="n">2</span><div><h3>A person checks it</h3><p>Before anyone can see it.</p></div></li>
-        <li><span class="n">3</span><div><h3>Neighbours step in</h3><p>Clubs, companies and volunteers.</p></div></li>
-        <li><span class="n">4</span><div><h3>Proof at the end</h3><p>Photos and results, checked again.</p></div></li>
-      </ol>
-
-    </section>
-
-    <section class="promise5" aria-label="Our promises">
-      <h2>Our promises to you</h2>
-      <ul>${PROMISES.map(([ic, t, d]) => html`<li><span class="ic">${icon(ic)}</span><div><strong>${t}</strong><span>${d}</span></div></li>`)}</ul>
+      <div class="how7-track">
+        <div><span>1</span><strong>Share</strong><p>Tell the problem in your own words.</p></div>
+        <div><span>2</span><strong>Checked</strong><p>A person reviews it first.</p></div>
+        <div><span>3</span><strong>Support</strong><p>Neighbours give money, time or skills.</p></div>
+        <div><span>4</span><strong>Proof</strong><p>Photos and results, checked again.</p></div>
+      </div>
     </section>
 
     <section class="join5">
       <h2>Ready to start?</h2>
       <p>Free for everyone.</p>
-      <div class="row"><a class="btn primary pill lg" href="/register">Create a free account</a><a class="btn pill lg" href="/explore">Browse needs first</a></div>
+      <div class="row"><a class="btn primary pill lg" href="/register">Create a free account</a><a class="btn pill lg" href="/login">I have an account</a></div>
     </section>
   </div>`);
 

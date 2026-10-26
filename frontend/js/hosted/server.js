@@ -1206,6 +1206,16 @@ R("PATCH", "/api/commitments/{id}/progress", (p, b) => progress(p.id, b));
 R("POST", "/api/files", (_, b) => upload(b));
 R("DELETE", "/api/files/{id}", (p) => deleteFile(p.id));
 R("POST", "/api/ai/structure", (_, b) => structure(b));
+R("POST", "/api/ai/improve-story", (_, b) => {
+  if (!b.problem_statement && !b.story) return E(422, "Describe the problem first, then we can help you tell it better.");
+  const first = (t, n = 1) => String(t || "").trim().split(/(?<=[.!?।])\s+/).slice(0, n).join(" ");
+  const who = String(b.beneficiaries || "").trim().replace(/\.$/, "");
+  const lead = `${b.city ? "In " + b.city + ", " : ""}${b.beneficiary_count ? b.beneficiary_count + " " : ""}${who ? who.toLowerCase() : "neighbours"} are living with this every day.`;
+  const fix = first(b.proposed_solution);
+  const ask = [b.budget_required ? "₹" + Number(b.budget_required).toLocaleString("en-IN") : "", b.volunteers_required ? b.volunteers_required + " volunteers" : ""].filter(Boolean).join(" and ");
+  const story = [lead, first(b.problem_statement || b.story, 2), fix ? "With a little help, " + fix.charAt(0).toLowerCase() + fix.slice(1) : "With a little help, this can change.", ask ? "Help needed: " + ask + "." : "Your help, big or small, will reach them directly."].filter(Boolean).join(" ").slice(0, 600);
+  return { suggestion: { title: b.title || "", story, provider: "template" } };
+});
 R("POST", "/api/projects/{id}/interest", (p) => addInterest(p.id));
 R("DELETE", "/api/projects/{id}/interest", (p) => removeInterest(p.id));
 R("GET", "/api/projects/{id}/messages", (p) => listMessages(p.id));

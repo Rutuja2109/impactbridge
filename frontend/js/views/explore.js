@@ -1,4 +1,4 @@
-import { icon } from "../art.js";
+import { CAUSE_EMOJI, icon } from "../art.js";
 import { $, $$, setUrl, api, emptyState, errorState, html, mount, skeletonTiles, state, toast } from "../core.js";
 import { projectTile } from "../components.js";
 
@@ -17,9 +17,7 @@ export default async function explore({ el, query }) {
   const inp = (name, label, type = "text", extra = "") => html`<div class="field"><label for="f-${name}">${label}</label>
     <input id="f-${name}" name="${name}" type="${type}" value="${q[name] || ""}" ${extra}></div>`;
 
-  const EMO = { education: "📚", health: "🩺", maternal_child_health: "🤱", water_sanitation: "💧", environment: "🌳", livelihoods: "🧵",
-    hunger_nutrition: "🍲", disaster_relief: "🆘", elderly_care: "👵", disability_inclusion: "♿", women_empowerment: "💪",
-    peacebuilding: "🕊️", community_infrastructure: "🏘️", animal_welfare: "🐕" };
+  const EMO = CAUSE_EMOJI;
   const sortOpts = [["", "Newest"], ["funding_gap", "Biggest gap"], ["starting_soon", "Starting soon"]];
 
   mount(el, html`<div class="wrap ex6">

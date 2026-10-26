@@ -47,7 +47,7 @@ function amountBlock(p) {
   const percent = pct(p);
   if (percent !== null) {
     return html`<div class="kc-amt">${percent > 0
-      ? html`<strong>${money(p.funding.pledged)}</strong> <span>pledged of ${money(p.funding.requested)}</span>`
+      ? html`<strong>${money(p.funding.pledged)}</strong> <span>pledged of ${money(p.funding.requested)}</span><b class="kc-pct">${percent}%</b>`
       : html`<strong>${money(p.funding.requested)}</strong> <span>needed</span>`}</div>
       <div class="pc-bar" role="img" aria-label="${percent}% of funding pledged"><span style="width:${Math.max(percent, 2)}%"></span></div>`;
   }

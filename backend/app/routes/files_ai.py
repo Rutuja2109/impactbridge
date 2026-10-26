@@ -7,7 +7,7 @@ from starlette.routing import Route
 
 from .. import config, db
 from ..errors import ApiError
-from ..models import StructureIn
+from ..models import ImproveStoryIn, StructureIn
 from ..security import current_user, require_user
 from ..services import ai, storage
 from ..services import projects as P
@@ -93,6 +93,16 @@ async def structure(request: Request):
     return ok({"proposal": proposal, "original_description": data.description})
 
 
+async def improve_story(request: Request):
+    user = require_user(request)
+    data = await parse(request, ImproveStoryIn)
+    if not (data.problem_statement or data.story):
+        raise ApiError(422, "Describe the problem first, then we can help you tell it better.", field="story")
+    out = ai.improve_story(data.model_dump(), data.language if data.language in ("en", "hi", "mr") else "en")
+    audit(user["id"], "ai.improved_story", "user", user["id"], provider=out.get("provider"))
+    return ok({"suggestion": out})
+
+
 async def transcribe(request: Request):
     user = require_user(request)
     if "multipart/form-data" not in request.headers.get("content-type", ""):
@@ -122,6 +132,7 @@ routes = [
     Route("/api/files/{fid}", download, methods=["GET"]),
     Route("/api/files/{fid}", delete_file, methods=["DELETE"]),
     Route("/api/ai/structure", structure, methods=["POST"]),
+    Route("/api/ai/improve-story", improve_story, methods=["POST"]),
     Route("/api/ai/transcribe", transcribe, methods=["POST"]),
     Route("/api/integrations", integrations, methods=["GET"]),
 ]

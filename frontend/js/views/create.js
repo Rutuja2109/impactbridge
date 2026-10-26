@@ -284,7 +284,9 @@ export default async function create({ el, params, opts }) {
         <div class="field ${flag("title")}"><label for="title">Project title</label><input id="title" name="title" maxlength="120" value="${v(p.title)}" placeholder="Who is affected and what would change, e.g. Help Ward 12 school children wash their hands"></div>
         <div class="field ${flag("story")}"><label for="story">The story (shown first to supporters)</label>
           <textarea id="story" name="story" rows="3" maxlength="600" placeholder="Two or three sentences about the people and a moment from their day. Then say what changes when it's fixed.">${v(p.story)}</textarea>
-          <p class="hint">Make it real, not sad. People help when they can picture the place and the people.</p></div>
+          <p class="hint">Make it real, not sad. People help when they can picture the place and the people.</p>
+          <button class="btn small imp7-btn" type="button" id="impact-btn">✨ Make it more impactful</button>
+          <div id="impact-out" class="imp7-out" aria-live="polite"></div></div>
         <div class="field ${flag("problem_statement")}"><label for="ps">Problem statement</label><textarea id="ps" name="problem_statement" rows="5">${v(p.problem_statement)}</textarea></div>
         <div class="field ${flag("proposed_solution")}"><label for="sol">Proposed solution</label><textarea id="sol" name="proposed_solution" rows="4">${v(p.proposed_solution)}</textarea></div>
         <div class="form-grid">
@@ -441,6 +443,28 @@ export default async function create({ el, params, opts }) {
     $("#skill-in", f).addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } });
     const syncSg = () => { $("#sg-field", f).hidden = !(f.involves_children.checked || f.involves_vulnerable.checked); };
     f.addEventListener("change", syncSg); syncSg();
+
+    // "Make it more impactful": a warmer rewrite of the person's own facts. They always review it; nothing is invented.
+    $("#impact-btn", f)?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget, out = $("#impact-out", f), b = collect();
+      const draft = Object.fromEntries(["title", "story", "problem_statement", "proposed_solution", "beneficiaries", "beneficiary_count", "budget_required",
+        "volunteers_required", "time_commitment", "city", "region", "cause"].map((k) => [k, b[k] ?? null]).filter(([, v]) => v !== null && v !== ""));
+      draft.language = currentLang();
+      if (!draft.problem_statement && !draft.story) { out.innerHTML = '<p class="notice warn">Write a line or two about the problem first, then tap again.</p>'; return; }
+      busy(btn);
+      try {
+        const { suggestion: sg } = await api("/api/ai/improve-story", { method: "POST", body: draft });
+        mount(out, html`<div class="imp7-card"><strong>${sg.provider === "template" ? "A warmer version, made from your own words" : "A more impactful version, written with AI"}</strong>
+          ${sg.title && sg.title !== b.title ? html`<p class="imp7-t" translate="no">${sg.title}</p><label class="check"><input type="checkbox" id="imp-title" checked><span>Also use this title</span></label>` : ""}
+          <p translate="no">${sg.story}</p>
+          <p class="small muted">Please check every detail is true before you use it. We never add facts you didn't give.</p>
+          <div class="row"><button class="btn primary small" type="button" id="imp-use">Use this</button><button class="btn small" type="button" id="imp-again">Try again</button><button class="btn small ghost" type="button" id="imp-no">Keep mine</button></div></div>`);
+        $("#imp-use", out).addEventListener("click", () => { f.elements.story.value = sg.story; if (sg.title && $("#imp-title", out)?.checked) f.elements.title.value = sg.title; out.innerHTML = ""; toast("Story updated. You can still edit it."); });
+        $("#imp-again", out).addEventListener("click", () => btn.click());
+        $("#imp-no", out).addEventListener("click", () => { out.innerHTML = ""; });
+      } catch (err) { out.innerHTML = `<p class="notice bad">${err.message}</p>`; }
+      finally { busy(btn, false); }
+    });
 
     function collect() {
       const g = (n) => f.elements[n];

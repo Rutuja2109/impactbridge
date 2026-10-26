@@ -225,11 +225,13 @@ def seed_demo() -> None:
                                      "sort_order": j, "created_at": ts})
         for t, b in _UPDATES.get(i, []):
             db.insert("updates", {"id": db.new_id(), "project_id": pid, "author_id": users["submitter"], "kind": "progress",
-                                  "title": t, "body": b, "created_at": ts})
-        for sk, kind, qty, anon, msg in pledges:
+                                  "title": t, "body": b,
+                                  "created_at": (datetime.now(timezone.utc) - timedelta(hours=3 + 11 * i)).isoformat(timespec="seconds")})
+        for n, (sk, kind, qty, anon, msg) in enumerate(pledges):
+            when = (datetime.now(timezone.utc) - timedelta(hours=5 + 19 * n + 7 * i)).isoformat(timespec="seconds")
             db.insert("commitments", {"id": db.new_id(), "project_id": pid, "supporter_id": sup[sk], "kind": kind,
                                       "quantity": qty, "description": msg, "status": "accepted", "is_anonymous": int(anon),
-                                      "created_at": ts, "updated_at": ts})
+                                      "created_at": when, "updated_at": when})
         for metric, target, unit in outcomes:
             db.insert("outcomes", {"id": db.new_id(), "project_id": pid, "metric": metric, "target": target,
                                    "unit": unit, "created_at": ts})

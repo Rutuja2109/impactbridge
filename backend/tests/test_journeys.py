@@ -438,6 +438,25 @@ class CommitmentTests(Base):
                     "city": "Pune", "region": "Maharashtra", "accept_terms": True} | bad
             self.assertEqual(TestClient(self.app).post("/api/auth/register", json=body).status_code, 422, bad)
 
+    def test_improve_story_never_adds_numbers(self):
+        draft = {"problem_statement": "180 children share one tap at lunch. Many fall ill every monsoon.", "city": "Talegaon",
+                 "beneficiaries": "School children", "beneficiary_count": 180, "budget_required": 85000,
+                 "proposed_solution": "Install four handwashing stations."}
+        r = self.vol.post("/api/ai/improve-story", draft)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["suggestion"]["provider"], "template")
+        self.assertIn("180", r.json()["suggestion"]["story"])
+        ai.set_test_hooks(provider=lambda s, u, i: '{"title": "Help 900 children", "story": "900 children are suffering."}')
+        try:
+            r = self.vol.post("/api/ai/improve-story", draft)
+            self.assertEqual(r.json()["suggestion"]["provider"], "template", "invented number is rejected")
+            ai.set_test_hooks(provider=lambda s, u, i: '{"title": "Give 180 children clean hands", "story": "Every lunch, 180 children queue at one tap."}')
+            r = self.vol.post("/api/ai/improve-story", draft)
+            self.assertEqual(r.json()["suggestion"]["story"], "Every lunch, 180 children queue at one tap.")
+        finally:
+            ai.set_test_hooks()
+        self.assertEqual(self.vol.post("/api/ai/improve-story", {"city": "Pune"}).status_code, 422)
+
     def test_anonymous_pledge_stays_anonymous_and_messages_show(self):
         pid = self.published_project(self.owner, self.reviewer)
         cid = self.vol.post(f"/api/projects/{pid}/commitments", {"kind": "money", "quantity": 500, "description": "Proud to help.",

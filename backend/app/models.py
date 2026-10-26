@@ -273,6 +273,22 @@ class ProjectIn(Strict):
         return self
 
 
+class ImproveStoryIn(Strict):
+    title: Optional[str] = Field(default=None, max_length=200)
+    story: Optional[str] = Field(default=None, max_length=2000)
+    problem_statement: Optional[str] = Field(default=None, max_length=8000)
+    proposed_solution: Optional[str] = Field(default=None, max_length=8000)
+    beneficiaries: Optional[str] = Field(default=None, max_length=2000)
+    beneficiary_count: Optional[int] = Field(default=None, ge=0, le=100_000_000)
+    budget_required: Optional[float] = Field(default=None, ge=0, le=1e12)
+    volunteers_required: Optional[int] = Field(default=None, ge=0, le=100_000)
+    time_commitment: Optional[str] = Field(default=None, max_length=300)
+    city: Optional[str] = Field(default=None, max_length=80)
+    region: Optional[str] = Field(default=None, max_length=80)
+    cause: Optional[str] = None
+    language: str = "en"
+
+
 class StructureIn(Strict):
     description: str = Field(min_length=30, max_length=8000)
     city: Optional[str] = Field(default=None, max_length=80)

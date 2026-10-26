@@ -1,6 +1,6 @@
 // ImpactBridge service worker: caches the app shell so the app opens offline.
 // Live data wins: project lists and pages are fetched fresh and a copy is kept only as an offline fallback.
-const VERSION = "ib-v10";
+const VERSION = "ib-v11";
 const API_CACHE = "ib-api-v1"; // last public project lists and pages, so Explore still shows something offline
 const SHELL = [
   "/", "/offline", "/static/css/styles.css", "/static/js/app.js", "/static/js/core.js", "/static/js/art.js",

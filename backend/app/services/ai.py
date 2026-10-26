@@ -345,6 +345,65 @@ def structure_need(description: str, city: str | None, region: str | None, cause
     return out
 
 
+IMPACT_PROMPT = """You are a compassionate fundraising storyteller for ImpactBridge, a platform for local community needs in India.
+Rewrite the person's draft so a stranger feels why it matters and wants to help, like the best crowdfunding stories:
+- Open with the people and one concrete, human moment from their day, using ONLY what the draft says.
+- Show the stakes: what happens if nothing changes. Then show the change: what their help makes possible.
+- Warm, specific, dignified. Short sentences. 3 to 5 sentences for the story, max 600 characters.
+- NEVER invent names, ages, quotes, events, numbers, places, organisations or outcomes. Use only facts and numbers in the draft.
+- No exaggeration, no graphic suffering, no guilt-tripping, no stereotypes, no exclamation marks.
+- End the story with a single, simple invitation to help (what kind of help is needed).
+- "title": a human headline, max 90 characters, naming who is affected and what will change.
+- Write in the OUTPUT LANGUAGE given, keeping names as written.
+Return ONLY JSON: {"title": str, "story": str}"""
+
+
+def _template_story(d: dict) -> dict:
+    """Plain, truthful fallback when no AI key is configured: arranges the person's own facts into a warm story."""
+    def first(text, n=1):
+        parts = re.split(r"(?<=[.!?।])\s+", (text or "").strip())
+        return " ".join(x for x in parts[:n] if x).strip()
+    who = (d.get("beneficiaries") or "").strip().rstrip(".")
+    count = d.get("beneficiary_count")
+    place = d.get("city") or ""
+    problem = first(d.get("problem_statement") or d.get("story"), 2)
+    fix = first(d.get("proposed_solution"))
+    ask = []
+    if d.get("budget_required"):
+        ask.append(f"₹{int(d['budget_required']):,}")
+    if d.get("volunteers_required"):
+        ask.append(f"{int(d['volunteers_required'])} volunteers")
+    opening = (f"{('In ' + place + ', ') if place else ''}{(str(int(count)) + ' ') if count else ''}{who.lower() if who else 'neighbours'} are living with this every day."
+               if who or count else (f"In {place}, neighbours are living with this every day." if place else "Our neighbours are living with this every day."))
+    parts = [opening, problem]
+    parts.append(("With a little help, " + fix[0].lower() + fix[1:]) if fix else "With a little help, this can change.")
+    parts.append("Help needed: " + " and ".join(ask) + "." if ask else "Your help, big or small, will reach them directly.")
+    story = " ".join(x for x in parts if x)[:600]
+    return {"title": d.get("title") or "", "story": story}
+
+
+def improve_story(draft: dict, language: str = "en") -> dict:
+    """Rewrite a draft need into a warmer, more compelling story without adding facts. Falls back to a template."""
+    facts = {k: draft.get(k) for k in ("title", "story", "problem_statement", "proposed_solution", "beneficiaries", "beneficiary_count",
+                                       "budget_required", "volunteers_required", "city", "region", "cause", "time_commitment")}
+    source = json.dumps(facts, ensure_ascii=False)
+    if _test_provider is None and config.settings.active_ai_provider is None:
+        out = _template_story(draft)
+        out["provider"] = "template"
+        return out
+    user_text = f"OUTPUT LANGUAGE: {LANG_NAMES.get(language, 'English')}\nDRAFT FACTS (JSON):\n{source}"
+    raw_text, provider = _call_provider(IMPACT_PROMPT, user_text, [])
+    raw = _extract_json(raw_text)
+    story = _clean_str(raw.get("story"), 700) or ""
+    title = _clean_str(raw.get("title"), 120) or draft.get("title") or ""
+    allowed = numbers_in(source) | {1, 2, 3, 4, 5}
+    if not story or not numbers_in(story) <= allowed:  # the model slipped in a number the person never gave
+        out = _template_story(draft)
+        out["provider"] = "template"
+        return out
+    return {"title": title[:120], "story": story[:600], "provider": provider}
+
+
 # ---- embeddings (semantic search) ------------------------------------------
 def embed(text: str) -> list[float] | None:
     if _test_embedder is not None:
