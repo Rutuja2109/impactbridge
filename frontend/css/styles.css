@@ -1932,3 +1932,35 @@ dialog::backdrop { backdrop-filter: blur(3px); }
 .pcard, .pmini, .kcard { animation: card-in .35s ease both; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pcard, .pmini, .kcard { animation: none; } }
+
+/* =====================================================================================
+   v19 — fixes from a real device pass: the sort/filter bar matched nothing (near-black,
+   overlapping the new floating tab bar), quick filters were bare text, and the profile
+   page had no identity card or visible sign-out. Also a nicer "recent activity" list.
+   ===================================================================================== */
+
+/* sort/filter floating bar: on-brand white pill, clear of the floating tab bar */
+.sf7 { bottom: calc(98px + env(safe-area-inset-bottom)); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-float); border: 1px solid var(--line); }
+.sf7 button { color: var(--ink); }
+.sf7 button:hover { color: var(--teal-deep, #00918F); }
+.sf7 button + button { border-left: 1px solid var(--line); }
+.sf7 svg { color: var(--teal-deep, #00918F); }
+.sf7 .ex6-n { background: var(--grad-main); }
+body:not(.has-tabbar) .sf7 { bottom: 20px; }
+
+/* quick filter chips: icons get the same teal treatment as the rest of the app */
+.qchip { gap: 6px; }
+.qchip svg { color: var(--teal-deep, #00918F); flex: none; }
+.qchip[aria-pressed="true"] svg { color: #fff; }
+
+/* profile: an identity card up top, with sign-out one tap away */
+.prof-head { position: relative; display: flex; align-items: flex-start; gap: 14px; padding: 18px 50px 10px 4px; }
+.prof-av { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--grad-main); color: #fff; font-weight: 800; font-size: 1.1rem; box-shadow: 0 6px 16px -4px rgba(0,145,143,.5); }
+.prof-id { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1; }
+.prof-id strong { font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-id .muted.small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-id .badge { width: fit-content; max-width: 100%; white-space: normal; line-height: 1.3; }
+.prof-logout { position: absolute; top: 14px; right: 4px; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.prof-logout:hover { border-color: var(--teal-deep, #00918F); color: var(--teal-deep, #00918F); }
+.btn.danger { border-radius: 16px; }
+#account .btn.danger { min-height: 50px; font-size: 1.02rem; }

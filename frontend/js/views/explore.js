@@ -35,11 +35,11 @@ export default async function explore({ el, query }) {
     </div>
     <div class="qchips" role="group" aria-label="Quick filters">
       <button class="qchip" type="button" id="nearme" aria-pressed="${q.city && state.user?.city && q.city.toLowerCase() === state.user.city.toLowerCase() ? "true" : "false"}">${icon("pin")} Near me</button>
-      <button class="qchip" type="button" data-quick="needs=money" aria-pressed="${q.needs === "money"}">Needs funding</button>
-      <button class="qchip" type="button" data-quick="needs=volunteers" aria-pressed="${q.needs === "volunteers"}">Needs volunteers</button>
-      <button class="qchip" type="button" data-quick="effort=light" aria-pressed="${q.effort === "light"}">Quick to help</button>
-      <button class="qchip" type="button" data-quick="verified=any" aria-pressed="${q.verified === "any"}">Verified</button>
-      <button class="qchip" type="button" data-quick="status=completed,verified" aria-pressed="${q.status === "completed,verified"}">Finished</button>
+      <button class="qchip" type="button" data-quick="needs=money" aria-pressed="${q.needs === "money"}">${icon("wallet")} Needs funding</button>
+      <button class="qchip" type="button" data-quick="needs=volunteers" aria-pressed="${q.needs === "volunteers"}">${icon("hand")} Needs volunteers</button>
+      <button class="qchip" type="button" data-quick="effort=light" aria-pressed="${q.effort === "light"}">${icon("clock")} Quick to help</button>
+      <button class="qchip" type="button" data-quick="verified=any" aria-pressed="${q.verified === "any"}">${icon("shield")} Verified</button>
+      <button class="qchip" type="button" data-quick="status=completed,verified" aria-pressed="${q.status === "completed,verified"}">${icon("award")} Finished</button>
     </div>
     ${semanticOK ? html`<label class="check" style="margin:6px 0 0"><input type="checkbox" id="f-semantic" ${q.semantic === "1" ? "checked" : ""}>
       <span>Search by meaning (AI)</span></label>` : ""}

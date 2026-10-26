@@ -7,7 +7,10 @@ const store = {
 };
 
 // ------------------------------------------------------------------ theme
-export function getTheme() { return store.get("ib-theme") || "system"; }
+// Ketto/ImpactGuru-style apps are light-only by design; don't silently follow the phone's
+// dark mode (it clashed with the teal/white theme). People can still opt into Dark or
+// Match my phone from Profile > Appearance.
+export function getTheme() { return store.get("ib-theme") || "light"; }
 export function applyTheme(t = getTheme()) {
   const root = document.documentElement;
   if (t === "light" || t === "dark") root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");

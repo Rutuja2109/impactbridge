@@ -7,8 +7,18 @@ export default async function profile({ el }) {
   document.title = "Profile — ImpactBridge";
   const draw = () => {
     const u = state.user;
+    const initials = (u.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
     mount(el, html`<div class="wrap" style="max-width:860px">
-      <div class="page-head"><h1>Profile</h1><p class="muted">${HOSTED ? html`Signed in with your Claude account as ${u.role_label}.` : html`Signed in as ${u.email || u.phone} (${u.role_label}).`} Your phone number is never shown publicly.</p></div>
+      <header class="prof-head">
+        <span class="prof-av" aria-hidden="true">${initials}</span>
+        <div class="prof-id"><strong translate="no">${u.name}</strong>
+          <span class="muted small">${u.email || u.phone || ""}</span>
+          <span class="badge">${u.role_label}</span></div>
+        ${HOSTED ? "" : html`<button class="prof-logout" type="button" data-action="logout" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>`}
+      </header>
+      <div class="page-head" style="padding-top:0"><p class="muted">${HOSTED ? "" : "Your phone number is never shown publicly."}</p></div>
       ${!HOSTED && u.needs_verification ? html`<div class="notice warn row between" id="verify-box"><span><strong>Confirm your email.</strong> We sent a link to ${u.email}. You need it to share needs or offer support.</span>
         <button class="btn small" type="button" id="resend">Resend link</button></div>` : ""}
       <section class="panel" id="settings"><h2>App settings</h2>
@@ -64,7 +74,9 @@ export default async function profile({ el }) {
         <div class="field"><label for="np">New password</label><input id="np" name="new_password" type="password" autocomplete="new-password"></div></div>
         <button class="btn" type="submit">Change password</button></form>`}
 
-
+      ${HOSTED ? "" : html`<section class="panel" id="account"><h2>Account</h2>
+        <button class="btn danger" type="button" data-action="logout" style="width:100%">Sign out</button>
+        <a href="/delete-account" class="small muted" style="display:block;text-align:center;margin-top:12px">Delete your account</a></section>`}
     </div>`);
 
     $("#pf", el).addEventListener("submit", async (e) => {

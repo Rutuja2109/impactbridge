@@ -16,10 +16,9 @@ export default async function dashboard({ el, feed }) {
   document.title = feed ? "Home — ImpactBridge" : "Dashboard — ImpactBridge";
   mount(el, html`<div class="wrap"><div class="page-head"><h1>Dashboard</h1></div><div class="skeleton"></div></div>`);
   const u = state.user;
-  const [d, near, act, recs, certs] = await Promise.all([
+  const [d, near, recs, certs] = await Promise.all([
     api("/api/dashboard"),
     api("/api/projects", { query: { needs: "any", per_page: 10, ...(u.city ? { city: u.city } : {}), status: "published,in_progress" } }).catch(() => ({ projects: [] })),
-    api("/api/activity").catch(() => ({ events: [] })),
     api("/api/recommendations").catch(() => ({ projects: [] })),
     api("/api/my/certificates").catch(() => ({ certificates: [] })),
   ]);
@@ -137,9 +136,6 @@ export default async function dashboard({ el, feed }) {
 
     ${certs.certificates.length ? html`<section class="blk"><h2>Your impact certificates</h2><ul class="rows">${certs.certificates.map((c) => html`<li>
       <div><strong translate="no">${c.project.title}</strong><div class="small muted" translate="no">${c.sponsor.name}</div></div><a class="btn small" href="/certificates/${c.id}">${icon("award")} Open</a></li>`)}</ul></section>` : ""}
-
-    ${act.events.length ? html`<section class="blk"><h2>Recent activity</h2><ul class="rows act5">${act.events.slice(0, 6).map((e) => html`<li><div>${e.text}
-      <div class="small"><a href="/projects/${e.project.id}" translate="no">${e.project.title}</a> <span class="muted">${ago(e.at)}</span></div></div></li>`)}</ul></section>` : ""}
 
     ${d.completed.length ? html`<section class="blk"><h2>Finished work</h2><ul class="rows">${d.completed.map((p) => html`<li><div><a href="/projects/${p.id}#impact" translate="no">${p.title}</a>
       ${p.as_supporter ? html`<div class="small muted">You supported this project</div>` : ""}</div>${statusBadge(p.status)}</li>`)}</ul></section>` : ""}
