@@ -1788,4 +1788,147 @@ body:not(.has-tabbar) .sf7 { bottom: 20px; }
 .su-nav .btn { flex: 1; min-height: 48px; }
 .su-nav .btn.primary { flex: 2; }
 .su-step[hidden] { display: none; }
+
+/* =====================================================================================
+   v16 — store-ready premium polish: rounder "fintech" cards, gradient CTAs, glowing
+   progress bars, a floating capsule tab bar. Ketto's clarity + ImpactGuru's warmth.
+   ===================================================================================== */
+:root {
+  --grad-main: linear-gradient(135deg, #01BFBD 0%, #00918F 100%);
+  --grad-warm: linear-gradient(135deg, #FF9A56 0%, #FF6F61 100%);
+  --shadow-card: 0 1px 2px rgba(16, 32, 42, .04), 0 10px 26px -10px rgba(0, 110, 108, .22);
+  --shadow-card-hover: 0 4px 10px rgba(16, 32, 42, .06), 0 20px 38px -14px rgba(0, 110, 108, .32);
+  --shadow-float: 0 10px 30px -8px rgba(0, 0, 0, .18);
+}
+
+/* buttons: rounded pill, gradient primary, gentle press feedback */
+.btn { border-radius: 999px; transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+.btn.small { border-radius: 999px; }
+.btn.primary {
+  background: var(--grad-main); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 18px -6px rgba(0, 145, 143, .55);
+}
+.btn.primary:hover { filter: brightness(1.04); box-shadow: 0 10px 22px -6px rgba(0, 145, 143, .6); }
+.btn.primary:active, .btn:active { transform: scale(.97); }
+.btn.ink { border-radius: 999px; }
+.kc-actions .btn, .pmini .kc-actions .btn, .kcard > .pc-body > .btn, .sticky-cta .btn.primary, .qp5-go { border-radius: 999px; }
+.kc-help { background: var(--grad-main); border-color: transparent; }
+
+/* cards: taller radius, soft lifted shadow, smooth hover */
+.pcard, .pmini, .kcard { border-radius: 20px; box-shadow: var(--shadow-card); border-color: transparent; }
+.pcard:hover, .kcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
+.pc-cover, .pm-cover { position: relative; }
+.pc-cover::after { content: ""; position: absolute; inset: auto 0 0 0; height: 56%; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.38) 100%); pointer-events: none; }
+.pc-shield, .pc-cause { backdrop-filter: blur(4px); }
+
+/* progress bars: gradient fill with a soft glossy highlight, Ketto bars get real pop */
+.pc-bar, .pc-bar.big { height: 10px; border-radius: 999px; background: #E9F3F2; }
+.pc-bar > span { background: linear-gradient(90deg, #01BFBD 0%, #00918F 100%); border-radius: 999px; position: relative; overflow: hidden; }
+.pc-bar > span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 55%); }
+.kc-pct { background: var(--grad-main); color: #fff; }
+
+/* hero actions: slightly deeper radius + warmer "help" tile, ImpactGuru-style punch */
+.act { border-radius: 24px; }
+.act-ic { border-radius: 18px; }
+.h5 .act.help { background: var(--grad-warm); border-color: transparent; color: #fff; }
+.h5 .act.help .act-ic { background: rgba(255,255,255,.26); color: #fff; }
+.h5 .act.help .act-d { color: rgba(255,255,255,.92); }
+
+/* stat chips: pill badges instead of plain divider columns */
+.trust6 { border: 0; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.trust6 li { background: rgba(255,255,255,.14); border-radius: 16px; padding: 10px 6px; text-align: center; }
+.trust6 li + li { border-left: 0; }
+
+/* floating capsule tab bar: elevated, blurred, with a pill active state */
+@media (max-width: 759px) {
+  .tabbar {
+    left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+    border-radius: 24px; box-shadow: var(--shadow-float);
+    background: rgba(255, 255, 255, .92); backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
+    border-top: 0;
+  }
+  body.has-tabbar { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .tabbar a[aria-current="page"] .ti { background: var(--grad-main); color: #fff; }
+  .tabbar a[aria-current="page"] { color: var(--teal-deep); }
+}
+:root[data-theme="dark"] .tabbar, :root:not([data-theme="light"]) .tabbar { background: rgba(28, 31, 31, .88); }
+
+/* join / closing band: gradient instead of flat teal */
+.join5 { background: var(--grad-main); }
+.wall5-empty { background: linear-gradient(135deg, #E6F7F6, #FFEFE3); }
+
+/* =====================================================================================
+   v17 — carry the polish into explore, project-detail and profile/dashboard screens.
+   ===================================================================================== */
+
+/* explore: pill search bar, pill cause dots, pill active filters */
+.s5 { border-radius: 999px; box-shadow: 0 1px 2px rgba(16,32,42,.04); }
+.s5 .btn { border-radius: 999px; }
+.ex6-pill { background: var(--grad-main); color: #fff; font-weight: 700; }
+.ex6-cat .ex6-dot { box-shadow: 0 2px 6px rgba(16,32,42,.08); transition: transform .12s ease, box-shadow .12s ease; }
+.ex6-cat[aria-pressed="true"] .ex6-dot { background: var(--grad-main) !important; color: #fff; border-color: transparent; }
+#ftoggle { border-radius: 999px; }
+.fs7-card { border-radius: 24px 24px 0 0; }
+.fs7-nav button[aria-selected="true"] { background: var(--teal-soft, #E6F8F8); border-radius: 0 14px 14px 0; }
+
+/* project detail: rounder hero sheet, lifted stat tiles, pill chips, floating CTA bar */
+.ph5-cover { border-radius: 0 0 28px 28px; }
+@media (min-width: 760px) { .ph5-cover { border-radius: 28px; } }
+.ph5-sheet { border-radius: 28px 28px 0 0; }
+.ph5-org, .rows, .more5, .faq5 details, .helpers5 li { border-radius: 16px; }
+.ph5-stats > div { border-radius: 16px; box-shadow: var(--shadow-card); border-color: transparent; transition: transform .12s ease; }
+.ph5-stats > div:hover { transform: translateY(-2px); }
+.ph5-stats strong { color: var(--teal-deep, #00918F); }
+.ph5-cause { background: var(--grad-main); color: #fff; }
+.ph5-org .tick { background: var(--grad-main); }
+.sticky-cta { border-radius: 22px 22px 0 0; box-shadow: var(--shadow-float); }
+.faq5 details[open] { border-color: var(--teal-deep, #00918F); }
+.journey li.done .dot, .journey li.current .dot { background: var(--grad-main); border-color: transparent; color: #fff; }
+
+/* profile / dashboard: rounder panels, gradient avatar + impact band, pill badges */
+.panel { border-radius: 18px; box-shadow: var(--shadow-card); border-color: transparent; }
+.badge { border-radius: 999px; }
+.badge.verified { background: var(--grad-main); border-color: transparent; color: #fff; font-weight: 800; }
+.me-av { background: var(--grad-main) !important; box-shadow: 0 6px 16px -4px rgba(0,145,143,.5); }
+.greet { gap: 12px; }
+.role-options label { border-radius: 16px; }
+.quick5 a, .quick5 button { border-radius: 14px; box-shadow: var(--shadow-card); border-color: transparent; }
+.status { border-radius: 999px; }
+.status.s-published, .status.s-verified { background: var(--grad-main); color: #fff; border-color: transparent; }
 .st6-t { display: block; max-width: 76px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .72rem; -webkit-line-clamp: unset; }
+
+/* =====================================================================================
+   v18 — the rest of the app: notifications, toasts, dialogs, chips/tabs, empty states,
+   match cards, report hero. Same rounded, gradient-accented language throughout.
+   ===================================================================================== */
+
+/* notifications */
+.list.panel { padding: 4px var(--s4); }
+.list > li { padding: 14px 0; }
+.notif.unread { background: transparent; position: relative; }
+.notif.unread .t::before { background: var(--grad-warm); width: 9px; height: 9px; box-shadow: 0 0 0 3px rgba(255, 111, 97, .18); }
+
+/* toasts & dialogs: rounder, softer, on-brand */
+.toast { border-radius: 16px; box-shadow: var(--shadow-float); font-weight: 700; }
+.toast.bad { background: linear-gradient(135deg, #E8505B, #C0392B); }
+dialog { border-radius: 22px; box-shadow: var(--shadow-float); }
+dialog::backdrop { backdrop-filter: blur(3px); }
+
+/* empty states: friendlier card instead of bare centered text */
+.state { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow-card); margin: var(--s4) 0; }
+
+/* chips, segmented control and pill tabs: consistent gradient "on" state */
+.chip-btn[aria-pressed="true"], .qchip[aria-pressed="true"], .tabs5 button[aria-selected="true"] { background: var(--grad-main); border-color: transparent; color: #fff; }
+.seg { border-radius: 999px; }
+.seg button[aria-selected="true"] { box-shadow: var(--shadow-card); }
+.cause-chip { box-shadow: 0 1px 2px rgba(16,32,42,.05); }
+
+/* match & report screens */
+.match-card .panel { border-radius: 18px; }
+.report-cover { border-radius: 24px; box-shadow: var(--shadow-card); }
+.report-kpis > div { border-radius: 16px; }
+
+/* a touch of life on load: cards settle in rather than just appearing */
+.pcard, .pmini, .kcard { animation: card-in .35s ease both; }
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pcard, .pmini, .kcard { animation: none; } }
