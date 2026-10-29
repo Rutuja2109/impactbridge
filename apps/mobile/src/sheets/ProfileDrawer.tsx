@@ -88,7 +88,7 @@ export default function ProfileDrawer() {
               <View style={styles.head}>
                 <View style={styles.bigAvatar}><Icon name="people" size={40} color={colors.white} /></View>
                 <Text style={styles.name}>{store.user?.name || t('n.guest')}</Text>
-                <Text style={styles.small}>{store.user?.email || t('n.guestSub')}</Text>
+                <Text style={styles.small}>{store.user?.email || store.user?.phone || t('n.guestSub')}</Text>
               </View>
               <View style={styles.stats}>
                 {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].filter((_, i) => !firebaseReady || i === 2).map(([v, l]) => (

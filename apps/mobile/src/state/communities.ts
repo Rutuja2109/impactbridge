@@ -1,6 +1,6 @@
 // Communities in Firestore. Only an organisation an admin has marked verified (orgs/{uid}.verified, set in the Firebase
 // console) can create one; the security rules enforce that, the app only mirrors it. Anyone signed in can join.
-import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc, writeBatch } from 'firebase/firestore';
+import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc, writeBatch } from '@react-native-firebase/firestore';
 import { useEffect, useState } from 'react';
 
 import { db } from '../firebase';

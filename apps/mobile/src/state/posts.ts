@@ -1,7 +1,7 @@
 // Real posts. A submitted form is saved as a "pending" document; only an admin can approve it (status = 'approved' in the
 // Firebase console), and only then does it appear for everyone. The private contact stays in a separate document that
 // only its author can read. applyLive() turns the approved posts into the cards the screens already know.
-import { addDoc, collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, query, setDoc, where } from '@react-native-firebase/firestore';
 import { useEffect } from 'react';
 
 import { applyLive, type PostDoc } from '../data';

@@ -48,7 +48,9 @@
         {
           "color": "#00918F"
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "description": "Small acts. Real change. Help neighbours with money, time and skills."
   }

@@ -1,19 +1,25 @@
-// Real sign-in through Firebase Authentication: email + password, and Google. The password is only ever sent to
-// Firebase; nothing is stored by the app. Google needs the installed app (a native module), so Expo Go cannot do it.
-import { deleteDoc, doc } from 'firebase/firestore';
-import { GoogleAuthProvider, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signOut, type User as FbUser } from 'firebase/auth';
+// Real sign-in through Firebase Authentication: phone number + one-time code (OTP), email + password, and Google.
+// Passwords and codes only ever go to Firebase; nothing is stored by the app. Google and phone need the installed app
+// (native modules), so Expo Go cannot do them.
+import {
+  GoogleAuthProvider, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithCredential,
+  signInWithEmailAndPassword, signInWithPhoneNumber, signOut, type getAuth,
+} from '@react-native-firebase/auth';
+import { deleteDoc, doc } from '@react-native-firebase/firestore';
 
 import { auth, db, googleWebClientId } from './firebase';
 import type { User } from './screens/Welcome';
 
-export const toUser = (u: FbUser): User => ({
-  uid: u.uid,
-  email: u.email ?? '',
-  name: u.displayName || (u.email ?? '').split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-});
+type FbUser = NonNullable<ReturnType<typeof getAuth>['currentUser']>;
+export const toUser = (u: FbUser): User => {
+  const mail = u.email ?? '';
+  const name = u.displayName || mail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return { uid: u.uid, email: mail, phone: u.phoneNumber ?? undefined, name: name || u.phoneNumber || '' };
+};
 
 export const signInEmail = (email: string, pass: string) => signInWithEmailAndPassword(auth!, email, pass);
 export const signUpEmail = (email: string, pass: string) => createUserWithEmailAndPassword(auth!, email, pass);
+
 export const signOutAll = async () => {
   try { const { GoogleSignin } = require('@react-native-google-signin/google-signin'); await GoogleSignin.signOut(); } catch { /* not signed in with Google */ }
   if (auth) await signOut(auth);
@@ -30,6 +36,17 @@ export async function signInGoogle() {
   const idToken = res?.data?.idToken;
   if (!idToken) throw new Error('google-cancelled');
   return signInWithCredential(auth!, GoogleAuthProvider.credential(idToken));
+}
+
+// Phone sign-in: step 1 sends the SMS, step 2 checks the code. On many phones Android reads the SMS by itself and signs in
+// without the second step; the auth listener in App.tsx then moves on.
+let pending: Awaited<ReturnType<typeof signInWithPhoneNumber>> | null = null;
+export async function sendOtp(phoneE164: string) {
+  pending = await signInWithPhoneNumber(auth!, phoneE164);
+}
+export async function confirmOtp(code: string) {
+  if (!pending) throw new Error('no-pending-code');
+  return pending.confirm(code);
 }
 
 export const watchAuth = (cb: (u: User | null) => void) => (auth ? onAuthStateChanged(auth, (u) => cb(u ? toUser(u) : null)) : () => {});
