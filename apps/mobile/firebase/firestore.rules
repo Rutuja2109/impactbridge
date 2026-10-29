@@ -1,7 +1,7 @@
 rules_version = '2';
 // Security rules for GoodNeighbour. Deploy with: firebase deploy --only firestore:rules
-// Organisations are marked verified ONLY by an admin in the Firebase console (verified: true on orgs/{uid});
-// the app can never set that field.
+// Organisations are marked verified, and posts approved, ONLY by an admin (a person with a document in /admins/{uid}),
+// from the Admin screen in the app or the Firebase console. Other people can never set those fields.
 service cloud.firestore {
   match /databases/{database}/documents {
     // Signed in, and (for email + password accounts) the email address has been verified through the link we send.
@@ -29,6 +29,7 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.uid == uid
         && request.resource.data.verified == resource.data.verified
         && request.resource.data.status == resource.data.status;
+      allow update: if isAdmin();
     }
 
     // Communities: anyone signed in can read; only verified organisations can create or edit their own.
@@ -48,23 +49,26 @@ service cloud.firestore {
 
     // Posts: saved as 'pending'; only an admin (Firebase console) can approve them. Everyone signed in can read approved posts.
     match /posts/{pid} {
-      allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid);
+      allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid || isAdmin());
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending';
+      allow update: if isAdmin();
 
       // The author's private contact: only the author can read or write it.
       match /private/{doc} {
         allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
+        allow read: if isAdmin();
       }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
         allow create: if signedIn() && request.auth.uid == uid;
-        allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+        allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
     }
 
     // Reports about posts or communities: anyone signed in can file one; only admins (console) can read them.
     match /reports/{rid} {
       allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+      allow read: if isAdmin();
     }
 
     // The offers of help a person has made (behind their badge and certificate): theirs alone.

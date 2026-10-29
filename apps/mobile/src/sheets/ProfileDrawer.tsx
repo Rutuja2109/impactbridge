@@ -6,13 +6,14 @@ import { Alert, Animated, Linking, Modal, Pressable, ScrollView, Share, StyleShe
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
+import AdminPanel from '../components/AdminPanel';
 import { Button, Notice } from '../components/ui';
 import { myVolunteering } from '../data';
 import { PHOTOS } from '../data/photos';
 import { inr } from '../format';
 import { useT } from '../i18n';
 import { badgesFor, liveBadges } from '../state/achievements';
-import { useJoined } from '../state/communities';
+import { useIsAdmin, useJoined } from '../state/communities';
 import { useMyHelps, useMyPosts } from '../state/mine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
@@ -22,7 +23,7 @@ import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
 const VERSION = '0.1.0';
-type View_ = 'menu' | 'support' | 'legal';
+type View_ = 'menu' | 'support' | 'legal' | 'admin';
 
 export default function ProfileDrawer() {
   const { t } = useT();
@@ -49,7 +50,9 @@ export default function ProfileDrawer() {
   const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL;
   const adminMail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
   const adminWa = process.env.EXPO_PUBLIC_ADMIN_WHATSAPP;
+  const isAdmin = useIsAdmin(store.user?.uid);
   const sub: Record<string, [string, ReactNode]> = {
+    admin: ['Admin', <AdminPanel key="admin" />],
     support: [t('n.support'), (
       <>
         <Notice tone="blue" text={t('n.sup.d')} />
@@ -76,6 +79,7 @@ export default function ProfileDrawer() {
     ['check', t('n.myBadges'), toImpact],
     ['chart', t('n.myCerts'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
+    ...(isAdmin ? [['check', 'Admin', () => setView('admin')] as [IconName, string, () => void]] : []),
     ['share', t('n.refer'), () => { Share.share({ message: t('n.referText') }).catch(() => undefined); }],
   ];
 
