@@ -8,6 +8,9 @@ import AppHeader from './src/components/AppHeader';
 import Welcome, { USER_KEY, type User } from './src/screens/Welcome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Splash from './src/components/Splash';
+import { watchAuth } from './src/auth';
+import { firebaseReady } from './src/firebase';
+import { registerPush } from './src/push';
 import { LangProvider } from './src/i18n';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
@@ -27,6 +30,7 @@ function Shell() {
   const { tab, stack, sheet, back, closeSheet, user, setUser } = useStore();
   const [loaded, setLoaded] = useState(false); // saved demo login read from this device
   useEffect(() => {
+    if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) registerPush(u.uid, u.name, u.email); });
     AsyncStorage.getItem(USER_KEY).then((v) => { if (v) setUser(JSON.parse(v) as User); }).catch(() => {}).finally(() => setLoaded(true));
   }, [setUser]);
   const top = stack[stack.length - 1];

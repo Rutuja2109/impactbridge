@@ -33,3 +33,6 @@ yarn-error.*
 
 # TypeScript
 *.tsbuildinfo
+.env
+google-services.json
+*.keystore

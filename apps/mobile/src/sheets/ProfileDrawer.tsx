@@ -14,6 +14,7 @@ import { useT } from '../i18n';
 import { badgesFor } from '../state/achievements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
+import { signOutAll } from '../auth';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
@@ -87,7 +88,7 @@ export default function ProfileDrawer() {
                   <Icon name="chev" size={18} color={colors.slate} />
                 </Pressable>
               ))}
-              <Button label={t('n.w.logout')} variant="ghost" block onPress={() => { AsyncStorage.removeItem(USER_KEY).catch(() => {}); store.closeSheet(); store.goTab('home'); store.setUser(null); }} style={styles.signUp} />
+              <Button label={t('n.w.logout')} variant="ghost" block onPress={() => { AsyncStorage.removeItem(USER_KEY).catch(() => {}); signOutAll().catch(() => {}); store.closeSheet(); store.goTab('home'); store.setUser(null); }} style={styles.signUp} />
               <View style={styles.legal}>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.terms')}</Text>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.privacy')}</Text>

@@ -1,109 +1,65 @@
-// First-run gate after the logo intro: three "what is this app" pages, then local email/password login,
-// or a real Google account sign-in flow using Expo AuthSession.
+// First-run gate after the logo intro: three "what is this app" pages, then sign-in.
+// With Firebase keys in .env (the installed app): real email + password accounts and real Google sign-in through Firebase.
+// Without them (Expo Go while developing): a local demo login. In both cases the password is never stored by the app.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { signInEmail, signInGoogle, signUpEmail } from '../auth';
 import Icon, { type IconName } from '../components/Icon';
 import { Button } from '../components/ui';
+import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { colors, radius, space } from '../theme';
 
 export const USER_KEY = 'gn.user';
-export type User = { name: string; email: string };
-
-const GOOGLE_CONFIG = {
-  expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || undefined,
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
-  scopes: ['openid', 'profile', 'email'],
-};
-
-const GOOGLE_ENABLED = Object.values(GOOGLE_CONFIG).some(Boolean);
-
-async function fetchGoogleProfile(accessToken: string): Promise<{ name: string; email: string }> {
-  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: 'Bearer ' + accessToken },
-  });
-
-  if (!res.ok) {
-    throw new Error('Google profile request failed.');
-  }
-
-  const profile = await res.json() as { name?: string; email?: string };
-  if (!profile.email) {
-    throw new Error('Google profile does not include an email address.');
-  }
-
-  return {
-    name: profile.name || profile.email.split('@')[0],
-    email: profile.email,
-  };
-}
+export type User = { name: string; email: string; uid?: string };
 
 const PAGES: { icon: IconName; k: string }[] = [{ icon: 'heart', k: '1' }, { icon: 'coin', k: '2' }, { icon: 'people', k: '3' }];
 
 export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   const { t } = useT();
   const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    WebBrowser.maybeCompleteAuthSession();
-  }, []);
-
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0); // 0-2 intro pages, 3 = login
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [errors, setErrors] = useState<{ email?: string; pass?: string }>({});
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [request, , promptAsync] = Google.useAuthRequest(GOOGLE_CONFIG);
+  const [authErr, setAuthErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const finish = useCallback((u: User) => {
-    AsyncStorage.setItem(USER_KEY, JSON.stringify(u)).catch(() => {});
-    onDone(u);
-  }, [onDone]);
+  const finish = (u: User) => { AsyncStorage.setItem(USER_KEY, JSON.stringify(u)).catch(() => {}); onDone(u); };
 
-  const login = () => {
+  // Real mode: Firebase does the work and App.tsx hears about it through watchAuth, so nothing to finish here.
+  const fail = (e: unknown) => {
+    const code = (e as { code?: string })?.code ?? (e as Error)?.message ?? '';
+    const key = code === 'google-unavailable' ? 'n.w.gNotInApp' : code === 'google-cancelled' ? 'n.w.gCancel'
+      : code.includes('email-already') ? 'n.w.exists' : code.includes('network') ? 'n.w.net'
+        : code.startsWith('google') || code.includes('SIGN_IN') || code.includes('DEVELOPER_ERROR') ? 'n.w.gFail' : 'n.w.authErr';
+    setAuthErr(t(key));
+    setBusy(false);
+  };
+
+  const login = (create = false) => {
     const e: typeof errors = {};
     const mail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) e.email = t('n.w.emailErr');
     if (pass.length < 6) e.pass = t('n.w.passErr');
     setErrors(e);
-    if (!e.email && !e.pass) {
-      const local = mail.split('@')[0].replace(/[._-]+/g, ' ').trim();
-      const nameParts = local.split(' ').filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1));
-      finish({ name: nameParts.join(' '), email: mail });
-    }
-  };
-
-  const google = async () => {
-    if (!GOOGLE_ENABLED || !request) {
-      Alert.alert('Google sign-in is not configured', 'Add EXPO_PUBLIC_GOOGLE_* values to the mobile app .env file before testing Google login.');
+    if (e.email || e.pass) return;
+    if (firebaseReady) {
+      setAuthErr(''); setBusy(true);
+      (create ? signUpEmail : signInEmail)(mail, pass).catch(fail);
       return;
     }
+    const local = mail.split('@')[0].replace(/[._-]+/g, ' ').trim();
+    finish({ name: local.replace(/\b\w/g, (c) => c.toUpperCase()), email: mail });
+  };
 
-    try {
-      setGoogleBusy(true);
-      const result = await promptAsync();
-      if (result.type !== 'success' || !result.authentication || !result.authentication.accessToken) {
-        if (result.type !== 'cancel') {
-          Alert.alert('Google sign-in failed', 'Google did not return a valid session. Please try again.');
-        }
-        return;
-      }
-
-      const profile = await fetchGoogleProfile(result.authentication.accessToken);
-      finish(profile);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      Alert.alert('Google sign-in failed', message);
-    } finally {
-      setGoogleBusy(false);
-    }
+  const google = () => {
+    if (!firebaseReady) { finish({ name: t('n.guest'), email: 'google.demo@example.com' }); return; } // simulated: no Google account used
+    setAuthErr(''); setBusy(true);
+    signInGoogle().catch(fail);
   };
 
   const pad = { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl };
@@ -117,8 +73,8 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
         </View>
         <View style={styles.center}>
           <View style={styles.circle}><Icon name={p.icon} size={64} color={colors.tealDark} /></View>
-          <Text accessibilityRole="header" style={styles.title}>{t('n.w.t' + p.k)}</Text>
-          <Text style={styles.desc}>{t('n.w.d' + p.k)}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{t(`n.w.t${p.k}`)}</Text>
+          <Text style={styles.desc}>{t(`n.w.d${p.k}`)}</Text>
         </View>
         <View style={styles.dots}>{PAGES.map((_, i) => <View key={i} style={[styles.dot, i === page && styles.dotOn]} />)}</View>
         <Button label={page < 2 ? t('n.w.next') : t('n.w.start')} block onPress={() => setPage(page + 1)} />
@@ -132,8 +88,8 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
         <View style={styles.circle}><Icon name="heart" size={48} color={colors.tealDark} /></View>
         <Text accessibilityRole="header" style={styles.title}>{t('n.w.loginT')}</Text>
         <Text style={styles.desc}>{t('n.w.loginD')}</Text>
-        <Button label={googleBusy ? 'Signing in…' : t('n.w.google')} variant="ghost" block onPress={google} />
-        <Text style={styles.small}>{t('n.w.gNote')}</Text>
+        <Button label={t('n.w.google')} variant="ghost" block onPress={google} />
+        {firebaseReady ? null : <Text style={styles.small}>{t('n.w.gNote')}</Text>}
         <View style={styles.orRow}><View style={styles.rule} /><Text style={styles.small}>{t('n.w.or')}</Text><View style={styles.rule} /></View>
         <Text style={styles.label}>{t('n.w.email')}</Text>
         <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" style={[styles.input, errors.email && styles.inputErr]} accessibilityLabel={t('n.w.email')} />
@@ -141,8 +97,10 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
         <Text style={styles.label}>{t('n.w.pass')}</Text>
         <TextInput value={pass} onChangeText={setPass} secureTextEntry autoCapitalize="none" autoComplete="password" style={[styles.input, errors.pass && styles.inputErr]} accessibilityLabel={t('n.w.pass')} />
         {errors.pass ? <Text style={styles.err}>{errors.pass}</Text> : null}
+        {authErr ? <Text style={styles.err}>{authErr}</Text> : null}
         <View style={styles.actions}>
-          <Button label={t('n.w.go')} block onPress={login} />
+          <Button label={t('n.w.go')} block onPress={() => login()} />
+          {firebaseReady ? <Button label={t('n.w.create')} variant="ghost" block onPress={() => login(true)} /> : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

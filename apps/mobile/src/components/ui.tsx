@@ -125,17 +125,18 @@ export function PanelTitle({ children }: { children: string }) {
 // ---------- controls ----------
 type ButtonProps = {
   label: string; onPress: () => void; variant?: 'primary' | 'ghost' | 'on'; small?: boolean; block?: boolean;
-  icon?: IconName; accessibilityLabel?: string; accessibilityHint?: string; style?: StyleProp<ViewStyle>;
+  icon?: IconName; disabled?: boolean; accessibilityLabel?: string; accessibilityHint?: string; style?: StyleProp<ViewStyle>;
 };
-export function Button({ label, onPress, variant = 'primary', small, block, icon, accessibilityLabel, accessibilityHint, style }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', small, block, icon, disabled, accessibilityLabel, accessibilityHint, style }: ButtonProps) {
   const fg = variant === 'primary' ? colors.white : variant === 'on' ? colors.leaf : colors.tealDark;
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      style={({ pressed }) => [styles.btn, small && styles.btnSmall, block && styles.btnBlock, styles[variant], pressed && styles.btnPressed, style]}
+      style={({ pressed }) => [styles.btn, small && styles.btnSmall, block && styles.btnBlock, styles[variant], (pressed || disabled) && styles.btnPressed, style]}
     >
       {icon ? <Icon name={icon} size={small ? 16 : 18} color={fg} /> : null}
       {label ? <Text style={[styles.btnText, small && styles.btnTextSmall, { color: fg }]} numberOfLines={2}>{label}</Text> : null}
