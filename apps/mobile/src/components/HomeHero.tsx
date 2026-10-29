@@ -25,8 +25,7 @@ const VIEW_W = 360;
 const VIEW_H = 120;
 const pct = (n: number, of: number): `${number}%` => `${(n / of) * 100}%`;
 
-// Same motion as the prototype CSS: neighbours bob 3 units over 3s, 150ms apart; the heart pulses to 112% every 1.6s,
-// growing from its bottom tip.
+// Same motion as the prototype CSS: neighbours bob 3 units over 3s, 150ms apart; the heart pulses to 112% every 1.6s.
 function useLoop(halfMs: number, delayMs: number, enabled: boolean) {
   const value = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -76,17 +75,19 @@ function Neighbour({ x, skin, top, index, unit, animate }: { x: number; skin: st
   );
 }
 
+// In the running prototype the heart's CSS "beat" animation replaces its SVG translate(-14 -14), so on screen it sits
+// at its raw path position: x 180..208, y 26..53, just above the fourth neighbour where the two arches meet.
+// It pulses around the prototype's transform-origin (180, 40): the left edge, halfway down the box.
 function Heart({ animate }: { animate: boolean }) {
   const t = useLoop(800, 0, animate);
   const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
-  // Heart box on the grid: x 166..194, y 12..40 (one unit of headroom above its rounded top).
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.layer, styles.heart, { left: pct(166, VIEW_W), top: pct(12, VIEW_H), width: pct(28, VIEW_W), height: pct(28, VIEW_H), transform: [{ scale }] }]}
+      style={[styles.layer, styles.heart, { left: pct(180, VIEW_W), top: pct(26, VIEW_H), width: pct(28, VIEW_W), height: pct(28, VIEW_H), transform: [{ scale }] }]}
     >
-      <Svg width="100%" height="100%" viewBox="166 12 28 28">
-        <Path d="M166 22c0-9 10-11 14-4 4-7 14-5 14 4 0 8-14 17-14 17s-14-9-14-17z" fill={colors.heart} />
+      <Svg width="100%" height="100%" viewBox="180 26 28 28">
+        <Path d="M180 36c0-9 10-11 14-4 4-7 14-5 14 4 0 8-14 17-14 17s-14-9-14-17z" fill={colors.heart} />
       </Svg>
     </Animated.View>
   );
@@ -95,7 +96,7 @@ function Heart({ animate }: { animate: boolean }) {
 function HeroArt() {
   const [width, setWidth] = useState(0);
   const reduceMotion = useReduceMotion();
-  const animate = !reduceMotion && width > 0;
+  const bob = !reduceMotion && width > 0; // the bob distance needs the measured width
   const unit = width / VIEW_W; // pixels per grid unit, so the bob distance scales with the screen
   return (
     <View style={StyleSheet.absoluteFill} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessible={false} importantForAccessibility="no-hide-descendants">
@@ -106,9 +107,9 @@ function HeroArt() {
         <Rect x="0" y="94" width="360" height="26" fill={colors.tealDeep} opacity={0.55} />
       </Svg>
       {PEOPLE.map(([x, skin, top], i) => (
-        <Neighbour key={x} x={x} skin={skin} top={top} index={i} unit={unit} animate={animate} />
+        <Neighbour key={x} x={x} skin={skin} top={top} index={i} unit={unit} animate={bob} />
       ))}
-      <Heart animate={animate} />
+      <Heart animate={!reduceMotion} />
     </View>
   );
 }
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
   sub: { ...type.body, color: colors.white, marginTop: space.s },
   art: { width: '100%', maxWidth: 420, aspectRatio: 3, alignSelf: 'center', marginTop: space.m },
   layer: { position: 'absolute' },
-  heart: { transformOrigin: 'bottom' }, // grows from its tip, like the prototype's transform-origin
+  heart: { transformOrigin: '0% 50%' }, // the prototype's transform-origin (180, 40) inside the heart's box
   actions: { flexDirection: 'row', gap: space.m, marginHorizontal: space.xxl, marginTop: -28 },
   action: {
     flex: 1,
