@@ -11,6 +11,8 @@ import { Rich, useT } from '../i18n';
 import { useStore } from '../state/store';
 import { colors, space, type } from '../theme';
 import DonateSheet from './DonateSheet';
+import FilterSheet from './FilterSheet';
+import ProfileDrawer from './ProfileDrawer';
 import SipSheet from './SipSheet';
 
 function Option({ icon, title, desc, onPress }: { icon?: IconName; title: string; desc?: string; onPress: () => void }) {
@@ -162,6 +164,8 @@ export default function SheetHost() {
     case 'org': return <OrgSheet id={sheet.id} />;
     case 'share': return <ShareSheet id={sheet.id} />;
     case 'sip': return <SipSheet cause={sheet.cause} />;
+    case 'profile': return <ProfileDrawer />;
+    case 'filters': return <FilterSheet />;
     case 'donate': return campaignOf(sheet.id) ? <DonateSheet id={sheet.id} /> : null;
   }
 }

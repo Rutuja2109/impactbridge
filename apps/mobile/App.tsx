@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import BottomNav from './src/components/BottomNav';
-import DemoBanner from './src/components/DemoBanner';
+import AppHeader from './src/components/AppHeader';
+import Splash from './src/components/Splash';
 import { LangProvider } from './src/i18n';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
@@ -22,6 +23,7 @@ import { colors } from './src/theme';
 function Shell() {
   const { tab, stack, sheet, back, closeSheet } = useStore();
   const top = stack[stack.length - 1];
+  const [intro, setIntro] = useState(true); // the launch intro plays on every app start
 
   // Android Back closes the open sheet, then detail screens, then returns to Home.
   useEffect(() => {
@@ -42,11 +44,12 @@ function Shell() {
 
   return (
     <View style={styles.root}>
-      <DemoBanner />
+      <AppHeader />
       <View style={styles.body}>{screen}</View>
       <BottomNav />
       <SheetHost />
-      <StatusBar style="light" />
+      {intro ? <Splash onDone={() => setIntro(false)} /> : null}
+      <StatusBar style={intro ? 'light' : 'dark'} />
     </View>
   );
 }

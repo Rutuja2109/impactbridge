@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '../components/BottomNav';
@@ -7,10 +7,11 @@ import Icon from '../components/Icon';
 import IllustrativeMap, { type MapItem } from '../components/IllustrativeMap';
 import ProjectCard from '../components/ProjectCard';
 import { Button, ChipRow, PageHead, Segmented, UntrNote } from '../components/ui';
-import { campaigns, categories, fundPct, pledgedPct, projects, type CauseId } from '../data';
-import { STRINGS } from '../i18n/strings.generated';
+import { categories, fundPct, pledgedPct, type CauseId } from '../data';
+import { activeCount, NO_FILTERS } from '../data/filters';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
+import { useDiscoverResults } from './useDiscoverResults';
 import { colors, radius, space } from '../theme';
 
 // Discover, as in the prototype: search, Projects / Fundraisers, the five causes, and a List / illustrative Map view.
@@ -18,16 +19,9 @@ import { colors, radius, space } from '../theme';
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useT();
-  const { discover: d, setDiscover, open, donations } = useStore();
-  const fund = d.kind === 'fund';
-  const q = d.q.trim().toLowerCase();
-  const causeWords = (cat: CauseId) => `${t(`cat.${cat}`)} ${(STRINGS.en as Record<string, string>)[`cat.${cat}`]}`;
-  const inCat = (cat: CauseId) => d.cat === 'all' || cat === d.cat;
-  const matches = (words: string[]) => !q || words.join(' ').toLowerCase().includes(q);
-
-  const shownProjects = fund ? [] : projects.filter((p) => inCat(p.cat) && matches([p.title, p.org, p.area, p.desc, causeWords(p.cat)]));
-  const shownCampaigns = fund ? campaigns.filter((c) => inCat(c.cat) && matches([c.title, c.short, c.story, c.organizer, c.beneficiary, causeWords(c.cat)])) : [];
-  const n = fund ? shownCampaigns.length : shownProjects.length;
+  const { discover: d, setDiscover, open, donations, showSheet } = useStore();
+  const { fund, projectList: shownProjects, campaignList: shownCampaigns, count: n } = useDiscoverResults(d.f);
+  const nFilters = activeCount(d.f, fund);
   const count = fund ? (n === 1 ? t('disc.fcount1') : t('disc.fcountN', { n })) : (n === 1 ? t('disc.count1') : t('disc.countN', { n }));
 
   const mapItems: MapItem[] = fund
@@ -39,7 +33,8 @@ export default function DiscoverScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }} keyboardShouldPersistTaps="handled">
       <PageHead title={t('disc.title')} subtitle={t('disc.sub')} tag={t('c.sampleData')} />
 
-      <View style={styles.search}>
+      <View style={styles.searchRow}>
+      <View style={[styles.search, styles.grow]}>
         <Icon name="search" size={20} color={colors.slate} />
         <TextInput
           value={d.q}
@@ -51,6 +46,11 @@ export default function DiscoverScreen() {
           style={styles.input}
         />
         {d.q ? <Text onPress={() => setDiscover({ q: '' })} accessibilityRole="button" accessibilityLabel={t('c.close')} style={styles.clearX}>✕</Text> : null}
+      </View>
+        <Pressable onPress={() => showSheet({ kind: 'filters' })} accessibilityRole="button" accessibilityLabel={nFilters ? `${t('n.f.btn')}. ${t('n.f.applied', { n: nFilters })}` : t('n.f.btn')} style={[styles.filterBtn, nFilters > 0 && styles.filterOn]}>
+          <Icon name="filter" size={22} color={nFilters ? colors.white : colors.tealDark} />
+          {nFilters > 0 ? <View style={styles.badge}><Text style={styles.countText}>{nFilters}</Text></View> : null}
+        </Pressable>
       </View>
 
       <View style={styles.block}>
@@ -85,7 +85,7 @@ export default function DiscoverScreen() {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>{t(fund ? 'disc.noneF' : 'disc.noneT')}</Text>
           <Text style={styles.emptyText}>{t('disc.noneD')}</Text>
-          <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null })} />
+          <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null, f: NO_FILTERS })} />
         </View>
       ) : d.view === 'map' ? (
         <IllustrativeMap
@@ -105,7 +105,13 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: space.l, marginTop: space.m, minHeight: 50, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: space.l, marginTop: space.m },
+  grow: { flex: 1 },
+  filterBtn: { width: 50, height: 50, borderRadius: 25, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  filterOn: { backgroundColor: colors.tealDark, borderColor: colors.tealDark },
+  badge: { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.heart, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  countText: { fontSize: 11, fontWeight: '800', color: colors.white },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 50, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   input: { flex: 1, fontSize: 16, color: colors.ink, paddingVertical: 10 },
   clearX: { fontSize: 16, color: colors.slate, paddingHorizontal: 4 },
   block: { marginHorizontal: space.l, marginTop: space.m, marginBottom: space.m },

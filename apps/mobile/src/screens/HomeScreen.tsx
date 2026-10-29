@@ -6,9 +6,9 @@ import Gradient, { Fill } from '../components/Gradient';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import HomeHero from '../components/HomeHero';
 import Icon from '../components/Icon';
-import ProjectCard from '../components/ProjectCard';
 import StoryCarousel from '../components/StoryCarousel';
-import TrendingCarousel from '../components/TrendingCarousel';
+import SipPanel from '../components/SipPanel';
+import NeedsCarousel from '../components/NeedsCarousel';
 import { Button, SampleTag, SectionHeader, UntrNote } from '../components/ui';
 import { campaignReceived, campaigns, campaignSupporters, categories, projects } from '../data';
 import { inr } from '../format';
@@ -23,8 +23,7 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const { t } = useT();
   const { showSheet, goTab, openDiscover, donations } = useStore();
-  const trending = [...campaigns].sort((a, b) => campaignSupporters(b, donations[b.id]) - campaignSupporters(a, donations[a.id])).slice(0, 6);
-  const nearby = projects.filter((p) => p.status !== 'Completed').slice(0, 4);
+  const needs = projects.filter((p) => p.status !== 'Completed');
   const causeW = Math.min(236, Math.round(width * 0.62));
 
   return (
@@ -60,7 +59,7 @@ export default function HomeScreen() {
                 style={[styles.causeCard, { width: causeW }]}
               >
                 <Fill>{(w, h) => <PortraitArt cause={c.id} id={`f-${c.id}`} width={w} height={h} />}</Fill>
-                <Gradient id={`fade-${c.id}`} x2={0} stops={[{ offset: 0.38, color: '#002624', opacity: 0 }, { offset: 1, color: '#002624', opacity: 0.86 }]} />
+                <Gradient id={`fade-${c.id}`} x2={0} stops={[{ offset: 0.2, color: '#002624', opacity: 0 }, { offset: 0.6, color: '#002624', opacity: 0.6 }, { offset: 1, color: '#002624', opacity: 0.92 }]} />
                 <View style={styles.causeBody}>
                   <Text style={styles.causeName}>{t(`cat.${c.id}`)}</Text>
                   <Text style={styles.causeBlurb}>{t(`catb.${c.id}`)}</Text>
@@ -73,26 +72,15 @@ export default function HomeScreen() {
         <Button label={t('feat.cta')} block onPress={() => openDiscover({ kind: 'fund', cat: 'all' })} />
       </View>
 
-      <SectionHeader title={t('trend.title')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'fund', cat: 'all' })} subtitle={t('trend.sub')} tag={t('fund.sampleCampaigns')} />
+      <SectionHeader title={t('n.nearTitle')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'projects', cat: 'all' })} subtitle={t('n.nearSub')} />
       <UntrNote style={styles.note} />
-      <TrendingCarousel items={trending} />
+      <NeedsCarousel items={needs} />
 
-      <Pressable onPress={() => showSheet({ kind: 'sip' })} accessibilityRole="button" accessibilityLabel={`${t('n.sipBannerT')}. ${t('n.sipBannerD')}`} style={({ pressed }) => [styles.sip, pressed && styles.pressed]}>
-        <View style={styles.sipIcon}><Icon name="coin" size={24} color={colors.white} /></View>
-        <View style={styles.sipText}>
-          <Text style={styles.sipTitle}>{t('n.sipBannerT')}</Text>
-          <Text style={styles.sipDesc}>{t('n.sipBannerD')}</Text>
-          <SampleTag label={t('dn.simTag')} />
-        </View>
-        <Icon name="chev" size={20} color={colors.tealDeep} />
-      </Pressable>
+      <SipPanel />
 
       <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />
       <StoryCarousel />
 
-      <SectionHeader title={t('home.near')} link={t('home.viewAll')} onLink={() => openDiscover({ kind: 'projects', cat: 'all' })} subtitle={t('home.nearSub')} tag={t('c.sampleProjects')} />
-      <UntrNote style={styles.note} />
-      {nearby.map((p) => <ProjectCard key={p.id} project={p} />)}
     </ScrollView>
   );
 }
