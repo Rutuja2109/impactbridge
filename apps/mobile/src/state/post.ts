@@ -43,7 +43,7 @@ export const PRIVATE = ['private', 'docs']; // reviewers only: never shown on pu
 export const FILE_FIELDS = ['files', 'cover', 'docs'];
 
 export const blankPost = (): PostData => ({
-  title: '', cat: '', desc: '', help: '', city: '', area: '', affected: '', count: '', landmark: '', pin: false,
+  title: '', cat: '', desc: '', help: '', city: '', area: '', affected: '', count: '', landmark: '', pin: false, lat: '', lng: '',
   started: '', urgency: 'normal', ongoing: '', actions: '', outcome: '', vols: '', skills: '', materials: '', budget: '', target: '', partners: '',
   who: '', orgName: '', contact: '', display: '', private: '', consent: false, files: [],
   payLink: '', ctype: '', story: '', benName: '', benAbout: '', relation: '', goal: '', use: '', deadline: '', cover: [], docs: [], accurate: false,

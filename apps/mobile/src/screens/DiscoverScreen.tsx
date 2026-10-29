@@ -5,9 +5,10 @@ import { NAV_HEIGHT } from '../components/BottomNav';
 import CampaignCard from '../components/CampaignCard';
 import Icon from '../components/Icon';
 import IllustrativeMap, { type MapItem } from '../components/IllustrativeMap';
+import OsmMap, { type GeoItem } from '../components/OsmMap';
 import ProjectCard from '../components/ProjectCard';
 import { Button, ChipRow, PageHead, Segmented, UntrNote } from '../components/ui';
-import { categories, fundPct, pledgedPct, type CauseId } from '../data';
+import { catOf, categories, fundPct, pledgedPct, type CauseId } from '../data';
 import { activeCount, NO_FILTERS } from '../data/filters';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
@@ -28,6 +29,9 @@ export default function DiscoverScreen() {
   const mapItems: MapItem[] = fund
     ? shownCampaigns.map((c) => ({ id: c.id, cat: c.cat, x: c.x, y: c.y, title: c.title, meta: `${c.organizer} · ${t('map.fpct', { n: fundPct(c, donations[c.id]) })}` }))
     : shownProjects.map((p) => ({ id: p.id, cat: p.cat, x: p.x, y: p.y, title: p.title, meta: `${p.area} · ${t('map.pct', { n: pledgedPct(p) })}` }));
+  const geoItems: GeoItem[] = (fund ? shownCampaigns : shownProjects)
+    .filter((x) => typeof x.lat === 'number' && typeof x.lng === 'number')
+    .map((x) => ({ id: x.id, lat: x.lat as number, lng: x.lng as number, title: x.title, meta: fund ? (x as typeof shownCampaigns[number]).organizer : (x as typeof shownProjects[number]).area, color: catOf(x.cat).color }));
   const pin = mapItems.some((m) => m.id === d.pin) ? d.pin : null;
 
   return (
@@ -88,6 +92,8 @@ export default function DiscoverScreen() {
           <Text style={styles.emptyText}>{t(firebaseReady && !d.q && d.cat === 'all' ? 'n.live.noneD' : 'disc.noneD')}</Text>
           <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null, f: NO_FILTERS })} />
         </View>
+      ) : d.view === 'map' && firebaseReady ? (
+        <OsmMap items={geoItems} onOpen={(id) => open({ name: fund ? 'campaign' : 'project', id })} />
       ) : d.view === 'map' ? (
         <IllustrativeMap
           items={mapItems}

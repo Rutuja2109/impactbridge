@@ -31,6 +31,22 @@
     },
     "plugins": [
       "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GoodNeighbour uses your location only when you choose to pin where a need is.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose photos to show what help is needed.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "expo-web-browser",
       "@react-native-google-signin/google-signin",
       [

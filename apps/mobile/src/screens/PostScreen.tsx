@@ -2,6 +2,7 @@
 // "Create a community project" and "Start a fundraiser". Rules and wording come from the prototype (state/post.ts and
 // its text keys). Demonstration only: nothing is sent; drafts are saved on this device (never private details or files).
 import { firebaseReady } from '../firebase';
+import * as Location from 'expo-location';
 import { submitPost } from '../state/posts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef } from 'react';
@@ -52,6 +53,16 @@ export default function PostScreen({ flow }: { flow: Flow }) {
     set((p) => ({ ...p, step, mode, errors: {}, restored: false }));
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
+  // Installed app: the pin is the phone's real position (asked for permission first), saved as latitude and longitude.
+  const pinMyLocation = async () => {
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') { store.toast(t('pin.denied')); return; }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      set((p) => ({ ...p, data: { ...p.data, pin: true, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) } }));
+    } catch { store.toast(t('pin.fail')); }
+  };
+  const clearLocation = () => set((p) => ({ ...p, data: { ...p.data, pin: false, lat: '', lng: '' } }));
   const setField = (name: string, value: PostState['data'][string]) =>
     set((p) => {
       const data = { ...p.data, [name]: value };
@@ -138,8 +149,8 @@ export default function PostScreen({ flow }: { flow: Flow }) {
         <>
           {label}{help}
           <TextInput {...inputProps} value={str(name)} onChangeText={(v) => setField(name, v)} maxLength={200} />
-          <Button label={t(d.pin ? 'b.unpin' : 'b.pin')} icon="pin" variant={d.pin ? 'on' : 'ghost'} small onPress={() => setField('pin', !d.pin)} style={styles.self} />
-          {d.pin ? <Text style={styles.hint}>{t('pin.placed')} · {t('n.pinNote')}</Text> : null}
+          <Button label={t(d.pin ? 'b.unpin' : 'b.pin')} icon="pin" variant={d.pin ? 'on' : 'ghost'} small onPress={() => (firebaseReady ? (d.pin ? clearLocation() : pinMyLocation()) : setField('pin', !d.pin))} style={styles.self} />
+          {d.pin ? <Text style={styles.hint}>{t('pin.placed')}{firebaseReady ? '' : ` · ${t('n.pinNote')}`}</Text> : null}
         </>,
       );
     }
