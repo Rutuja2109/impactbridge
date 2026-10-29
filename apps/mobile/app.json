@@ -50,7 +50,8 @@
         }
       ],
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "./plugins/withKotlinMetadata"
     ],
     "description": "Small acts. Real change. Help neighbours with money, time and skills."
   }
