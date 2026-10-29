@@ -64,7 +64,7 @@ function Shell() {
       <SheetHost />
       {loaded && !user ? <Welcome onDone={setUser} /> : null}
       {intro ? <Splash onDone={() => setIntro(false)} /> : null}
-      <StatusBar style={intro ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
     </View>
   );
 }

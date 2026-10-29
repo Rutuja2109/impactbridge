@@ -5,8 +5,9 @@ import { firebaseReady } from '../firebase';
 import { campaignOf, myVolunteering, type CauseId } from '../data';
 import type { MyDonation, Sip } from './store';
 
-export type Badge = { id: string; icon: IconName; earned: boolean; progress?: [number, number] };
+export type Badge = { id: string; icon: IconName; earned: boolean; progress?: [number, number]; at?: number };
 export type Certificate =
+  | { id: string; kind: 'badge'; badge: string; at: number }
   | { id: string; kind: 'volunteer'; activity: string; hours: number; date: string }
   | { id: string; kind: 'donation'; cid: string; amount: number; monthly: boolean };
 
@@ -37,3 +38,19 @@ export function certificatesFor(a: Activity): Certificate[] {
   const don: Certificate[] = a.myDonations.map((d, i) => ({ id: `d-${i}`, kind: 'donation', cid: d.cid, amount: d.a, monthly: !!d.monthly }));
   return [...vol, ...don];
 }
+
+type LiveActivity = { posts: { at: number }[]; helps: { at: number }[]; joined: number };
+const first = (xs: { at: number }[]) => (xs.length ? Math.min(...xs.map((x) => x.at || Date.now())) : undefined);
+
+/** Badges from what the signed-in person really did: shared a post, offered help, joined a community. Saved with their account. */
+export function liveBadges(a: LiveActivity): Badge[] {
+  return [
+    { id: 'poster', icon: 'heart', earned: a.posts.length > 0, at: first(a.posts) },
+    { id: 'helper', icon: 'hand', earned: a.helps.length > 0, at: first(a.helps) },
+    { id: 'member', icon: 'people', earned: a.joined > 0 },
+  ];
+}
+
+/** One certificate for every badge earned. */
+export const liveCertificates = (badges: Badge[]): Certificate[] =>
+  badges.filter((b) => b.earned).map((b) => ({ id: `b-${b.id}`, kind: 'badge' as const, badge: b.id, at: b.at ?? Date.now() }));

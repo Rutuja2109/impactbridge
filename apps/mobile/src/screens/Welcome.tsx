@@ -1,14 +1,14 @@
-// First-run gate after the logo intro: three "what is this app" pages, then sign-in, in the same layout Ketto uses:
-// a mobile number with a one-time code (OTP), "Continue with email", and a round Google button. There is no guest option.
-// With the Firebase build (google-services.json inside the app) every method is real. In Expo Go it is a local demo:
-// any 6-digit code works and nothing leaves the phone. Passwords and codes are never stored by the app.
+// First-run gate after the logo intro: three "what is this app" pages, then sign-in with email + password or Google.
+// New email accounts must verify their address, and "Forgot password?" emails a reset link. There is no guest option.
+// With the Firebase build (google-services.json inside the app) every method is real. In Expo Go it is a local demo
+// that never leaves the phone. Passwords are never stored by the app.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
-import { confirmOtp, sendOtp, signInEmail, signInGoogle, signUpEmail } from '../auth';
+import { checkVerified, resendVerification, resetPassword, signInEmail, signInGoogle, signOutAll, signUpEmail } from '../auth';
 import Icon, { type IconName } from '../components/Icon';
 import { Button } from '../components/ui';
 import { firebaseReady } from '../firebase';
@@ -19,7 +19,6 @@ export const USER_KEY = 'gn.user';
 export type User = { name: string; email: string; uid?: string; phone?: string };
 
 const PAGES: { icon: IconName; k: string }[] = [{ icon: 'heart', k: '1' }, { icon: 'coin', k: '2' }, { icon: 'people', k: '3' }];
-const RESEND_S = 30;
 
 const GoogleG = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24">
@@ -30,33 +29,18 @@ const GoogleG = () => (
   </Svg>
 );
 
-const MailIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-    <Rect x="3" y="5" width="18" height="14" rx="2.5" stroke={colors.tealDark} strokeWidth={2} />
-    <Path d="M4 7l8 6 8-6" stroke={colors.tealDark} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-type Mode = 'phone' | 'otp' | 'email';
+type Mode = 'signin' | 'verify' | 'forgot';
 
 export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0); // 0-2 intro pages, 3 = sign-in
-  const [mode, setMode] = useState<Mode>('phone');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
+  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
-  const [wait, setWait] = useState(0);
-
-  useEffect(() => {
-    if (wait <= 0) return undefined;
-    const id = setTimeout(() => setWait((w) => w - 1), 1000);
-    return () => clearTimeout(id);
-  }, [wait]);
 
   const finish = (u: User) => { AsyncStorage.setItem(USER_KEY, JSON.stringify(u)).catch(() => {}); onDone(u); };
 
@@ -65,50 +49,52 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
     const raw = (e as { code?: string; message?: string });
     const c = raw?.code ?? raw?.message ?? '';
     const key = c === 'google-unavailable' ? 'n.w.gNotInApp' : c === 'google-cancelled' ? 'n.w.gCancel'
-      : c.includes('invalid-phone') ? 'n.lg.phoneErr' : c.includes('too-many') ? 'n.lg.tooMany'
-        : c.includes('invalid-verification-code') || c.includes('code-expired') ? 'n.lg.otpBad'
-          : c.includes('email-already') ? 'n.w.exists' : c.includes('network') ? 'n.w.net'
-            : c.startsWith('google') || c.includes('SIGN_IN') || c === '10' || c.includes('DEVELOPER_ERROR') ? 'n.w.gFail'
-              : mode === 'phone' ? 'n.lg.sendFail' : 'n.w.authErr';
+      : c.includes('too-many') ? 'n.lg.tooMany' : c.includes('email-already') ? 'n.w.exists' : c.includes('network') ? 'n.w.net'
+        : c.includes('invalid-email') ? 'n.w.emailErr' : c.includes('weak-password') ? 'n.w.passErr'
+          : c.startsWith('google') || c.includes('SIGN_IN') || c === '10' || c.includes('DEVELOPER_ERROR') ? 'n.w.gFail' : 'n.w.authErr';
     // The reason code is shown in small print so a failure can be reported and fixed, instead of a vague message.
     setErr(`${t(key)}${c && !c.startsWith('google-') ? `  (${c.replace('auth/', '')})` : ''}`);
+    setOk('');
     setBusy(false);
   };
 
-  const digits = phone.replace(/\D/g, '');
-  const validPhone = /^[6-9]\d{9}$/.test(digits);
-
-  const sendCode = () => {
-    setErr('');
-    if (!validPhone) { setErr(t('n.lg.phoneErr')); return; }
-    if (!firebaseReady) { setCode(''); setMode('otp'); setWait(RESEND_S); return; }
-    setBusy(true);
-    sendOtp(`+91${digits}`).then(() => { setBusy(false); setCode(''); setMode('otp'); setWait(RESEND_S); }).catch(fail);
-  };
-
-  const verify = () => {
-    setErr('');
-    if (!/^\d{6}$/.test(code)) { setErr(t('n.lg.otpErr')); return; }
-    if (!firebaseReady) { finish({ name: `+91 ${digits}`, email: '', phone: `+91${digits}` }); return; }
-    setBusy(true);
-    confirmOtp(code).catch(fail);
-  };
+  const validEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
   const emailGo = (create: boolean) => {
-    setErr('');
+    setErr(''); setOk('');
     const mail = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { setErr(t('n.w.emailErr')); return; }
+    if (!validEmail(mail)) { setErr(t('n.w.emailErr')); return; }
     if (pass.length < 6) { setErr(t('n.w.passErr')); return; }
     if (!firebaseReady) {
       finish({ name: mail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), email: mail });
       return;
     }
     setBusy(true);
-    (create ? signUpEmail : signInEmail)(mail, pass).catch(fail);
+    // Signed in but not yet verified: Firebase keeps the account, the app waits on the "check your email" step.
+    (create ? signUpEmail : signInEmail)(mail, pass).then((cred) => { setBusy(false); if (!cred.user.emailVerified) setMode('verify'); }).catch(fail);
+  };
+
+  const verified = () => {
+    setErr(''); setBusy(true);
+    checkVerified().then((u) => { setBusy(false); if (u) onDone(u); else setErr(t('n.lg.vNot')); }).catch(fail);
+  };
+  const resendMail = () => { setErr(''); resendVerification().then(() => setOk(t('n.lg.vSent'))).catch(fail); };
+  const otherEmail = () => { signOutAll().catch(() => {}); setErr(''); setOk(''); setPass(''); setMode('signin'); };
+
+  const sendReset = () => {
+    setErr(''); setOk('');
+    const mail = email.trim();
+    if (!validEmail(mail)) { setErr(t('n.w.emailErr')); return; }
+    if (!firebaseReady) { setOk(t('n.lg.linkSent', { e: mail })); return; }
+    setBusy(true);
+    // Same message whether or not the address has an account, so nobody can use this to find out who is registered.
+    resetPassword(mail).then(() => { setBusy(false); setOk(t('n.lg.linkSent', { e: mail })); }).catch((e) => {
+      if (String((e as { code?: string })?.code).includes('user-not-found')) { setBusy(false); setOk(t('n.lg.linkSent', { e: mail })); } else fail(e);
+    });
   };
 
   const google = () => {
-    setErr('');
+    setErr(''); setOk('');
     if (!firebaseReady) { finish({ name: t('n.guest'), email: 'google.demo@example.com' }); return; } // simulated in Expo Go
     setBusy(true);
     signInGoogle().catch(fail);
@@ -133,91 +119,65 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
     );
   }
 
-  const ErrLine = err ? <Text style={styles.err} accessibilityLiveRegion="polite">{err}</Text> : null;
+  const Msg = (
+    <>
+      {err ? <Text style={styles.err} accessibilityLiveRegion="polite">{err}</Text> : null}
+      {ok ? <Text style={styles.okMsg} accessibilityLiveRegion="polite">{ok}</Text> : null}
+    </>
+  );
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.form, pad]} keyboardShouldPersistTaps="handled">
-        {mode !== 'phone' ? (
-          <Pressable onPress={() => { setMode('phone'); setErr(''); }} accessibilityRole="button" accessibilityLabel={t('n.lg.back')} style={styles.back} hitSlop={10}>
+        {mode !== 'signin' ? (
+          <Pressable onPress={mode === 'verify' ? otherEmail : () => { setMode('signin'); setErr(''); setOk(''); }} accessibilityRole="button" accessibilityLabel={t('n.lg.back')} style={styles.back} hitSlop={10}>
             <Icon name="back" size={24} color={colors.ink} />
           </Pressable>
         ) : null}
 
         <Text style={styles.kicker}>{t('n.lg.welcome')}</Text>
-        <Text accessibilityRole="header" style={styles.hero}>{mode === 'otp' ? t('n.lg.otpT') : mode === 'email' ? t('n.lg.emailT') : t('n.lg.hero')}</Text>
+        <Text accessibilityRole="header" style={styles.hero}>{mode === 'verify' ? t('n.lg.vT') : mode === 'forgot' ? t('n.lg.forgotT') : t('n.lg.hero')}</Text>
 
-        {mode === 'phone' ? (
-          <>
-            <Text style={styles.label}>{t('n.lg.phone')}</Text>
-            <View style={[styles.phoneRow, !!err && styles.inputErr]}>
-              <Text style={styles.cc}>+91</Text>
-              <View style={styles.sep} />
-              <TextInput
-                value={phone} onChangeText={(v) => setPhone(v.replace(/\D/g, '').slice(0, 10))} keyboardType="number-pad" maxLength={10}
-                placeholder={t('n.lg.phoneHint')} placeholderTextColor="#A6B0AE" style={styles.phoneInput} accessibilityLabel={t('n.lg.phone')}
-                autoComplete="tel"
-              />
-            </View>
-            {ErrLine}
-          </>
-        ) : null}
-
-        {mode === 'otp' ? (
-          <>
-            <Text style={styles.desc2}>{t('n.lg.otpD', { p: `+91 ${digits}` })}</Text>
-            <TextInput
-              value={code} onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} autoFocus
-              textContentType="oneTimeCode" autoComplete="sms-otp" placeholder="••••••" placeholderTextColor="#C5CDCB"
-              style={[styles.otp, !!err && styles.inputErr]} accessibilityLabel={t('n.lg.otpT')}
-            />
-            {!firebaseReady ? <Text style={styles.small}>{t('n.lg.demo')}</Text> : null}
-            {ErrLine}
-            <Pressable onPress={sendCode} disabled={wait > 0 || busy} accessibilityRole="button" style={styles.resend}>
-              <Text style={[styles.link, wait > 0 && styles.muted]}>{wait > 0 ? t('n.lg.resendIn', { s: wait }) : t('n.lg.resend')}</Text>
-            </Pressable>
-            <Pressable onPress={() => { setMode('phone'); setErr(''); }} accessibilityRole="button" style={styles.resend}>
-              <Text style={styles.link}>{t('n.lg.change')}</Text>
-            </Pressable>
-          </>
-        ) : null}
-
-        {mode === 'email' ? (
+        {mode === 'signin' ? (
           <>
             <Text style={styles.label}>{t('n.w.email')}</Text>
             <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" style={styles.input} accessibilityLabel={t('n.w.email')} />
             <Text style={styles.label}>{t('n.w.pass')}</Text>
             <TextInput value={pass} onChangeText={setPass} secureTextEntry autoCapitalize="none" autoComplete="password" style={styles.input} accessibilityLabel={t('n.w.pass')} />
-            {ErrLine}
+            {Msg}
+            <Pressable onPress={() => { setMode('forgot'); setErr(''); setOk(''); }} accessibilityRole="button" style={styles.forgot} hitSlop={8}>
+              <Text style={styles.link}>{t('n.lg.forgot')}</Text>
+            </Pressable>
+          </>
+        ) : null}
+
+        {mode === 'forgot' ? (
+          <>
+            <Text style={styles.desc2}>{t('n.lg.forgotD')}</Text>
+            <Text style={styles.label}>{t('n.w.email')}</Text>
+            <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" style={styles.input} accessibilityLabel={t('n.w.email')} />
+            {Msg}
+          </>
+        ) : null}
+
+        {mode === 'verify' ? (
+          <>
+            <Text style={styles.desc2}>{t('n.lg.vD', { e: email.trim() })}</Text>
+            {Msg}
+            <Pressable onPress={resendMail} accessibilityRole="button" style={styles.centerLink}><Text style={styles.link}>{t('n.lg.vResend')}</Text></Pressable>
+            <Pressable onPress={otherEmail} accessibilityRole="button" style={styles.centerLink}><Text style={styles.link}>{t('n.lg.vOther')}</Text></Pressable>
           </>
         ) : null}
 
         <View style={styles.spacer} />
 
-        {mode !== 'otp' ? (
-          <Text style={styles.terms}>
-            {t('n.lg.terms')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.tos')}</Text> {t('n.lg.and')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.privacy')}</Text>
-          </Text>
-        ) : null}
-
-        {mode === 'phone' ? <Button label={t('n.lg.cont')} block onPress={sendCode} disabled={busy} /> : null}
-        {mode === 'otp' ? <Button label={t('n.lg.verify')} block onPress={verify} disabled={busy} /> : null}
-        {mode === 'email' ? (
+        {mode === 'signin' ? (
           <>
+            <Text style={styles.terms}>
+              {t('n.lg.terms')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.tos')}</Text> {t('n.lg.and')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.privacy')}</Text>
+            </Text>
             <Button label={t('n.w.go')} block onPress={() => emailGo(false)} disabled={busy} />
             <Button label={t('n.w.create')} variant="ghost" block onPress={() => emailGo(true)} disabled={busy} />
-          </>
-        ) : null}
-
-        {mode === 'phone' ? (
-          <Pressable onPress={() => { setMode('email'); setErr(''); }} accessibilityRole="button" style={styles.emailBtn}>
-            <MailIcon />
-            <Text style={styles.emailText}>{t('n.lg.email')}</Text>
-          </Pressable>
-        ) : null}
-
-        {mode !== 'otp' ? (
-          <>
             <View style={styles.orRow}><View style={styles.rule} /><Text style={styles.orText}>{t('n.lg.or')}</Text><View style={styles.rule} /></View>
             <View style={styles.social}>
               <Pressable onPress={google} disabled={busy} accessibilityRole="button" accessibilityLabel={t('n.w.google')} style={({ pressed }) => [styles.round, pressed && styles.pressed]}>
@@ -226,6 +186,9 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
             </View>
           </>
         ) : null}
+
+        {mode === 'forgot' ? <Button label={t('n.lg.sendLink')} block onPress={sendReset} disabled={busy} /> : null}
+        {mode === 'verify' ? <Button label={t('n.lg.vBtn')} block onPress={verified} disabled={busy} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -244,27 +207,19 @@ const styles = StyleSheet.create({
   form: { flexGrow: 1, gap: space.m, maxWidth: 520, width: '100%', alignSelf: 'center' },
   back: { alignSelf: 'flex-start', padding: 4 },
   kicker: { fontSize: 17, fontWeight: '700', color: colors.tealDark, marginTop: space.xl },
-  hero: { fontFamily: 'serif', fontStyle: 'italic', fontWeight: '700', fontSize: 38, lineHeight: 46, color: colors.ink, marginBottom: space.l },
+  hero: { fontFamily: 'serif', fontStyle: 'italic', fontWeight: '700', fontSize: 38, lineHeight: 46, color: colors.ink, marginBottom: space.m },
   label: { fontSize: 17, fontWeight: '700', color: colors.slate, marginTop: space.s },
   desc2: { fontSize: 17, lineHeight: 24, color: colors.slate },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#C9D1CF', borderRadius: radius.m, backgroundColor: colors.white, paddingHorizontal: 18, minHeight: 64 },
-  cc: { fontSize: 20, fontWeight: '800', color: colors.slate },
-  sep: { width: 1.5, alignSelf: 'stretch', backgroundColor: '#C9D1CF', marginHorizontal: 14, marginVertical: 14 },
-  phoneInput: { flex: 1, fontSize: 20, color: colors.ink, paddingVertical: 12 },
-  otp: { borderWidth: 1.5, borderColor: '#C9D1CF', borderRadius: radius.m, backgroundColor: colors.white, fontSize: 30, letterSpacing: 12, textAlign: 'center', paddingVertical: 14, color: colors.ink },
-  input: { borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.m, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, color: colors.ink, backgroundColor: colors.white },
-  inputErr: { borderColor: colors.brick, backgroundColor: colors.brickSoft },
+  input: { borderWidth: 1.5, borderColor: '#C9D1CF', borderRadius: radius.m, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, color: colors.ink, backgroundColor: colors.white },
   err: { fontSize: 15, lineHeight: 21, color: colors.brick, fontWeight: '600' },
-  small: { fontSize: 14, lineHeight: 20, color: colors.slate },
-  spacer: { flexGrow: 1, minHeight: space.xl },
+  okMsg: { fontSize: 15, lineHeight: 21, color: colors.leaf, fontWeight: '600' },
+  forgot: { alignSelf: 'flex-end', paddingVertical: 4 },
+  spacer: { flexGrow: 1, minHeight: space.l },
   terms: { fontSize: 14, lineHeight: 20, color: colors.slate, textAlign: 'center' },
   termsLink: { fontWeight: '800', color: colors.ink },
-  resend: { alignSelf: 'center', paddingVertical: 8 },
+  centerLink: { alignSelf: 'center', paddingVertical: 8 },
   link: { fontSize: 16, fontWeight: '800', color: colors.tealDark },
-  muted: { color: colors.slate, fontWeight: '600' },
-  emailBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 60, borderRadius: 999, borderWidth: 1.5, borderColor: '#C9D1CF', backgroundColor: colors.white },
-  emailText: { fontSize: 19, fontWeight: '800', color: colors.tealDark },
-  orRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: space.m },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: space.s },
   rule: { flex: 1, height: 1, backgroundColor: colors.line },
   orText: { fontSize: 14, fontWeight: '800', letterSpacing: 2, color: colors.ink },
   social: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: space.s },
