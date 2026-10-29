@@ -4,7 +4,8 @@ rules_version = '2';
 // the app can never set that field.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
+    // Signed in, and (for email + password accounts) the email address has been verified through the link we send.
+    function signedIn() { return request.auth != null && (request.auth.token.firebase.sign_in_provider != 'password' || request.auth.token.email_verified == true); }
     // An admin is a person with a document in /admins/{their uid}, created by hand in the Firebase console.
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     function isVerifiedOrg() { return signedIn() && get(/databases/$(database)/documents/orgs/$(request.auth.uid)).data.verified == true; }

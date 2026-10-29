@@ -8,7 +8,7 @@ import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSh
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { confirmOtp, sendOtp, signInEmail, signInGoogle, signUpEmail } from '../auth';
+import { checkVerified, confirmOtp, resendVerification, sendOtp, signInEmail, signInGoogle, signOutAll, signUpEmail } from '../auth';
 import Icon, { type IconName } from '../components/Icon';
 import { Button } from '../components/ui';
 import { firebaseReady } from '../firebase';
@@ -37,7 +37,7 @@ const MailIcon = () => (
   </Svg>
 );
 
-type Mode = 'phone' | 'otp' | 'email';
+type Mode = 'phone' | 'otp' | 'email' | 'verify';
 
 export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   const { t } = useT();
@@ -64,7 +64,7 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   const fail = (e: unknown) => {
     const raw = (e as { code?: string; message?: string });
     const c = raw?.code ?? raw?.message ?? '';
-    const key = c === 'google-unavailable' ? 'n.w.gNotInApp' : c === 'google-cancelled' ? 'n.w.gCancel'
+    const key = c.includes('operation-not-allowed') && mode === 'phone' ? 'n.lg.phoneOff' : c === 'google-unavailable' ? 'n.w.gNotInApp' : c === 'google-cancelled' ? 'n.w.gCancel'
       : c.includes('invalid-phone') ? 'n.lg.phoneErr' : c.includes('too-many') ? 'n.lg.tooMany'
         : c.includes('invalid-verification-code') || c.includes('code-expired') ? 'n.lg.otpBad'
           : c.includes('email-already') ? 'n.w.exists' : c.includes('network') ? 'n.w.net'
@@ -104,8 +104,16 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
       return;
     }
     setBusy(true);
-    (create ? signUpEmail : signInEmail)(mail, pass).catch(fail);
+    // Signed in but not yet verified: Firebase keeps the account, the app waits on the "check your email" step.
+    (create ? signUpEmail : signInEmail)(mail, pass).then((cred) => { if (!cred.user.emailVerified) { setBusy(false); setMode('verify'); } }).catch(fail);
   };
+
+  const verified = () => {
+    setErr(''); setBusy(true);
+    checkVerified().then((u) => { setBusy(false); if (u) onDone(u); else setErr(t('n.lg.vNot')); }).catch(fail);
+  };
+  const resendMail = () => { setErr(''); resendVerification().then(() => setErr(t('n.lg.vSent'))).catch(fail); };
+  const otherEmail = () => { signOutAll().catch(() => {}); setErr(''); setPass(''); setMode('email'); };
 
   const google = () => {
     setErr('');
@@ -138,14 +146,14 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.form, pad]} keyboardShouldPersistTaps="handled">
-        {mode !== 'phone' ? (
+        {mode !== 'phone' && mode !== 'verify' ? (
           <Pressable onPress={() => { setMode('phone'); setErr(''); }} accessibilityRole="button" accessibilityLabel={t('n.lg.back')} style={styles.back} hitSlop={10}>
             <Icon name="back" size={24} color={colors.ink} />
           </Pressable>
         ) : null}
 
         <Text style={styles.kicker}>{t('n.lg.welcome')}</Text>
-        <Text accessibilityRole="header" style={styles.hero}>{mode === 'otp' ? t('n.lg.otpT') : mode === 'email' ? t('n.lg.emailT') : t('n.lg.hero')}</Text>
+        <Text accessibilityRole="header" style={styles.hero}>{mode === 'otp' ? t('n.lg.otpT') : mode === 'email' ? t('n.lg.emailT') : mode === 'verify' ? t('n.lg.vT') : t('n.lg.hero')}</Text>
 
         {mode === 'phone' ? (
           <>
@@ -182,6 +190,15 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
           </>
         ) : null}
 
+        {mode === 'verify' ? (
+          <>
+            <Text style={styles.desc2}>{t('n.lg.vD', { e: email.trim() })}</Text>
+            {ErrLine}
+            <Pressable onPress={resendMail} accessibilityRole="button" style={styles.resend}><Text style={styles.link}>{t('n.lg.vResend')}</Text></Pressable>
+            <Pressable onPress={otherEmail} accessibilityRole="button" style={styles.resend}><Text style={styles.link}>{t('n.lg.vOther')}</Text></Pressable>
+          </>
+        ) : null}
+
         {mode === 'email' ? (
           <>
             <Text style={styles.label}>{t('n.w.email')}</Text>
@@ -194,7 +211,7 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
 
         <View style={styles.spacer} />
 
-        {mode !== 'otp' ? (
+        {mode !== 'otp' && mode !== 'verify' ? (
           <Text style={styles.terms}>
             {t('n.lg.terms')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.tos')}</Text> {t('n.lg.and')} <Text style={styles.termsLink} onPress={openPolicy}>{t('n.lg.privacy')}</Text>
           </Text>
@@ -202,6 +219,7 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
 
         {mode === 'phone' ? <Button label={t('n.lg.cont')} block onPress={sendCode} disabled={busy} /> : null}
         {mode === 'otp' ? <Button label={t('n.lg.verify')} block onPress={verify} disabled={busy} /> : null}
+        {mode === 'verify' ? <Button label={t('n.lg.vBtn')} block onPress={verified} disabled={busy} /> : null}
         {mode === 'email' ? (
           <>
             <Button label={t('n.w.go')} block onPress={() => emailGo(false)} disabled={busy} />
@@ -216,7 +234,7 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
           </Pressable>
         ) : null}
 
-        {mode !== 'otp' ? (
+        {mode !== 'otp' && mode !== 'verify' ? (
           <>
             <View style={styles.orRow}><View style={styles.rule} /><Text style={styles.orText}>{t('n.lg.or')}</Text><View style={styles.rule} /></View>
             <View style={styles.social}>
