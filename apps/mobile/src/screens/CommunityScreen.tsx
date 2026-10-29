@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import Sheet from '../components/Sheet';
 import { Badge, Button, Notice, PageHead } from '../components/ui';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
+import { report } from '../state/posts';
 import { applyOrg, createCommunity, setJoined, useCommunities, useJoined, useMembers, useOrg, type Community } from '../state/communities';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
@@ -48,6 +49,8 @@ function LiveCommunities() {
   const list = useCommunities();
   const org = useOrg(user?.uid);
   const joined = useJoined(user?.uid);
+  const { setFollowing } = useStore();
+  useEffect(() => { setFollowing(joined); }, [joined.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   const [form, setForm] = useState<'apply' | 'create' | null>(null);
   const [seeing, setSeeing] = useState<Community | null>(null);
 
@@ -94,6 +97,7 @@ function LiveCommunities() {
             <Text style={styles.members}>{t('n.cm.members', { n: (c.memberCount ?? 0).toLocaleString('en-IN') })}</Text>
             {mine ? <Button label={t('n.cm.seeMembers')} block variant="ghost" onPress={() => setSeeing(c)} />
               : <Button label={on ? t('n.cJoined') : t('n.cJoin')} variant={on ? 'on' : 'primary'} block icon={on ? 'check' : undefined} onPress={() => join(c)} />}
+            {mine || !user?.uid ? null : <Button label={t('b.report')} variant="ghost" small onPress={() => report(user, 'community', c.id, 'reported from app').then(() => toast(t('t.reported'))).catch(() => toast(t('n.cm.fail')))} />}
           </View>
         );
       }) : <Text style={[styles.small, styles.none]}>{t('n.cm.none')}</Text>}

@@ -1,10 +1,12 @@
 // App state for the prototype build: navigation, the open sheet, and session-only demo actions.
 // Nothing here is saved or sent anywhere; restarting the app resets it, like reloading the prototype.
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, Linking, StyleSheet, Text } from 'react-native';
 
 import { campaignOf, campaigns, type CauseId, type Donation } from '../data';
 import { inr } from '../format';
+import { firebaseReady } from '../firebase';
+import { useT } from '../i18n';
 import { NO_FILTERS, type Filters } from '../data/filters';
 import { colors, radius, space, type } from '../theme';
 import type { User } from '../screens/Welcome';
@@ -17,7 +19,7 @@ export type Sheet =
   | { kind: 'updates' }
   | { kind: 'help'; id: string }
   | { kind: 'donate'; id: string }
-  | { kind: 'report' }
+  | { kind: 'report'; id?: string }
   | { kind: 'share'; id: string }
   | { kind: 'sip'; cause?: CauseId }
   | { kind: 'profile' }
@@ -46,6 +48,9 @@ type Store = {
   user: User | null;
   notes: Note[];
   unread: number;
+  dataVersion: number;
+  bumpData: () => void;
+  setFollowing: (ids: string[]) => void;
   markRead: () => void;
   setUser: (u: User | null) => void;
   setPost: (flow: Flow, fn: (p: PostState) => PostState) => void;
@@ -69,6 +74,7 @@ const StoreContext = createContext<Store | null>(null);
 const initialDonations = () => Object.fromEntries(campaigns.map((c) => [c.id, c.donations.map((d) => ({ ...d }))]));
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const { t } = useT();
   const [tab, setTab] = useState<TabId>('home');
   const [stack, setStack] = useState<Route[]>([]);
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -82,6 +88,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [sips, setSips] = useState<Sip[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [unread, setUnread] = useState(0);
+  const [dataVersion, setDataVersion] = useState(0); // bumped when live posts arrive so screens redraw
   const notify = useCallback((key: string, p: Note['p'] = {}) => {
     setNotes((n) => [{ id: n.length + 1, key, p }, ...n]);
     setUnread((u) => u + 1);
@@ -107,7 +114,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   tabRef.current = tab;
 
   const store = useMemo<Store>(() => ({
-    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, setUser, notes, unread,
+    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, setUser, notes, unread, dataVersion,
+    bumpData: () => setDataVersion((v) => v + 1),
+    setFollowing,
     markRead: () => setUnread(0),
     setPost: (flow, fn) => setPosts((all) => ({ ...all, [flow]: fn(all[flow]) })),
     // The first month of a campaign SIP is recorded as a simulated donation so the campaign total moves once, now.
@@ -133,7 +142,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setStack([]); setSheet(null); setTab('discover');
     },
     setDiscover: (patch) => setDiscoverState((d) => ({ ...d, ...patch })),
-    showSheet: (s) => setSheet(s),
+    // The installed app never handles money: Donate opens the organiser's own payment page, and the demo SIP is off.
+    showSheet: (s) => {
+      if (firebaseReady && s.kind === 'sip') return;
+      if (firebaseReady && s.kind === 'donate') {
+        const link = campaignOf(s.id)?.payLink;
+        if (link && /^https?:\/\/|^upi:\/\//i.test(link)) Linking.openURL(link).catch(() => toast(t('n.pay.fail')));
+        else toast(t('n.pay.none'));
+        return;
+      }
+      setSheet(s);
+    },
     closeSheet: () => setSheet(null),
     toggle: (list, id) => {
       const set = { following: setFollowing, joined: setJoined, going: setGoing }[list];
@@ -152,7 +171,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDonations((all) => ({ ...all, [cid]: all[cid].map((d, i) => (i === index ? { ...d, s: 'received' } : d)) }));
     },
     toast,
-  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, notes, unread, notify, toast]);
+  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, notes, unread, dataVersion, notify, toast, t]);
 
   return (
     <StoreContext.Provider value={store}>

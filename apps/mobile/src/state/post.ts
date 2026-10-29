@@ -18,7 +18,7 @@ const PROBLEM_STEPS: Record<number, Spec[]> = {
 const FUND_STEPS: Record<number, Spec[]> = {
   1: [['ctype', 'ctype', 1], ['title', 'text', 1], ['cat', 'cats', 1], ['story', 'area', 1]],
   2: [['benName', 'text', 1], ['benAbout', 'text', 0], ['relation', 'relation', 1], ['orgName', 'text', 1], ['display', 'text', 1]],
-  3: [['goal', 'num', 1], ['use', 'area', 1], ['deadline', 'date', 1]],
+  3: [['goal', 'num', 1], ['use', 'area', 1], ['deadline', 'date', 1], ['payLink', 'text', 0]],
   4: [['cover', 'image', 0], ['docs', 'files', 0]],
   5: [['private', 'text', 1], ['consent', 'check', 1], ['accurate', 'check', 1]],
 };
@@ -46,7 +46,7 @@ export const blankPost = (): PostData => ({
   title: '', cat: '', desc: '', help: '', city: '', area: '', affected: '', count: '', landmark: '', pin: false,
   started: '', urgency: 'normal', ongoing: '', actions: '', outcome: '', vols: '', skills: '', materials: '', budget: '', target: '', partners: '',
   who: '', orgName: '', contact: '', display: '', private: '', consent: false, files: [],
-  ctype: '', story: '', benName: '', benAbout: '', relation: '', goal: '', use: '', deadline: '', cover: [], docs: [], accurate: false,
+  payLink: '', ctype: '', story: '', benName: '', benAbout: '', relation: '', goal: '', use: '', deadline: '', cover: [], docs: [], accurate: false,
 });
 export const freshPost = (): PostState => ({ step: 1, max: 1, mode: 'form', data: blankPost(), errors: {}, fromReview: false, ref: '', restored: false });
 
@@ -83,6 +83,7 @@ export function fieldError(flow: Flow, d: PostData, name: string): string {
     case 'goal': return isInt(s, 1000) && Number(s) <= 5000000 ? '' : 'goal';
     case 'started': return s && (!isDate(isoDate(s)) || isoDate(s) > today()) ? 'started' : '';
     case 'target': return s && (!isDate(isoDate(s)) || isoDate(s) <= today()) ? 'target' : '';
+    case 'payLink': return s && !/^(https?|upi):\/\/\S+$/i.test(s) ? 'payLink' : '';
     case 'deadline': return isDate(isoDate(s)) && isoDate(s) > today() ? '' : 'deadline';
     case 'private': return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) || /^(\+?91)?\d{10}$/.test(s.replace(/[\s-]/g, '')) ? '' : 'private';
     default: return '';

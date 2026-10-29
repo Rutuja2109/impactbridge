@@ -1,6 +1,7 @@
 // Badges and demo certificates, worked out from what the person did in this session plus the sample
 // volunteering record. Nothing here is issued by a real organisation; every certificate says so.
 import type { IconName } from '../components/Icon';
+import { firebaseReady } from '../firebase';
 import { campaignOf, myVolunteering, type CauseId } from '../data';
 import type { MyDonation, Sip } from './store';
 
@@ -12,6 +13,8 @@ export type Certificate =
 type Activity = { myDonations: MyDonation[]; sips: Sip[]; joined: string[]; going: string[]; following: string[] };
 
 export function badgesFor(a: Activity): Badge[] {
+  // The installed app has no donations, SIPs, events or sample volunteering: only joining a community can be earned.
+  if (firebaseReady) return [{ id: 'member', icon: 'people', earned: a.following.length > 0 }];
   const causes = new Set<CauseId>();
   a.myDonations.forEach((d) => { const c = campaignOf(d.cid); if (c) causes.add(c.cat); });
   a.sips.filter((s) => s.status !== 'cancelled').forEach((s) => causes.add(s.cause));

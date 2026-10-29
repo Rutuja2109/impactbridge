@@ -7,6 +7,7 @@ import { campaignOf } from '../data';
 import { inr } from '../format';
 import { useT } from '../i18n';
 import { badgesFor, certificatesFor, type Certificate } from '../state/achievements';
+import { firebaseReady } from '../firebase';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import Icon from './Icon';
@@ -74,7 +75,7 @@ export default function ImpactMine() {
         {certs.length ? <Text style={styles.small}>{t('n.certDemo')}</Text> : null}
       </View>
 
-      <View style={styles.sec}>
+      {firebaseReady ? null : <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.myGiving')}</Text>
         {store.sips.map((s) => (
           <View key={s.id} style={styles.item}>
@@ -97,7 +98,7 @@ export default function ImpactMine() {
           </View>
         ))}
         {!store.sips.length && !store.myDonations.length ? <Text style={styles.small}>{t('n.givingNone')}</Text> : <SampleTag label={t('dn.simTag')} />}
-      </View>
+      </View>}
 
       {cert ? <Sheet visible onClose={() => setCert(null)} title={t(cert.kind === 'volunteer' ? 'n.certVolT' : 'n.certDonT')}><CertificateCard cert={cert} /></Sheet> : null}
     </>

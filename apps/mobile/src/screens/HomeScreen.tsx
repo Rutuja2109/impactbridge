@@ -12,6 +12,7 @@ import NeedsCarousel from '../components/NeedsCarousel';
 import { Button, SampleTag, SectionHeader, UntrNote } from '../components/ui';
 import { campaignReceived, campaigns, campaignSupporters, categories, projects } from '../data';
 import { inr } from '../format';
+import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
@@ -78,7 +79,7 @@ export default function HomeScreen() {
       <UntrNote style={styles.note} />
       <NeedsCarousel items={needs} />
 
-      <SipPanel />
+      {firebaseReady ? null : <SipPanel />}
 
       <View style={styles.gap} />
       <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />

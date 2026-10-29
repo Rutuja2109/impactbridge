@@ -7,6 +7,7 @@ import Icon from '../components/Icon';
 import { Button, CauseBadge, Legend, Panel, PanelTitle, SampleTag, StatGrid, StatusBadge, TwoLayerBar, UntrTag } from '../components/ui';
 import { pledgedPct, projectOf, receivedPct } from '../data';
 import { inr } from '../format';
+import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { colors, space } from '../theme';
@@ -92,6 +93,7 @@ export default function ProjectScreen({ id }: { id: string }) {
             <Text style={d.small}>{done ? t('proj.complete') : t('proj.left', { n: p.days })}</Text>
             {done ? null : <Button label={t('c.help')} block onPress={help} />}
             <Button label={t('c.share')} icon="share" variant="ghost" block onPress={share} />
+            {firebaseReady ? <Button label={t('b.report')} variant="ghost" small onPress={() => showSheet({ kind: 'report', id: p.id })} /> : null}
           </Panel>
         </View>
       </ScrollView>

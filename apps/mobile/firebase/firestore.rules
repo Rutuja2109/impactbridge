@@ -37,6 +37,27 @@ service cloud.firestore {
       }
     }
 
+    // Posts: saved as 'pending'; only an admin (Firebase console) can approve them. Everyone signed in can read approved posts.
+    match /posts/{pid} {
+      allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending';
+
+      // The author's private contact: only the author can read or write it.
+      match /private/{doc} {
+        allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
+      }
+      // Offers of help: the person writes their own; the post's author can read them.
+      match /responses/{uid} {
+        allow create: if signedIn() && request.auth.uid == uid;
+        allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+      }
+    }
+
+    // Reports about posts or communities: anyone signed in can file one; only admins (console) can read them.
+    match /reports/{rid} {
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+    }
+
     // In-app notifications are written by the Cloud Function only; the person can read and mark their own.
     match /users/{uid}/notifications/{nid} {
       allow read, update: if signedIn() && request.auth.uid == uid;

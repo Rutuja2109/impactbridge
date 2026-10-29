@@ -7,7 +7,9 @@ import Icon, { type IconName } from '../components/Icon';
 import Sheet, { sheetStyles as s } from '../components/Sheet';
 import { Button, ProgressBar, SampleTag, TwoLayerBar, UntrTag, StatGrid } from '../components/ui';
 import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pledgePct, pledgedPct, projectOf, projects } from '../data';
+import { firebaseReady } from '../firebase';
 import { inr } from '../format';
+import { report, respond } from '../state/posts';
 import { Rich, useT } from '../i18n';
 import type { Flow } from '../state/post';
 import { useStore } from '../state/store';
@@ -68,27 +70,36 @@ function UpdatesSheet() {
 
 function HelpSheet({ id }: { id: string }) {
   const { t } = useT();
-  const { closeSheet, toast } = useStore();
+  const { closeSheet, toast, user } = useStore();
   const p = projectOf(id);
   if (!p) return null;
-  const pick = (key: string) => { closeSheet(); toast(t(key)); };
+  const pick = (key: string, kind?: 'volunteer' | 'items') => {
+    closeSheet();
+    // Installed app: the offer is really sent to the organiser. Expo Go keeps the demo toast.
+    if (firebaseReady && kind && user?.uid) respond(user, id, kind).then(() => toast(t('n.rs.sent', { e: user.email }))).catch(() => toast(t('n.cm.fail')));
+    else toast(t(key));
+  };
   return (
     <Sheet visible onClose={closeSheet} title={t('help.title')} subtitle={p.title}>
-      <Option icon="coin" title={t('help.pledgeT')} desc={t('help.pledgeD')} onPress={() => pick('help.pledgeToast')} />
-      <Option icon="hand" title={t('help.volT')} desc={t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast')} />
-      <Option icon="tool" title={t('help.giveT')} desc={t('help.giveD')} onPress={() => pick('help.giveToast')} />
-      <Text style={s.note}>{t('help.note')}</Text>
+      {firebaseReady ? null : <Option icon="coin" title={t('help.pledgeT')} desc={t('help.pledgeD')} onPress={() => pick('help.pledgeToast')} />}
+      <Option icon="hand" title={t('help.volT')} desc={t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast', 'volunteer')} />
+      <Option icon="tool" title={t('help.giveT')} desc={t('help.giveD')} onPress={() => pick('help.giveToast', 'items')} />
+      <Text style={s.note}>{firebaseReady ? t('n.rs.consent') : t('help.note')}</Text>
     </Sheet>
   );
 }
 
-function ReportSheet() {
+function ReportSheet({ id }: { id?: string }) {
   const { t } = useT();
-  const { closeSheet, toast } = useStore();
-  const pick = () => { closeSheet(); toast(t('t.reported')); };
+  const { closeSheet, toast, user } = useStore();
+  const pick = (reason: string) => {
+    closeSheet();
+    if (firebaseReady && user?.uid && id) report(user, 'post', id, reason).then(() => toast(t('t.reported'))).catch(() => toast(t('n.cm.fail')));
+    else toast(t('t.reported'));
+  };
   return (
     <Sheet visible onClose={closeSheet} title={t('rp.title')} subtitle={t('rp.sub')}>
-      {['rp.r1', 'rp.r2', 'rp.r3', 'rp.r4'].map((k) => <Option key={k} title={t(k)} onPress={pick} />)}
+      {['rp.r1', 'rp.r2', 'rp.r3', 'rp.r4'].map((k) => <Option key={k} title={t(k)} onPress={() => pick(k)} />)}
     </Sheet>
   );
 }
@@ -166,7 +177,7 @@ export default function SheetHost() {
     case 'post': return <PostSheet />;
     case 'updates': return <UpdatesSheet />;
     case 'help': return <HelpSheet id={sheet.id} />;
-    case 'report': return <ReportSheet />;
+    case 'report': return <ReportSheet id={sheet.id} />;
     case 'org': return <OrgSheet id={sheet.id} />;
     case 'share': return <ShareSheet id={sheet.id} />;
     case 'sip': return <SipSheet cause={sheet.cause} />;

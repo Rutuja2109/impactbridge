@@ -6,6 +6,7 @@ import ImpactMine from '../components/ImpactMine';
 import { Badge, Button, CauseBadge, Notice, PageHead, Panel, SampleTag } from '../components/ui';
 import { campaignOf, campaignPledged, campaignReceived, campaigns, myVolunteering, opportunities, outcomes, projects, type CauseId, type Outcome } from '../data';
 import { inr } from '../format';
+import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
@@ -45,10 +46,12 @@ export default function ImpactScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }}>
       <PageHead title={t('imp.title')} subtitle={t('imp.sub')} />
-      <Notice text={tr('imp.notice')} rich style={styles.notice} />
+      {firebaseReady ? null : <Notice text={tr('imp.notice')} rich style={styles.notice} />}
 
       <ImpactMine />
 
+      {firebaseReady ? null : (
+        <>
       {/* Overview */}
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('imp.overview')}</Text>
@@ -114,6 +117,9 @@ export default function ImpactScreen() {
           </Panel>
         )}
       </View>
+
+        </>
+      )}
 
       {/* My volunteering: time */}
       <View style={styles.sec}>

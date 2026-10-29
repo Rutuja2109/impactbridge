@@ -4,12 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type Vie
 import Svg, { Defs, Line, Pattern, Rect } from 'react-native-svg';
 
 import { catOf, causeInk, type Campaign, type CauseId, type Project } from '../data';
+import { firebaseReady } from '../firebase';
 import { Rich, useT } from '../i18n';
 import { colors, radius, shadow, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
 
 // ---------- tags and badges ----------
 export function SampleTag({ label }: { label: string }) {
+  if (firebaseReady) return null; // real content in the installed app: nothing is sample
   return (
     <View style={styles.sample}>
       <Text style={styles.sampleText}>{label.toUpperCase()}</Text>

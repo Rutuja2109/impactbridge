@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { firebaseReady } from '../firebase';
 import { LANGS, useT } from '../i18n';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space } from '../theme';
@@ -37,7 +38,7 @@ export default function AppHeader() {
           <Icon name="people" size={20} color={colors.white} />
         </Pressable>
       </View>
-      <Text style={styles.demo} numberOfLines={1}>{t('n.demoLine')}</Text>
+      {firebaseReady ? null : <Text style={styles.demo} numberOfLines={1}>{t('n.demoLine')}</Text>}
 
       <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel={t('c.close')} />

@@ -11,6 +11,7 @@ import Splash from './src/components/Splash';
 import { watchAuth } from './src/auth';
 import { firebaseReady } from './src/firebase';
 import { registerPush } from './src/push';
+import { useLiveSync } from './src/state/posts';
 import { LangProvider } from './src/i18n';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
@@ -27,7 +28,8 @@ import { colors } from './src/theme';
 // with the centre plus, and whichever sheet is open. Everything is local sample data; nothing is sent anywhere
 // and no permissions are requested.
 function Shell() {
-  const { tab, stack, sheet, back, closeSheet, user, setUser } = useStore();
+  const { tab, stack, sheet, back, closeSheet, user, setUser, bumpData } = useStore();
+  useLiveSync(user?.uid, bumpData); // approved posts from Firestore (installed app only)
   const [loaded, setLoaded] = useState(false); // saved demo login read from this device
   useEffect(() => {
     if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) registerPush(u.uid, u.name, u.email); });

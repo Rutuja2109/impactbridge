@@ -138,7 +138,7 @@ export default function CampaignScreen({ id }: { id: string }) {
             <Text style={d.small}>{t('cd.earlier', { n: c.base.donors })}</Text>
           </Panel>
 
-          <Button label={t('b.report')} variant="ghost" small onPress={() => showSheet({ kind: 'report' })} style={styles.report} />
+          <Button label={t('b.report')} variant="ghost" small onPress={() => showSheet({ kind: 'report', id: c.id })} style={styles.report} />
         </View>
       </ScrollView>
       <StickyCta shareLabel={t('b.shareC')} onShare={share} label={t('b.donate')} onPress={donate} />

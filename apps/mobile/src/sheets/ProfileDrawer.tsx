@@ -2,7 +2,7 @@
 // My donations & SIPs (these three open the Impact page), Help, Invite, legal links and the version. Sign-up and log-in come in a later stage.
 // Everything is computed from this session's demo activity; nothing is sent anywhere.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Animated, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
@@ -14,7 +14,8 @@ import { useT } from '../i18n';
 import { badgesFor } from '../state/achievements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
-import { signOutAll } from '../auth';
+import { deleteAccount, signOutAll } from '../auth';
+import { firebaseReady } from '../firebase';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
@@ -52,10 +53,14 @@ export default function ProfileDrawer() {
     )],
   };
 
+  const confirmDelete = () => Alert.alert(t('n.del.t'), t('n.del.d'), [
+    { text: t('c.close'), style: 'cancel' },
+    { text: t('n.del.btn'), style: 'destructive', onPress: () => deleteAccount().then(() => { store.closeSheet(); store.goTab('home'); }).catch((e: { code?: string }) => store.toast(t(e?.code === 'auth/requires-recent-login' ? 'n.del.relogin' : 'n.cm.fail'))) },
+  ]);
+  const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL;
   const menu: [IconName, string, () => void][] = [
     ['check', t('n.myBadges'), toImpact],
     ['chart', t('n.myCerts'), toImpact],
-    ['coin', t('n.myGiving'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
     ['share', t('n.refer'), () => { Share.share({ message: t('n.referText') }).catch(() => undefined); }],
   ];
@@ -77,7 +82,7 @@ export default function ProfileDrawer() {
                 <Text style={styles.small}>{store.user?.email || t('n.guestSub')}</Text>
               </View>
               <View style={styles.stats}>
-                {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].map(([v, l]) => (
+                {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].filter((_, i) => !firebaseReady || i === 2).map(([v, l]) => (
                   <View key={l} style={styles.stat}><Text style={styles.statV}>{v}</Text><Text style={styles.statL}>{l}</Text></View>
                 ))}
               </View>
@@ -89,9 +94,10 @@ export default function ProfileDrawer() {
                 </Pressable>
               ))}
               <Button label={t('n.w.logout')} variant="ghost" block onPress={() => { AsyncStorage.removeItem(USER_KEY).catch(() => {}); signOutAll().catch(() => {}); store.closeSheet(); store.goTab('home'); store.setUser(null); }} style={styles.signUp} />
+              {firebaseReady && store.user?.uid ? <Button label={t('n.del.btn')} variant="ghost" block onPress={confirmDelete} /> : null}
               <View style={styles.legal}>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.terms')}</Text>
-                <Text style={styles.link} onPress={() => setView('legal')}>{t('n.privacy')}</Text>
+                <Text style={styles.link} onPress={() => (privacyUrl ? Linking.openURL(privacyUrl).catch(() => {}) : setView('legal'))}>{t('n.privacy')}</Text>
                 <Text style={styles.small}>{t('n.version', { v: VERSION })}</Text>
               </View>
             </>

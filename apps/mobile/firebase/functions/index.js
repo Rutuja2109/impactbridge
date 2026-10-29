@@ -1,7 +1,7 @@
 // Cloud Functions that send the real push notifications straight through Firebase Cloud Messaging (FCM).
 // No Expo service or Expo account is involved. Deploy from apps/mobile/firebase with:
 //   firebase deploy --only functions      (needs the Blaze plan)
-const { onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
@@ -50,4 +50,26 @@ exports.onCommunityCreated = onDocumentCreated('communities/{cid}', async (event
 
 exports.onMemberLeft = onDocumentDeleted('communities/{cid}/members/{uid}', async (event) => {
   await db.doc(`communities/${event.params.cid}`).update({ memberCount: FieldValue.increment(-1) }).catch(() => {});
+});
+
+// Someone offered help on a post: tell the person who posted it.
+exports.onHelpOffered = onDocumentCreated('posts/{pid}/responses/{uid}', async (event) => {
+  const r = event.data.data();
+  const post = (await db.doc(`posts/${event.params.pid}`).get()).data();
+  if (!post) return;
+  const title = r.kind === 'volunteer' ? 'A neighbour can volunteer' : 'A neighbour can give items';
+  const body = `${r.name || 'Someone'} (${r.email}) offered help on "${post.data?.title || 'your post'}"`;
+  await db.collection(`users/${post.ownerId}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
+  await push(await tokensFor([post.ownerId]), title, body, { pid: event.params.pid });
+});
+
+// Your post was approved: tell the author.
+exports.onPostApproved = onDocumentUpdated('posts/{pid}', async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (before.status === 'approved' || after.status !== 'approved') return;
+  const title = 'Your post is live';
+  const body = `"${after.data?.title || 'Your post'}" was approved and neighbours can now see it.`;
+  await db.collection(`users/${after.ownerId}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
+  await push(await tokensFor([after.ownerId]), title, body, { pid: event.params.pid });
 });

@@ -1,8 +1,9 @@
 // Real sign-in through Firebase Authentication: email + password, and Google. The password is only ever sent to
 // Firebase; nothing is stored by the app. Google needs the installed app (a native module), so Expo Go cannot do it.
-import { GoogleAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signOut, type User as FbUser } from 'firebase/auth';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { GoogleAuthProvider, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signOut, type User as FbUser } from 'firebase/auth';
 
-import { auth, googleWebClientId } from './firebase';
+import { auth, db, googleWebClientId } from './firebase';
 import type { User } from './screens/Welcome';
 
 export const toUser = (u: FbUser): User => ({
@@ -32,3 +33,13 @@ export async function signInGoogle() {
 }
 
 export const watchAuth = (cb: (u: User | null) => void) => (auth ? onAuthStateChanged(auth, (u) => cb(u ? toUser(u) : null)) : () => {});
+
+/** Permanently deletes the signed-in account (Play requires this inside the app). Throws auth/requires-recent-login when the
+ *  sign-in is too old: the person must sign in again first. Their profile and push token are removed; posts they sent stay
+ *  only if an admin approved them, and can be removed on request. */
+export async function deleteAccount() {
+  const u = auth?.currentUser;
+  if (!u) return;
+  if (db) await deleteDoc(doc(db, 'users', u.uid)).catch(() => {});
+  await deleteUser(u);
+}

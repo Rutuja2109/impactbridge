@@ -1,6 +1,8 @@
 // The prototype's post flows as native screens: five guided steps, a review and a confirmation, for "Report a problem",
 // "Create a community project" and "Start a fundraiser". Rules and wording come from the prototype (state/post.ts and
 // its text keys). Demonstration only: nothing is sent; drafts are saved on this device (never private details or files).
+import { firebaseReady } from '../firebase';
+import { submitPost } from '../state/posts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -74,10 +76,15 @@ export default function PostScreen({ flow }: { flow: Flow }) {
     AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ flow, step: post.step, data: keep })).then(() => store.toast(t('t.saved'))).catch(() => store.toast(t('t.saveFail')));
   };
   const discard = () => { AsyncStorage.removeItem(DRAFT_KEY).catch(() => undefined); set(() => freshPost()); store.toast(t('t.discarded')); };
-  const submit = () => {
+  const finish = (ref: string) => {
     AsyncStorage.removeItem(DRAFT_KEY).catch(() => undefined);
-    set((p) => ({ ...p, mode: 'done', ref: spec.ref + Math.floor(100000 + Math.random() * 900000) }));
+    set((p) => ({ ...p, mode: 'done', ref }));
     scroll.current?.scrollTo({ y: 0, animated: false });
+  };
+  const submit = () => {
+    // Installed app: the post is really saved (pending review). Expo Go: the old demo reference number.
+    if (firebaseReady && store.user?.uid) submitPost(store.user, flow, d).then((id) => finish(spec.ref.replace('DEMO', 'POST') + id.slice(0, 6).toUpperCase())).catch(() => store.toast(t('n.cm.fail')));
+    else finish(spec.ref + Math.floor(100000 + Math.random() * 900000));
   };
 
   // ---------- one field ----------
