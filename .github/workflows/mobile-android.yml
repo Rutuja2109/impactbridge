@@ -1,0 +1,71 @@
+name: Mobile Android APK
+
+# Builds the GoodNeighbour Android app (apps/mobile) on GitHub's free Linux runners and attaches the APK to the run.
+# Start it from the Actions tab (Run workflow) or by pushing a change under apps/mobile.
+# Optional repository secrets (Settings > Secrets and variables > Actions). Without them the app builds in local demo mode:
+#   GOOGLE_SERVICES_JSON  base64 of google-services.json   (real push + Firebase Android app)
+#   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID, EXPO_PUBLIC_PRIVACY_URL, EXPO_PUBLIC_ADMIN_EMAIL, EXPO_PUBLIC_ADMIN_WHATSAPP
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/goodneighbour-mobile-foundation]
+    paths: ['apps/mobile/**', '.github/workflows/mobile-android.yml']
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      EXPO_PUBLIC_PRIVACY_URL: ${{ secrets.EXPO_PUBLIC_PRIVACY_URL }}
+      EXPO_PUBLIC_ADMIN_EMAIL: ${{ secrets.EXPO_PUBLIC_ADMIN_EMAIL }}
+      EXPO_PUBLIC_ADMIN_WHATSAPP: ${{ secrets.EXPO_PUBLIC_ADMIN_WHATSAPP }}
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Accept Android SDK licences (the runner already has the SDK)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Add google-services.json (if provided)
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then echo "$GOOGLE_SERVICES_JSON" | base64 -d > google-services.json; echo "EXPO_PUBLIC_FIREBASE_ENABLED=1" >> "$GITHUB_ENV"; echo "Firebase file added"; else echo "No GOOGLE_SERVICES_JSON secret: demo-mode build"; fi
+
+      - name: Generate the Android project
+        run: CI=1 npx expo prebuild --platform android --clean
+
+      - name: Build the release APK (64-bit ARM phones)
+        working-directory: apps/mobile/android
+        run: |
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon > ../build.log 2>&1 || {
+            msg=$( { grep -B2 -A8 -m1 "What went wrong" ../build.log; echo "--- compiler errors ---"; grep -E "^e: |error: " ../build.log | head -8; } | cut -c1-320 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Gradle build failed::${msg}"
+            tail -n 25 ../build.log
+            exit 1
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goodneighbour-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

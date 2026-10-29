@@ -1,0 +1,74 @@
+rules_version = '2';
+// Security rules for GoodNeighbour. Deploy with: firebase deploy --only firestore:rules
+// Organisations are marked verified ONLY by an admin in the Firebase console (verified: true on orgs/{uid});
+// the app can never set that field.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    // An admin is a person with a document in /admins/{their uid}, created by hand in the Firebase console.
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isVerifiedOrg() { return signedIn() && get(/databases/$(database)/documents/orgs/$(request.auth.uid)).data.verified == true; }
+
+    // Admin marker: a person can only check whether they themselves are an admin.
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+    }
+
+    // A person's own profile and push token.
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Organisation verification requests. 'verified' and 'status' are admin-only.
+    match /orgs/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.verified == false
+        && request.resource.data.status == 'pending';
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.verified == resource.data.verified
+        && request.resource.data.status == resource.data.status;
+    }
+
+    // Communities: anyone signed in can read; only verified organisations can create or edit their own.
+    match /communities/{cid} {
+      allow read: if signedIn();
+      allow create: if (isVerifiedOrg() || isAdmin()) && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.whatsapp.matches('https://chat\\.whatsapp\\.com/.+');
+      allow update, delete: if (isVerifiedOrg() && resource.data.ownerId == request.auth.uid) || isAdmin();
+
+      // A person joins by writing their own member document; the owner can read the list.
+      match /members/{uid} {
+        allow create, delete: if signedIn() && request.auth.uid == uid;
+        allow read: if signedIn() && (request.auth.uid == uid
+          || get(/databases/$(database)/documents/communities/$(cid)).data.ownerId == request.auth.uid);
+      }
+    }
+
+    // Posts: saved as 'pending'; only an admin (Firebase console) can approve them. Everyone signed in can read approved posts.
+    match /posts/{pid} {
+      allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending';
+
+      // The author's private contact: only the author can read or write it.
+      match /private/{doc} {
+        allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
+      }
+      // Offers of help: the person writes their own; the post's author can read them.
+      match /responses/{uid} {
+        allow create: if signedIn() && request.auth.uid == uid;
+        allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+      }
+    }
+
+    // Reports about posts or communities: anyone signed in can file one; only admins (console) can read them.
+    match /reports/{rid} {
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+    }
+
+    // In-app notifications are written by the Cloud Function only; the person can read and mark their own.
+    match /users/{uid}/notifications/{nid} {
+      allow read, update: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

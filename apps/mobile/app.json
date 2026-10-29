@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "GoodNeighbour",
+    "slug": "goodneighbour",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "org.goodneighbour.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "org.goodneighbour.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#00706E",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 37,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#00918F"
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "./plugins/withKotlinMetadata"
+    ],
+    "description": "Small acts. Real change. Help neighbours with money, time and skills."
+  }
+}
