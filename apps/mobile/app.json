@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "GoodNeighbour",
+    "slug": "goodneighbour",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "org.goodneighbour.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "org.goodneighbour.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#00918F",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    }
+  }
+}
