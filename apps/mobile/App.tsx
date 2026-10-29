@@ -1,45 +1,41 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Placeholder screen that proves the toolchain works. The real GoodNeighbour screens replace it next.
-// It makes no network calls. Colours come from the approved prototype palette.
+import BottomNav, { type TabId } from './src/components/BottomNav';
+import PostSheet from './src/components/PostSheet';
+import ComingSoonScreen from './src/screens/ComingSoonScreen';
+import HomeScreen from './src/screens/HomeScreen';
+import { colors } from './src/theme';
+
+// App shell: the five-destination bottom bar (Post is the centre plus button) and the screen for the chosen tab.
+// Everything shown is local sample data; nothing is sent anywhere and no permissions are requested.
 export default function App() {
+  const [tab, setTab] = useState<TabId>('home');
+  const [postOpen, setPostOpen] = useState(false);
+
+  const choosePost = (title: string) => {
+    setPostOpen(false);
+    // Let the sheet finish closing before the dialog appears.
+    setTimeout(() => Alert.alert(title, 'This form comes in a later step. Nothing is sent or saved.'), 250);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={styles.title}>
-        GoodNeighbour
-      </Text>
-      <Text style={styles.tagline}>Small acts. Real change.</Text>
-      <Text style={styles.note}>Native app foundation. Screens are coming next.</Text>
-      <StatusBar style="light" />
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        {tab === 'home' && <HomeScreen />}
+        {tab === 'discover' && <ComingSoonScreen title="Discover" icon="search" />}
+        {tab === 'community' && <ComingSoonScreen title="Community" icon="people" />}
+        {tab === 'impact' && <ComingSoonScreen title="Impact" icon="chart" />}
+        <BottomNav active={tab} onSelect={setTab} onPost={() => setPostOpen(true)} />
+        <PostSheet visible={postOpen} onClose={() => setPostOpen(false)} onChoose={(_, title) => choosePost(title)} />
+        <StatusBar style="dark" />
+      </View>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#00706E',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 34,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  tagline: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  note: {
-    color: '#E6F7F6',
-    fontSize: 14,
-    marginTop: 24,
-    textAlign: 'center',
-  },
+  root: { flex: 1, backgroundColor: colors.white },
 });
