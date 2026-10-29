@@ -10,7 +10,7 @@ type Shape =
 
 export type IconName =
   | 'home' | 'search' | 'plus' | 'people' | 'chart' | 'bell' | 'chev' | 'close' | 'pin' | 'clock'
-  | 'heart' | 'coin' | 'medical' | 'animals' | 'education' | 'food' | 'environment';
+  | 'heart' | 'hand' | 'coin' | 'medical' | 'animals' | 'education' | 'food' | 'environment';
 
 const ICONS: Record<IconName, Shape[]> = {
   home: [{ d: 'M3 11 12 4l9 7' }, { d: 'M5 10v10h14V10' }, { d: 'M10 20v-6h4v6' }],
@@ -24,6 +24,7 @@ const ICONS: Record<IconName, Shape[]> = {
   pin: [{ d: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z' }, { cx: 12, cy: 9.5, r: 2.5 }],
   clock: [{ cx: 12, cy: 12, r: 9 }, { d: 'M12 7v5l3 2' }],
   heart: [{ d: 'M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z' }],
+  hand: [{ d: 'M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.5 14.5a1.6 1.6 0 0 1 2.5-2L7 13.5' }],
   coin: [{ cx: 12, cy: 12, r: 9 }, { d: 'M9 8h6M9 11.5h6M12 11.5c0 3-2 4.5-3.5 4.5L14 17' }],
   medical: [{ x: 3, y: 3, w: 18, h: 18, rx: 5 }, { d: 'M12 8v8M8 12h8' }],
   animals: [

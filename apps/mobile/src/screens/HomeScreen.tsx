@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '../components/BottomNav';
 import FundraiserCard from '../components/FundraiserCard';
+import HomeHero from '../components/HomeHero';
 import Icon from '../components/Icon';
 import ProjectRow from '../components/ProjectRow';
 import StoryCarousel from '../components/StoryCarousel';
@@ -14,7 +15,9 @@ import { colors, radius, shadow, space, type } from '../theme';
 const comingLater = (title: string, what: string) =>
   Alert.alert(title, `${what} comes in a later step. Everything on this screen is sample data.`);
 
-export default function HomeScreen() {
+type Props = { onNeedSupport: () => void; onCanHelp: () => void };
+
+export default function HomeScreen({ onNeedSupport, onCanHelp }: Props) {
   const insets = useSafeAreaInsets();
   const [cause, setCause] = useState<CauseId | null>(null);
 
@@ -39,12 +42,8 @@ export default function HomeScreen() {
         <SampleTag label="Sample data" />
       </View>
 
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Text style={styles.welcome}>Welcome, neighbour</Text>
-        <Text style={styles.tagline}>Small acts. Real change.</Text>
-        <Text style={styles.heroSub}>Your community. Your people. Your impact.</Text>
-      </View>
+      {/* Hero with the prototype illustration and the two action cards */}
+      <HomeHero onNeedSupport={onNeedSupport} onCanHelp={onCanHelp} />
       <Text style={styles.demoNote}>Prototype build: every campaign, person, amount and story on this screen is sample data.</Text>
 
       {/* Community updates banner */}
@@ -119,17 +118,7 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.s, flexShrink: 1 },
   mark: { width: 34, height: 34, borderRadius: 11, backgroundColor: colors.tealDark, alignItems: 'center', justifyContent: 'center' },
   brandName: { fontSize: 20, fontWeight: '800', color: colors.ink, flexShrink: 1 },
-  hero: {
-    marginHorizontal: space.l,
-    marginTop: space.l,
-    padding: space.xl,
-    borderRadius: radius.l,
-    backgroundColor: colors.tealSoft,
-  },
-  welcome: { ...type.small, fontWeight: '700', color: colors.tealDeep },
-  tagline: { ...type.display, color: colors.tealDeep, marginTop: space.xs },
-  heroSub: { ...type.body, color: colors.ink, marginTop: space.s },
-  demoNote: { ...type.small, color: colors.slate, marginHorizontal: space.l, marginTop: space.m },
+  demoNote: { ...type.small, color: colors.slate, marginHorizontal: space.l, marginTop: space.l },
   updates: {
     flexDirection: 'row',
     alignItems: 'center',

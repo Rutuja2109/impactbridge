@@ -24,7 +24,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.root}>
-        {tab === 'home' && <HomeScreen />}
+        {tab === 'home' && <HomeScreen onNeedSupport={() => setPostOpen(true)} onCanHelp={() => setTab('discover')} />}
         {tab === 'discover' && <ComingSoonScreen title="Discover" icon="search" />}
         {tab === 'community' && <ComingSoonScreen title="Community" icon="people" />}
         {tab === 'impact' && <ComingSoonScreen title="Impact" icon="chart" />}
