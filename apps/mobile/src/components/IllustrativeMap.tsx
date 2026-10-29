@@ -4,6 +4,7 @@ import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
 import { catOf, type CauseId } from '../data';
 import { useT } from '../i18n';
 import { colors, radius, shadow, space } from '../theme';
+import { Fill } from './Gradient';
 import Icon from './Icon';
 import { Button } from './ui';
 
@@ -15,7 +16,8 @@ export default function IllustrativeMap({ items, selected, onSelect, onOpen }: {
   const sel = items.find((i) => i.id === selected);
   return (
     <View style={styles.map} accessibilityLabel={t('map.aria')}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="none" accessible={false}>
+      <Fill>{(w, h) => (
+      <Svg width={w} height={h} viewBox="0 0 400 300" preserveAspectRatio="none" accessible={false}>
         <Rect width="400" height="300" fill="#EAF3EE" />
         <Path d="M0 210 C 90 190 140 250 230 220 S 360 180 400 200 V230 C 350 215 300 250 230 250 S 90 220 0 240z" fill="#BFE3F0" />
         <Ellipse cx="80" cy="215" rx="40" ry="22" fill="#BFE3F0" />
@@ -24,6 +26,7 @@ export default function IllustrativeMap({ items, selected, onSelect, onOpen }: {
         <G stroke="#fff" strokeWidth={7} fill="none"><Path d="M0 120 H400" /><Path d="M170 0 V300" /><Path d="M0 40 L400 170" /><Path d="M300 0 V300" /></G>
         <G stroke="#DCE7E0" strokeWidth={2} fill="none"><Path d="M0 80 H400M0 160 H400M80 0 V300M240 0 V300M360 0 V300" /></G>
       </Svg>
+      )}</Fill>
       <Text style={styles.label}>{t('map.label')}</Text>
       {items.map((it) => {
         const on = it.id === selected;

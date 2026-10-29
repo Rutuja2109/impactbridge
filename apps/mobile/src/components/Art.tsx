@@ -37,11 +37,11 @@ export function CoverArt({ cause, id, height, placeholder }: { cause: CauseId; i
 const GROUP: [number, string, string][] = [[70, '#8D5A3B', '#FFE08A'], [120, '#C68B59', '#FFFFFF'], [170, '#E0AC82', '#FF9F8E']];
 
 /** Portrait illustration (240 x 300 grid): category symbol, soft hills and, for stories, a small group of people. */
-export function PortraitArt({ cause, id, people = false }: { cause: CauseId; id: string; people?: boolean }) {
+export function PortraitArt({ cause, id, people = false, width = '100%', height = '100%' }: { cause: CauseId; id: string; people?: boolean; width?: number | `${number}%`; height?: number | `${number}%` }) {
   const c = catOf(cause);
   const n = [...id].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return (
-    <Svg width="100%" height="100%" viewBox="0 0 240 300" preserveAspectRatio="xMidYMid slice" accessible={false}>
+    <Svg width={width} height={height} viewBox="0 0 240 300" preserveAspectRatio="xMidYMid slice" accessible={false}>
       <Defs>
         <LinearGradient id={`p-${id}`} x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor={c.color} />

@@ -15,9 +15,12 @@ export type Sheet =
   | { kind: 'donate'; id: string }
   | { kind: 'report' }
   | { kind: 'share'; id: string }
+  | { kind: 'sip'; cause?: CauseId }
   | { kind: 'org'; id: string };
 export type DiscoverState = { q: string; cat: 'all' | CauseId; kind: 'projects' | 'fund'; view: 'list' | 'map'; pin: string | null };
-export type MyDonation = { cid: string; a: number; n: string };
+export type MyDonation = { cid: string; a: number; n: string; monthly?: boolean };
+/** A simulated monthly giving plan (SIP), as on Ketto: a fixed amount every month for a cause. Nothing is charged. */
+export type Sip = { id: string; cause: CauseId; amount: number; cid: string | null; status: 'active' | 'paused' | 'cancelled'; started: string };
 
 type Store = {
   tab: TabId;
@@ -29,6 +32,9 @@ type Store = {
   going: string[];
   donations: Record<string, Donation[]>;
   myDonations: MyDonation[];
+  sips: Sip[];
+  startSip: (cause: CauseId, amount: number, cid: string | null, name?: string, message?: string) => void;
+  setSipStatus: (id: string, status: Sip['status']) => void;
   goTab: (tab: TabId) => void;
   open: (route: Route) => void;
   back: () => boolean;
@@ -56,6 +62,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [going, setGoing] = useState<string[]>([]);
   const [donations, setDonations] = useState<Record<string, Donation[]>>(initialDonations);
   const [myDonations, setMyDonations] = useState<MyDonation[]>([]);
+  const [sips, setSips] = useState<Sip[]>([]);
 
   // toast
   const [toastText, setToastText] = useState('');
@@ -76,7 +83,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   tabRef.current = tab;
 
   const store = useMemo<Store>(() => ({
-    tab, stack, sheet, discover, following, joined, going, donations, myDonations,
+    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips,
+    // The first month of a campaign SIP is recorded as a simulated donation so the campaign total moves once, now.
+    startSip: (cause, amount, cid, name = '', message = '') => {
+      setSips((all) => [...all, { id: `sip-${all.length + 1}`, cause, amount, cid, status: 'active', started: new Date().toISOString().slice(0, 10) }]);
+      if (cid) {
+        setDonations((all) => ({ ...all, [cid]: [...all[cid], { n: name, a: amount, m: message, s: 'received', mine: true }] }));
+        setMyDonations((m) => [...m, { cid, a: amount, n: name, monthly: true }]);
+      }
+    },
+    setSipStatus: (id, status) => setSips((all) => all.map((s) => (s.id === id ? { ...s, status } : s))),
     goTab: (t) => { setStack([]); setSheet(null); setTab(t); },
     open: (route) => { setSheet(null); setStack((s) => [...s, route]); },
     // Android Back: close detail screens first, then return to Home; false lets Android leave the app.
@@ -107,7 +123,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDonations((all) => ({ ...all, [cid]: all[cid].map((d, i) => (i === index ? { ...d, s: 'received' } : d)) }));
     },
     toast,
-  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, toast]);
+  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, toast]);
 
   return (
     <StoreContext.Provider value={store}>

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useT } from '../i18n';
+import Gradient from './Gradient';
 import { colors, radius, shadow, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
 
@@ -75,16 +76,19 @@ function Neighbour({ x, skin, top, index, unit, animate }: { x: number; skin: st
   );
 }
 
-// In the running prototype the heart's CSS "beat" animation replaces its SVG translate(-14 -14), so on screen it sits
-// at its raw path position: x 180..208, y 26..53, just above the fourth neighbour where the two arches meet.
-// It pulses around the prototype's transform-origin (180, 40): the left edge, halfway down the box.
-function Heart({ animate }: { animate: boolean }) {
+// The prototype's CSS "beat" keyframes only set the midpoint, scale(1.12), so the start and end of each beat fall back
+// to the heart's own SVG translate(-14 -14). The browser blends the two: the heart drifts 14 units up-left, away from
+// the children, then back down-right towards them while it grows, around transform-origin (180, 40).
+// Here the box sits at the raw path position (x 180..208, y 26..53) and the same blend is rebuilt:
+// translate goes -14 -> 0 while scale goes 1 -> 1.12, both around the box's left-middle (the prototype's origin).
+function Heart({ animate, unit }: { animate: boolean; unit: number }) {
   const t = useLoop(800, 0, animate);
   const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const shift = t.interpolate({ inputRange: [0, 1], outputRange: [-14 * unit, 0] });
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.layer, styles.heart, { left: pct(180, VIEW_W), top: pct(26, VIEW_H), width: pct(28, VIEW_W), height: pct(28, VIEW_H), transform: [{ scale }] }]}
+      style={[styles.layer, styles.heart, { left: pct(180, VIEW_W), top: pct(26, VIEW_H), width: pct(28, VIEW_W), height: pct(28, VIEW_H), transform: [{ translateX: shift }, { translateY: shift }, { scale }] }]}
     >
       <Svg width="100%" height="100%" viewBox="180 26 28 28">
         <Path d="M180 36c0-9 10-11 14-4 4-7 14-5 14 4 0 8-14 17-14 17s-14-9-14-17z" fill={colors.heart} />
@@ -109,7 +113,8 @@ function HeroArt() {
       {PEOPLE.map(([x, skin, top], i) => (
         <Neighbour key={x} x={x} skin={skin} top={top} index={i} unit={unit} animate={bob} />
       ))}
-      <Heart animate={!reduceMotion} />
+      {/* With reduced motion the prototype shows the heart at rest, i.e. at its translate(-14 -14) spot. */}
+      <Heart animate={bob} unit={unit} />
     </View>
   );
 }
@@ -141,15 +146,7 @@ export default function HomeHero({ onNeedSupport, onCanHelp }: Props) {
   return (
     <View>
       <View style={styles.panel}>
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" accessible={false}>
-          <Defs>
-            <LinearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#008482" />
-              <Stop offset="1" stopColor={colors.tealDark} />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#hero-bg)" />
-        </Svg>
+        <Gradient id="hero-bg" stops={[{ offset: 0, color: '#008482' }, { offset: 1, color: colors.tealDark }]} />
         <Text style={styles.eyebrow}>{t('home.eyebrow')}</Text>
         <Text style={styles.tagline} accessibilityRole="header">{t('home.tagline')}</Text>
         <Text style={styles.sub}>{t('home.sub')}</Text>

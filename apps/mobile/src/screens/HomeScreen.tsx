@@ -1,14 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PortraitArt } from '../components/Art';
+import Gradient, { Fill } from '../components/Gradient';
 import { NAV_HEIGHT } from '../components/BottomNav';
-import CampaignCard from '../components/CampaignCard';
 import HomeHero from '../components/HomeHero';
 import Icon from '../components/Icon';
 import ProjectCard from '../components/ProjectCard';
 import StoryCarousel from '../components/StoryCarousel';
+import TrendingCarousel from '../components/TrendingCarousel';
 import { Button, SampleTag, SectionHeader, UntrNote } from '../components/ui';
 import { campaignReceived, campaigns, campaignSupporters, categories, projects } from '../data';
 import { inr } from '../format';
@@ -23,7 +23,7 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const { t } = useT();
   const { showSheet, goTab, openDiscover, donations } = useStore();
-  const trending = [...campaigns].sort((a, b) => campaignSupporters(b, donations[b.id]) - campaignSupporters(a, donations[a.id])).slice(0, 4);
+  const trending = [...campaigns].sort((a, b) => campaignSupporters(b, donations[b.id]) - campaignSupporters(a, donations[a.id])).slice(0, 6);
   const nearby = projects.filter((p) => p.status !== 'Completed').slice(0, 4);
   const causeW = Math.min(236, Math.round(width * 0.62));
 
@@ -39,15 +39,7 @@ export default function HomeScreen() {
 
       {/* "Choose a cause" feature panel */}
       <View style={styles.feat}>
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" accessible={false}>
-          <Defs>
-            <LinearGradient id="feat-bg" x1="0" y1="0" x2="0.6" y2="1">
-              <Stop offset="0" stopColor={colors.tealSoft} />
-              <Stop offset="1" stopColor="#FFF4E0" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#feat-bg)" />
-        </Svg>
+        <Gradient id="feat-bg" x2={0.6} stops={[{ offset: 0, color: colors.tealSoft }, { offset: 1, color: '#FFF4E0' }]} />
         <View style={styles.kickerRow}>
           <Text style={styles.kicker}>{t('feat.kicker').toUpperCase()}</Text>
           <SampleTag label={t('fund.sampleCampaigns')} />
@@ -67,16 +59,8 @@ export default function HomeScreen() {
                 accessibilityLabel={`${t(`cat.${c.id}`)}. ${t(`catb.${c.id}`)}. ${stat}`}
                 style={[styles.causeCard, { width: causeW }]}
               >
-                <PortraitArt cause={c.id} id={`f-${c.id}`} />
-                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" accessible={false}>
-                  <Defs>
-                    <LinearGradient id={`fade-${c.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0.38" stopColor="#002624" stopOpacity={0} />
-                      <Stop offset="1" stopColor="#002624" stopOpacity={0.86} />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill={`url(#fade-${c.id})`} />
-                </Svg>
+                <Fill>{(w, h) => <PortraitArt cause={c.id} id={`f-${c.id}`} width={w} height={h} />}</Fill>
+                <Gradient id={`fade-${c.id}`} x2={0} stops={[{ offset: 0.38, color: '#002624', opacity: 0 }, { offset: 1, color: '#002624', opacity: 0.86 }]} />
                 <View style={styles.causeBody}>
                   <Text style={styles.causeName}>{t(`cat.${c.id}`)}</Text>
                   <Text style={styles.causeBlurb}>{t(`catb.${c.id}`)}</Text>
@@ -91,7 +75,17 @@ export default function HomeScreen() {
 
       <SectionHeader title={t('trend.title')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'fund', cat: 'all' })} subtitle={t('trend.sub')} tag={t('fund.sampleCampaigns')} />
       <UntrNote style={styles.note} />
-      {trending.map((c) => <CampaignCard key={c.id} campaign={c} support />)}
+      <TrendingCarousel items={trending} />
+
+      <Pressable onPress={() => showSheet({ kind: 'sip' })} accessibilityRole="button" accessibilityLabel={`${t('n.sipBannerT')}. ${t('n.sipBannerD')}`} style={({ pressed }) => [styles.sip, pressed && styles.pressed]}>
+        <View style={styles.sipIcon}><Icon name="coin" size={24} color={colors.white} /></View>
+        <View style={styles.sipText}>
+          <Text style={styles.sipTitle}>{t('n.sipBannerT')}</Text>
+          <Text style={styles.sipDesc}>{t('n.sipBannerD')}</Text>
+          <SampleTag label={t('dn.simTag')} />
+        </View>
+        <Icon name="chev" size={20} color={colors.tealDeep} />
+      </Pressable>
 
       <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />
       <StoryCarousel />
@@ -124,4 +118,9 @@ const styles = StyleSheet.create({
   causeBlurb: { fontSize: 14, lineHeight: 19, color: colors.white },
   causeStat: { alignSelf: 'flex-start', fontSize: 12, lineHeight: 16, fontWeight: '700', color: colors.white, backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' },
   note: { marginHorizontal: space.l, marginBottom: space.m },
+  sip: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 16, borderRadius: radius.m, backgroundColor: '#FFF4E0', borderWidth: 1, borderColor: '#F5D9A8' },
+  sipIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.tealDark, alignItems: 'center', justifyContent: 'center' },
+  sipText: { flex: 1, gap: 4 },
+  sipTitle: { ...type.cardTitle, color: colors.ink },
+  sipDesc: { ...type.small, color: colors.slate },
 });

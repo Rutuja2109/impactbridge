@@ -1,11 +1,12 @@
 // The prototype's demo donation: amount -> optional fictional name and message -> review -> success.
 // It never asks for card, bank or UPI details and no money moves; the campaign total changes for this session only.
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import Icon from '../components/Icon';
 import Sheet, { sheetStyles as s } from '../components/Sheet';
-import { Button, Notice, SampleTag } from '../components/ui';
+import { Button, Notice, SampleTag, Segmented } from '../components/ui';
+import { AmountChips, SIP_AMOUNTS } from './SipSheet';
 import { campaignOf, campaignReceived, fundPct } from '../data';
 import { inr } from '../format';
 import { useT } from '../i18n';
@@ -24,6 +25,7 @@ export default function DonateSheet({ id }: { id: string }) {
   const [name, setName] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState(false);
+  const [monthly, setMonthly] = useState(false);
 
   const value = custom.trim() ? Number(custom.trim()) : amount;
   const valid = (!custom.trim() || /^\d+$/.test(custom.trim())) && value >= 10 && value <= 100000;
@@ -36,7 +38,8 @@ export default function DonateSheet({ id }: { id: string }) {
     setStep(step + 1);
   };
   const confirm = () => {
-    store.donate(id, value, name.trim(), msg.trim());
+    if (monthly) store.startSip(c.cat, value, id, name.trim(), msg.trim());
+    else store.donate(id, value, name.trim(), msg.trim());
     setStep(4);
   };
   const ds = store.donations[id];
@@ -47,17 +50,22 @@ export default function DonateSheet({ id }: { id: string }) {
 
       {step === 1 ? (
         <>
-          <Text style={styles.label}>{t('dn.amount')}</Text>
-          <View style={styles.chips}>
-            {AMOUNTS.map((a) => {
-              const on = !custom.trim() && amount === a;
-              return (
-                <Pressable key={a} onPress={() => { setAmount(a); setCustom(''); setErr(false); }} accessibilityRole="radio" accessibilityState={{ checked: on }} style={[styles.chip, on && styles.chipOn]}>
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{inr(a)}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Text style={styles.label}>{t('n.freq')}</Text>
+          <Segmented
+            stretch
+            label={t('n.freq')}
+            selected={monthly ? 'monthly' : 'once'}
+            onSelect={(f) => { const m = f === 'monthly'; setMonthly(m); setAmount(m ? 300 : 500); setCustom(''); setErr(false); }}
+            items={[{ id: 'once', label: t('n.once') }, { id: 'monthly', label: t('n.monthly') }]}
+          />
+          {monthly ? <Text style={s.note}>{t('n.sipWhat')}</Text> : null}
+          <Text style={styles.label}>{monthly ? t('n.sipAmount') : t('dn.amount')}</Text>
+          <AmountChips
+            amounts={monthly ? SIP_AMOUNTS : AMOUNTS}
+            value={custom.trim() ? null : amount}
+            onChange={(a) => { setAmount(a); setCustom(''); setErr(false); }}
+            monthly={monthly}
+          />
           <Text style={styles.label}>{t('dn.custom')}</Text>
           <TextInput
             value={custom}
@@ -91,7 +99,8 @@ export default function DonateSheet({ id }: { id: string }) {
           <View style={styles.dl}>
             <Text style={styles.dt}>{t('dn.to')}</Text><Text style={styles.dd}>{c.title}</Text>
             <Text style={styles.dt}>{t('dn.amt')}</Text>
-            <View style={styles.amountRow}><Text style={styles.big}>{inr(value)}</Text><SampleTag label={t('dn.simTag')} /></View>
+            <View style={styles.amountRow}><Text style={styles.big}>{monthly ? t('n.perMonth', { a: inr(value) }) : inr(value)}</Text><SampleTag label={t('dn.simTag')} /></View>
+            {monthly ? <><Text style={styles.dt}>{t('n.freq')}</Text><Text style={styles.dd}>{t('n.sipFreq')}</Text><Text style={s.note}>{t('n.sipFirst')}</Text></> : null}
             <Text style={styles.dt}>{t('dn.as')}</Text><Text style={styles.dd}>{shownAs}</Text>
             {msg.trim() ? <><Text style={styles.dt}>{t('dn.msg')}</Text><Text style={styles.dd}>{msg.trim()}</Text></> : null}
           </View>
@@ -108,6 +117,7 @@ export default function DonateSheet({ id }: { id: string }) {
           <View style={styles.success}><Icon name="check" size={34} color={colors.leaf} strokeWidth={2.6} /></View>
           <Text style={styles.h3}>{t('dn.successT')}</Text>
           <Notice tone="green" text={t('dn.success')} />
+          {monthly ? <Text style={styles.body}>{t('n.sipDone', { a: inr(value), c: t(`cat.${c.cat}`) })}</Text> : null}
           <Text style={styles.body}>{t('dn.updated', { a: inr(campaignReceived(c, ds)), p: fundPct(c, ds) })}</Text>
           <Text style={s.note}>{t('dn.noReceipt')}</Text>
           <View style={styles.nav}>
