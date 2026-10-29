@@ -4,7 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Text, type StyleProp, type TextStyle } from 'react-native';
 
+import { firebaseReady } from '../firebase';
 import { FEATURES } from './features';
+import { LIVE } from './live';
 import { NATIVE } from './native';
 import { STRINGS } from './strings.generated';
 
@@ -19,7 +21,7 @@ const LOCALES: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' };
 type Dict = Record<string, string>;
 
 function translate(lang: Lang, key: string, vars: Record<string, string | number> = {}): string {
-  let s = (STRINGS[lang] as Dict)[key] ?? NATIVE[lang][key] ?? FEATURES[lang][key];
+  let s = (firebaseReady ? LIVE[lang][key] : undefined) ?? (STRINGS[lang] as Dict)[key] ?? NATIVE[lang][key] ?? FEATURES[lang][key];
   if (s === undefined) {
     if (__DEV__) console.warn('Missing translation:', lang, key);
     s = (STRINGS.en as Dict)[key] ?? NATIVE.en[key] ?? FEATURES.en[key] ?? key;

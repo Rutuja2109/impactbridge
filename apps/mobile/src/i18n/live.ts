@@ -1,0 +1,42 @@
+// Wording that replaces the prototype's "demonstration" text in the installed app, where posts really are saved (pending review).
+// Expo Go and the web demo keep the original strings.
+type Dict = Record<string, string>;
+
+export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
+  en: {
+    'b.submit': 'Submit for review',
+    'done.body': 'Your problem “{t}” has been sent to a reviewer. Once checked, neighbours in {c} can see it and offer help.',
+    'done.fundBody': 'Your fundraiser “{t}” has been sent to a reviewer. It stays Not verified until documents are checked — fundraisers are never verified automatically.',
+    'done.demo': 'Saved. Keep this reference number to ask about your post.',
+    't.saved': 'Draft saved on this device. Private contact is not saved.',
+    'h.files': 'Photo and document upload is coming in the next update. You can submit without it.',
+    'h.cover': 'Photo upload is coming in the next update. You can submit without it.',
+    'h.docs': '🔒 Document upload for reviewers is coming in the next update.',
+    'c.linkCopied': 'Link copied',
+    'sh.text': 'Please support “{t}” on GoodNeighbour:',
+  },
+  hi: {
+    'b.submit': 'समीक्षा के लिए भेजें',
+    'done.body': 'आपकी समस्या “{t}” समीक्षक को भेज दी गई है। जाँच के बाद {c} के पड़ोसी इसे देख सकेंगे और मदद दे सकेंगे।',
+    'done.fundBody': 'आपका फंडरेज़र “{t}” समीक्षक को भेज दिया गया है। दस्तावेज़ जाँचे जाने तक यह “सत्यापित नहीं” रहेगा — फंडरेज़र अपने-आप सत्यापित नहीं होते।',
+    'done.demo': 'सहेज लिया गया। अपनी पोस्ट के बारे में पूछने के लिए यह संदर्भ संख्या रखें।',
+    't.saved': 'ड्राफ़्ट इस फ़ोन में सहेजा गया। निजी संपर्क सहेजा नहीं जाता।',
+    'h.files': 'फ़ोटो और दस्तावेज़ अपलोड अगले अपडेट में आ रहा है। इसके बिना भी भेज सकते हैं।',
+    'h.cover': 'फ़ोटो अपलोड अगले अपडेट में आ रहा है। इसके बिना भी भेज सकते हैं।',
+    'h.docs': '🔒 समीक्षकों के लिए दस्तावेज़ अपलोड अगले अपडेट में आ रहा है।',
+    'c.linkCopied': 'लिंक कॉपी हो गया',
+    'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
+  },
+  mr: {
+    'b.submit': 'पुनरावलोकनासाठी पाठवा',
+    'done.body': 'तुमची समस्या “{t}” पुनरावलोककाकडे पाठवली आहे. तपासणीनंतर {c} मधील शेजारी ती पाहून मदत देऊ शकतील.',
+    'done.fundBody': 'तुमची मोहीम “{t}” पुनरावलोककाकडे पाठवली आहे. कागदपत्रे तपासेपर्यंत ती “पडताळलेली नाही” राहील — मोहिमा आपोआप पडताळल्या जात नाहीत.',
+    'done.demo': 'जतन केले. तुमच्या पोस्टबद्दल विचारण्यासाठी हा संदर्भ क्रमांक ठेवा.',
+    't.saved': 'मसुदा या फोनवर जतन केला. खाजगी संपर्क जतन होत नाही.',
+    'h.files': 'फोटो आणि कागदपत्र अपलोड पुढील अपडेटमध्ये येत आहे. त्याशिवायही पाठवू शकता.',
+    'h.cover': 'फोटो अपलोड पुढील अपडेटमध्ये येत आहे. त्याशिवायही पाठवू शकता.',
+    'h.docs': '🔒 पुनरावलोकनकर्त्यांसाठी कागदपत्र अपलोड पुढील अपडेटमध्ये येत आहे.',
+    'c.linkCopied': 'लिंक कॉपी झाली',
+    'sh.text': 'कृपया GoodNeighbour वर “{t}” ला मदत करा:',
+  },
+};

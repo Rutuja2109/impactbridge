@@ -212,7 +212,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{str('title')}</Text>
         <Text style={styles.small}>{flow === 'fund' ? `${t('cd.beneficiary')}: ${str('benName')} · ${t('cd.organizer')}: ${d.ctype === 'org' ? str('orgName') : str('display')}` : `${str('display')}${where ? ` · ${where}` : ''}`}</Text>
-        <SampleTag label={t('c.sample')} />
+        {firebaseReady ? null : <SampleTag label={t('c.sample')} />}
         {flow === 'fund' ? <Text style={styles.small}>{t('fund.recvOf', { a: inr(0), b: inr(Number(str('goal')) || 0) }).replace(/<[^>]+>/g, '')}</Text> : null}
         <Text style={styles.body} numberOfLines={4}>{(flow === 'fund' ? str('story') : str('desc')).trim()}</Text>
       </View>
