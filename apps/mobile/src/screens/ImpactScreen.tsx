@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '../components/BottomNav';
+import ImpactMine from '../components/ImpactMine';
 import { Badge, Button, CauseBadge, Notice, PageHead, Panel, SampleTag } from '../components/ui';
 import { campaignOf, campaignPledged, campaignReceived, campaigns, myVolunteering, opportunities, outcomes, projects, type CauseId, type Outcome } from '../data';
 import { inr } from '../format';
@@ -45,6 +46,8 @@ export default function ImpactScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }}>
       <PageHead title={t('imp.title')} subtitle={t('imp.sub')} />
       <Notice text={tr('imp.notice')} rich style={styles.notice} />
+
+      <ImpactMine />
 
       {/* Overview */}
       <View style={styles.sec}>

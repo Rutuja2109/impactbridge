@@ -1,5 +1,6 @@
 // Every sheet the prototype opens: post choices, updates, project help, report, organisation and demo donation.
 // The open sheet lives in the store, so any screen can open one.
+import { useEffect } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import Icon, { type IconName } from '../components/Icon';
@@ -45,10 +46,15 @@ function PostSheet() {
 
 function UpdatesSheet() {
   const { t } = useT();
-  const { closeSheet, open } = useStore();
+  const { closeSheet, open, notes, markRead } = useStore();
+  useEffect(() => { markRead(); }, [markRead]);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
   return (
     <Sheet visible onClose={closeSheet} title={t('upd.title')} subtitle={<View style={styles.subRow}><Text style={s.note}>{t('upd.sub')}</Text><SampleTag label={t('c.sample')} /><UntrTag /></View>}>
+      {notes.length ? <Text style={styles.h3}>{t('n.nt.title')}</Text> : null}
+      {notes.map((n) => (
+        <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
+      ))}
       {items.map(({ c, u }, i) => (
         <Pressable key={`${c.id}-${i}`} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t('cd.ago', { n: u.ago })}</Text>

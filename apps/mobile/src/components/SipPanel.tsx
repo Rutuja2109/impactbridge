@@ -42,7 +42,7 @@ export default function SipPanel() {
       </View>
       <Text style={styles.desc}>{t('n.sipPanelD')}</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={186} decelerationRate="fast" contentContainerStyle={styles.cards} style={styles.cardsScroll}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={194} decelerationRate="fast" contentContainerStyle={styles.cards} style={styles.cardsScroll}>
         {categories.map((c) => (
           <Pressable key={c.id} onPress={() => showSheet({ kind: 'sip', cause: c.id })} accessibilityRole="button" accessibilityLabel={`${t(`cat.${c.id}`)}. ${t(`n.st.${c.id}`, { n: STAT[c.id].toLocaleString('en-IN') })}`} style={styles.card}>
             <Fill>{(w, h) => <PortraitArt cause={c.id} id={`sip-${c.id}`} width={w} height={h} />}</Fill>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   giversText: { fontSize: 13, fontWeight: '700', color: colors.ink, textAlign: 'center' },
   desc: { fontSize: 15, lineHeight: 22, color: '#3D4A44', marginTop: space.m },
   cardsScroll: { marginHorizontal: -24, marginTop: space.xl },
-  cards: { paddingHorizontal: 24, gap: 14 },
+  cards: { paddingHorizontal: 24, gap: 22 },
   card: { width: 172, height: 220, borderRadius: 18, overflow: 'hidden', borderWidth: 3, borderColor: colors.white, justifyContent: 'flex-end' },
   cardBody: { padding: 12, gap: 2 },
   cardTitle: { fontSize: 17, fontWeight: '800', color: colors.white },

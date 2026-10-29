@@ -10,7 +10,7 @@ import { CoverArt } from './Art';
 import Icon, { type IconName } from './Icon';
 import { Badge, Button, CauseBadge, ProgressBar } from './ui';
 
-const GAP = 12;
+const GAP = 22;
 
 // "Problems near you": open needs from local organisations, as a horizontal swipe row. Each card says what help is
 // wanted in all three forms (money, volunteers, materials or skills) so a neighbour can pick how to help.

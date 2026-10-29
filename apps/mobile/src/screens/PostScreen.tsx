@@ -14,7 +14,7 @@ import { categories, type CauseId } from '../data';
 import { inr } from '../format';
 import { useT } from '../i18n';
 import { STRINGS } from '../i18n/strings.generated';
-import { CHOICES, FILE_FIELDS, FLOWS, PRIVATE, fieldError, freshPost, kindOf, specsOf, validateStep, visible, type Attach, type Flow, type PostState, type Spec } from '../state/post';
+import { CHOICES, FILE_FIELDS, FLOWS, PRIVATE, fieldError, freshPost, isoDate, kindOf, specsOf, validateStep, visible, type Attach, type Flow, type PostState, type Spec } from '../state/post';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
@@ -186,7 +186,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
     if (kind === 'pin') return [str(name).trim(), d.pin ? t('rev.pin') : ''].filter(Boolean).join(' · ');
     if (kind === 'check') return v ? '✓' : '';
     if (kind !== 'text' && kind !== 'area' && kind !== 'num' && kind !== 'date') { const o = choices(kind).find(([x]) => x === v); return o ? t(o[1]) : ''; }
-    if (kind === 'date') return str(name) ? formatDate(str(name), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    if (kind === 'date') return str(name) ? formatDate(isoDate(str(name)), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     if ((name === 'budget' || name === 'goal') && str(name).trim()) return inr(Number(str(name)));
     return str(name).trim();
   };

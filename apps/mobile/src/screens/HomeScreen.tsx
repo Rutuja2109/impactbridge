@@ -22,7 +22,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { t } = useT();
-  const { showSheet, goTab, openDiscover, donations } = useStore();
+  const { showSheet, goTab, openDiscover, donations, unread } = useStore();
   const needs = projects.filter((p) => p.status !== 'Completed');
   const causeW = Math.min(180, Math.round(width * 0.46));
 
@@ -33,6 +33,7 @@ export default function HomeScreen() {
       <Pressable onPress={() => showSheet({ kind: 'updates' })} accessibilityRole="button" accessibilityLabel={t('upd.label')} style={({ pressed }) => [styles.updates, pressed && styles.pressed]}>
         <Icon name="bell" size={24} color={colors.tealDark} />
         <Text style={styles.updatesText}>{t('upd.label')}</Text>
+        {unread ? <View style={styles.dot}><Text style={styles.dotText}>{unread}</Text></View> : null}
         <Icon name="chev" size={20} color={colors.slate} />
       </Pressable>
 
@@ -45,7 +46,7 @@ export default function HomeScreen() {
         </View>
         <Text accessibilityRole="header" style={styles.featTitle}>{t('feat.title')}</Text>
         <Text style={styles.featSub}>{t('feat.sub')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={causeW + 12} decelerationRate="fast" contentContainerStyle={styles.causeRow} style={styles.causeScroll} accessibilityLabel={t('feat.aria')}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={causeW + 22} decelerationRate="fast" contentContainerStyle={styles.causeRow} style={styles.causeScroll} accessibilityLabel={t('feat.aria')}>
           {categories.map((c) => {
             const mine = campaigns.filter((x) => x.cat === c.id);
             const amount = inr(mine.reduce((a, x) => a + campaignReceived(x, donations[x.id]), 0));
@@ -95,6 +96,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 14,
     borderRadius: radius.m, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, boxShadow: shadow.card,
   },
+  dot: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: colors.brick, alignItems: 'center', justifyContent: 'center' },
+  dotText: { fontSize: 12, fontWeight: '800', color: colors.white },
   updatesText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.ink },
   feat: { marginHorizontal: space.l, marginTop: space.xxl, padding: 18, borderRadius: radius.l, overflow: 'hidden', gap: 10 },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   featTitle: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.tealDeep },
   featSub: { ...type.body, color: colors.slate },
   causeScroll: { marginHorizontal: -20 },
-  causeRow: { paddingHorizontal: 20, gap: 12, paddingVertical: 10 },
+  causeRow: { paddingHorizontal: 20, gap: 22, paddingVertical: 10 },
   causeCard: { aspectRatio: 4 / 5, borderRadius: radius.m, overflow: 'hidden', justifyContent: 'flex-end', boxShadow: shadow.card },
   causeBody: { padding: 12, gap: 4 },
   causeName: { fontSize: 17, lineHeight: 21, fontWeight: '800', color: colors.white },

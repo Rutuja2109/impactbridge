@@ -9,7 +9,7 @@ import { PortraitArt } from './Art';
 import Icon from './Icon';
 import { Button } from './ui';
 
-const GAP = 12;
+const GAP = 22;
 
 // The prototype's "Stories of change" carousel: the centred card is full size, neighbours are smaller and faded,
 // the quote below follows the selected story, and "Explore causes" opens that story's cause in Discover.

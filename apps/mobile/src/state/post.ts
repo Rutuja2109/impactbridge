@@ -61,6 +61,8 @@ export function visible(flow: Flow, d: PostData, name: string) {
 
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
 const isInt = (v: string, min: number) => /^\d+$/.test(v) && Number(v) >= min;
+/** The date fields hint DD/MM/YYYY; accept that and the ISO form, and return ISO. */
+export const isoDate = (v: string) => v.replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, (_, d, m, y) => `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 
 /** Error code (an `e.<code>` text key) for one field, or '' when it is fine. Same rules as the prototype. */
@@ -79,9 +81,9 @@ export function fieldError(flow: Flow, d: PostData, name: string): string {
     case 'count': return s && !isInt(s, 1) ? 'count' : '';
     case 'vols': case 'budget': return s && !isInt(s, 0) ? 'num' : '';
     case 'goal': return isInt(s, 1000) && Number(s) <= 5000000 ? '' : 'goal';
-    case 'started': return s && (!isDate(s) || s > today()) ? 'started' : '';
-    case 'target': return s && (!isDate(s) || s <= today()) ? 'target' : '';
-    case 'deadline': return isDate(s) && s > today() ? '' : 'deadline';
+    case 'started': return s && (!isDate(isoDate(s)) || isoDate(s) > today()) ? 'started' : '';
+    case 'target': return s && (!isDate(isoDate(s)) || isoDate(s) <= today()) ? 'target' : '';
+    case 'deadline': return isDate(isoDate(s)) && isoDate(s) > today() ? '' : 'deadline';
     case 'private': return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) || /^(\+?91)?\d{10}$/.test(s.replace(/[\s-]/g, '')) ? '' : 'private';
     default: return '';
   }

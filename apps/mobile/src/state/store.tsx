@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 
-import { campaigns, type CauseId, type Donation } from '../data';
+import { campaignOf, campaigns, type CauseId, type Donation } from '../data';
+import { inr } from '../format';
 import { NO_FILTERS, type Filters } from '../data/filters';
 import { colors, radius, space, type } from '../theme';
 import type { User } from '../screens/Welcome';
@@ -27,6 +28,9 @@ export type MyDonation = { cid: string; a: number; n: string; monthly?: boolean 
 /** A simulated monthly giving plan (SIP), as on Ketto: a fixed amount every month for a cause. Nothing is charged. */
 export type Sip = { id: string; cause: CauseId; amount: number; cid: string | null; status: 'active' | 'paused' | 'cancelled'; started: string };
 
+/** An in-app notification: a string key plus values, shown in the Updates sheet in the current language. */
+export type Note = { id: number; key: string; p: Record<string, string | number> };
+
 type Store = {
   tab: TabId;
   stack: Route[];
@@ -40,6 +44,9 @@ type Store = {
   sips: Sip[];
   posts: Record<Flow, PostState>;
   user: User | null;
+  notes: Note[];
+  unread: number;
+  markRead: () => void;
   setUser: (u: User | null) => void;
   setPost: (flow: Flow, fn: (p: PostState) => PostState) => void;
   startSip: (cause: CauseId, amount: number, cid: string | null, name?: string, message?: string) => void;
@@ -73,6 +80,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [myDonations, setMyDonations] = useState<MyDonation[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [sips, setSips] = useState<Sip[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [unread, setUnread] = useState(0);
+  const notify = useCallback((key: string, p: Note['p'] = {}) => {
+    setNotes((n) => [{ id: n.length + 1, key, p }, ...n]);
+    setUnread((u) => u + 1);
+  }, []);
   const [posts, setPosts] = useState<Record<Flow, PostState>>({ problem: freshPost(), project: freshPost(), fund: freshPost() });
 
   // toast
@@ -94,11 +107,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   tabRef.current = tab;
 
   const store = useMemo<Store>(() => ({
-    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, setUser,
+    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, setUser, notes, unread,
+    markRead: () => setUnread(0),
     setPost: (flow, fn) => setPosts((all) => ({ ...all, [flow]: fn(all[flow]) })),
     // The first month of a campaign SIP is recorded as a simulated donation so the campaign total moves once, now.
     startSip: (cause, amount, cid, name = '', message = '') => {
       setSips((all) => [...all, { id: `sip-${all.length + 1}`, cause, amount, cid, status: 'active', started: new Date().toISOString().slice(0, 10) }]);
+      notify('n.nt.sip', { a: inr(amount) });
       if (cid) {
         setDonations((all) => ({ ...all, [cid]: [...all[cid], { n: name, a: amount, m: message, s: 'received', mine: true }] }));
         setMyDonations((m) => [...m, { cid, a: amount, n: name, monthly: true }]);
@@ -125,17 +140,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const current = { following, joined, going }[list];
       const on = !current.includes(id);
       set(on ? [...current, id] : current.filter((x) => x !== id));
+      if (on && list === 'following') notify('n.nt.follow');
       return on;
     },
     donate: (cid, amount, name, message) => {
       setDonations((all) => ({ ...all, [cid]: [...all[cid], { n: name, a: amount, m: message, s: 'received', mine: true }] }));
       setMyDonations((m) => [...m, { cid, a: amount, n: name }]);
+      notify('n.nt.donate', { a: inr(amount), c: campaignOf(cid)?.title ?? '' });
     },
     confirmPledge: (cid, index) => {
       setDonations((all) => ({ ...all, [cid]: all[cid].map((d, i) => (i === index ? { ...d, s: 'received' } : d)) }));
     },
     toast,
-  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, toast]);
+  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, notes, unread, notify, toast]);
 
   return (
     <StoreContext.Provider value={store}>

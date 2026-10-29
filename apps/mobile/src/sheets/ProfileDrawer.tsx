@@ -1,25 +1,24 @@
 // Ketto-style profile drawer, sliding in from the left: avatar and name, quick stats, then My badges, My certificates,
-// My donations & SIPs, Help, Invite, legal links and the version. Sign-up and log-in come in a later stage.
+// My donations & SIPs (these three open the Impact page), Help, Invite, legal links and the version. Sign-up and log-in come in a later stage.
 // Everything is computed from this session's demo activity; nothing is sent anywhere.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
-import { LogoMark } from '../components/Logo';
-import { Badge as Pill, Button, CauseBadge, Notice, SampleTag } from '../components/ui';
-import { campaignOf, myVolunteering } from '../data';
+import { Button, Notice } from '../components/ui';
+import { myVolunteering } from '../data';
 import { PHOTOS } from '../data/photos';
 import { inr } from '../format';
 import { useT } from '../i18n';
-import { badgesFor, certificatesFor, type Certificate } from '../state/achievements';
+import { badgesFor } from '../state/achievements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
 const VERSION = '0.1.0';
-type View_ = 'menu' | 'badges' | 'certs' | 'giving' | 'support' | 'legal' | { cert: Certificate };
+type View_ = 'menu' | 'support' | 'legal';
 
 export default function ProfileDrawer() {
   const { t } = useT();
@@ -35,67 +34,12 @@ export default function ProfileDrawer() {
 
   const activity = { myDonations: store.myDonations, sips: store.sips, joined: store.joined, going: store.going, following: store.following };
   const badges = badgesFor(activity);
-  const certs = certificatesFor(activity);
   const given = store.myDonations.reduce((a, d) => a + d.a, 0);
   const hours = myVolunteering.reduce((a, v) => a + v.hours, 0);
-  const back = () => setView(typeof view === 'object' ? 'certs' : 'menu');
+  const back = () => setView('menu');
+  const toImpact = () => { store.closeSheet(); store.goTab('impact'); };
 
   const sub: Record<string, [string, ReactNode]> = {
-    badges: [t('n.myBadges'), (
-      <>
-        {badges.map((b) => (
-          <View key={b.id} style={[styles.badge, !b.earned && styles.badgeLocked]}>
-            <View style={[styles.medal, b.earned ? styles.medalOn : styles.medalOff]}><Icon name={b.icon} size={22} color={b.earned ? colors.white : colors.slate} /></View>
-            <View style={styles.grow}>
-              <Text style={styles.itemTitle}>{t(`n.b.${b.id}`)}</Text>
-              <Text style={styles.small}>{t(`n.b.${b.id}D`)}{b.progress && !b.earned ? `  ${b.progress[0]}/${b.progress[1]}` : ''}</Text>
-            </View>
-            <Pill label={b.earned ? t('n.earned') : t('n.locked')} tone={b.earned ? 'leaf' : 'grey'} />
-          </View>
-        ))}
-        <Text style={styles.small}>{t('n.badgesNote')}</Text>
-      </>
-    )],
-    certs: [t('n.myCerts'), certs.length ? (
-      <>
-        {certs.map((c) => (
-          <Pressable key={c.id} onPress={() => setView({ cert: c })} accessibilityRole="button" style={styles.item}>
-            <Icon name={c.kind === 'volunteer' ? 'hand' : 'heart'} size={20} color={colors.tealDark} />
-            <View style={styles.grow}>
-              <Text style={styles.itemTitle}>{t(c.kind === 'volunteer' ? 'n.certVolT' : 'n.certDonT')}</Text>
-              <Text style={styles.small} numberOfLines={1}>{c.kind === 'volunteer' ? t(`va.${c.activity}`) : campaignOf(c.cid)?.title}</Text>
-            </View>
-            <Text style={styles.link}>{t('n.certView')}</Text>
-          </Pressable>
-        ))}
-        <Text style={styles.small}>{t('n.certDemo')}</Text>
-      </>
-    ) : <Text style={styles.small}>{t('n.certNone')}</Text>],
-    giving: [t('n.myGiving'), (
-      <>
-        {store.sips.map((s) => (
-          <View key={s.id} style={styles.item}>
-            <View style={styles.grow}>
-              <View style={styles.inline}><CauseBadge cause={s.cause} /><Text style={styles.itemTitle}>{t('n.perMonth', { a: inr(s.amount) })}</Text></View>
-              <Text style={styles.small}>{t(s.status === 'active' ? 'n.sipActive' : s.status === 'paused' ? 'n.sipPaused' : 'n.sipCancelled')} · {s.started}</Text>
-            </View>
-            {s.status !== 'cancelled' ? (
-              <View style={styles.inline}>
-                <Button small variant="ghost" label={t(s.status === 'active' ? 'n.pause' : 'n.resume')} onPress={() => store.setSipStatus(s.id, s.status === 'active' ? 'paused' : 'active')} />
-                <Button small variant="ghost" label={t('n.cancel')} onPress={() => store.setSipStatus(s.id, 'cancelled')} />
-              </View>
-            ) : null}
-          </View>
-        ))}
-        {store.myDonations.filter((d) => !d.monthly).map((d, i) => (
-          <View key={`${d.cid}-${i}`} style={styles.item}>
-            <Text style={[styles.itemTitle, styles.grow]} numberOfLines={2}>{campaignOf(d.cid)?.title}</Text>
-            <Text style={styles.itemTitle}>{inr(d.a)}</Text>
-          </View>
-        ))}
-        {!store.sips.length && !store.myDonations.length ? <Text style={styles.small}>{t('n.givingNone')}</Text> : <SampleTag label={t('dn.simTag')} />}
-      </>
-    )],
     support: [t('n.support'), <Notice key="s" tone="blue" text={t('n.supportText')} />],
     legal: [`${t('n.terms')} · ${t('n.privacy')}`, (
       <>
@@ -108,17 +52,16 @@ export default function ProfileDrawer() {
   };
 
   const menu: [IconName, string, () => void][] = [
-    ['check', t('n.myBadges'), () => setView('badges')],
-    ['chart', t('n.myCerts'), () => setView('certs')],
-    ['coin', t('n.myGiving'), () => setView('giving')],
+    ['check', t('n.myBadges'), toImpact],
+    ['chart', t('n.myCerts'), toImpact],
+    ['coin', t('n.myGiving'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
     ['share', t('n.refer'), () => { Share.share({ message: t('n.referText') }).catch(() => undefined); }],
   ];
 
   let title = '';
   let body: ReactNode;
-  if (typeof view === 'object') { title = t(view.cert.kind === 'volunteer' ? 'n.certVolT' : 'n.certDonT'); body = <CertificateCard cert={view.cert} />; }
-  else if (view !== 'menu') { [title, body] = sub[view]; }
+  if (view !== 'menu') { [title, body] = sub[view]; }
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={view === 'menu' ? close : back} statusBarTranslucent>
@@ -129,8 +72,8 @@ export default function ProfileDrawer() {
             <>
               <View style={styles.head}>
                 <View style={styles.bigAvatar}><Icon name="people" size={40} color={colors.white} /></View>
-                <Text style={styles.name}>{store.user && !store.user.guest ? store.user.name : t('n.guest')}</Text>
-                <Text style={styles.small}>{store.user && !store.user.guest ? `+91 ${store.user.phone}` : t('n.guestSub')}</Text>
+                <Text style={styles.name}>{store.user?.name || t('n.guest')}</Text>
+                <Text style={styles.small}>{store.user?.email || t('n.guestSub')}</Text>
               </View>
               <View style={styles.stats}>
                 {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].map(([v, l]) => (
@@ -163,26 +106,6 @@ export default function ProfileDrawer() {
         </ScrollView>
       </Animated.View>
     </Modal>
-  );
-}
-
-function CertificateCard({ cert }: { cert: Certificate }) {
-  const { t, formatDate } = useT();
-  const text = cert.kind === 'volunteer'
-    ? t('n.certVol', { h: cert.hours, a: t(`va.${cert.activity}`) })
-    : t(cert.monthly ? 'n.certDonM' : 'n.certDon', { c: campaignOf(cert.cid)?.title ?? '', a: inr(cert.amount) });
-  return (
-    <View style={styles.cert} accessible>
-      <LogoMark size={44} />
-      <Text style={styles.certKicker}>GOODNEIGHBOUR</Text>
-      <Text style={styles.certTitle}>{t(cert.kind === 'volunteer' ? 'n.certVolT' : 'n.certDonT')}</Text>
-      <Text style={styles.small}>{t('n.certTo')}</Text>
-      <Text style={styles.certName}>{t('n.guest')}</Text>
-      <Text style={styles.certBody}>{text}</Text>
-      {cert.kind === 'volunteer' ? <Text style={styles.small}>{formatDate(cert.date, { day: 'numeric', month: 'long', year: 'numeric' })}</Text> : null}
-      <View style={styles.certRule} />
-      <Text style={styles.certDemo}>{t('n.certDemo')}</Text>
-    </View>
   );
 }
 
