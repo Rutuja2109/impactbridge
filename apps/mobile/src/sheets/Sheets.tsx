@@ -52,11 +52,12 @@ function UpdatesSheet() {
   useEffect(() => { markRead(); }, [markRead]);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
   return (
-    <Sheet visible onClose={closeSheet} title={t('upd.title')} subtitle={<View style={styles.subRow}><Text style={s.note}>{t('upd.sub')}</Text><SampleTag label={t('c.sample')} /><UntrTag /></View>}>
+    <Sheet visible onClose={closeSheet} title={t('upd.title')} subtitle={<View style={styles.subRow}><Text style={s.note}>{t('upd.sub')}</Text>{firebaseReady ? null : <><SampleTag label={t('c.sample')} /><UntrTag /></>}</View>}>
       {notes.length ? <Text style={styles.h3}>{t('n.nt.title')}</Text> : null}
       {notes.map((n) => (
         <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
       ))}
+      {firebaseReady && !notes.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
       {items.map(({ c, u }, i) => (
         <Pressable key={`${c.id}-${i}`} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t('cd.ago', { n: u.ago })}</Text>

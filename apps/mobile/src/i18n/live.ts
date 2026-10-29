@@ -4,6 +4,9 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'upd.title': 'Your notifications',
+    'upd.sub': 'Updates about your posts and the help you offer appear here.',
+    'upd.none': 'No notifications yet.',
     'b.submit': 'Submit for review',
     'done.body': 'Your problem “{t}” has been sent to a reviewer. Once checked, neighbours in {c} can see it and offer help.',
     'done.fundBody': 'Your fundraiser “{t}” has been sent to a reviewer. It stays Not verified until documents are checked — fundraisers are never verified automatically.',
@@ -16,6 +19,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'upd.title': 'आपकी सूचनाएँ',
+    'upd.sub': 'आपकी पोस्ट और आपकी दी मदद के अपडेट यहाँ दिखेंगे।',
+    'upd.none': 'अभी कोई सूचना नहीं।',
     'b.submit': 'समीक्षा के लिए भेजें',
     'done.body': 'आपकी समस्या “{t}” समीक्षक को भेज दी गई है। जाँच के बाद {c} के पड़ोसी इसे देख सकेंगे और मदद दे सकेंगे।',
     'done.fundBody': 'आपका फंडरेज़र “{t}” समीक्षक को भेज दिया गया है। दस्तावेज़ जाँचे जाने तक यह “सत्यापित नहीं” रहेगा — फंडरेज़र अपने-आप सत्यापित नहीं होते।',
@@ -28,6 +34,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'upd.title': 'तुमच्या सूचना',
+    'upd.sub': 'तुमच्या पोस्ट आणि तुम्ही दिलेल्या मदतीचे अपडेट इथे दिसतील.',
+    'upd.none': 'अजून कोणतीही सूचना नाही.',
     'b.submit': 'पुनरावलोकनासाठी पाठवा',
     'done.body': 'तुमची समस्या “{t}” पुनरावलोककाकडे पाठवली आहे. तपासणीनंतर {c} मधील शेजारी ती पाहून मदत देऊ शकतील.',
     'done.fundBody': 'तुमची मोहीम “{t}” पुनरावलोककाकडे पाठवली आहे. कागदपत्रे तपासेपर्यंत ती “पडताळलेली नाही” राहील — मोहिमा आपोआप पडताळल्या जात नाहीत.',
