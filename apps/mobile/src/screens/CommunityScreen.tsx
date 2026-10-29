@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '../components/BottomNav';
@@ -9,7 +9,7 @@ import { Badge, Button, Notice, PageHead } from '../components/ui';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { report } from '../state/posts';
-import { applyOrg, createCommunity, setJoined, useCommunities, useJoined, useMembers, useOrg, type Community } from '../state/communities';
+import { WHATSAPP_RE, applyOrg, createCommunity, setJoined, useCommunities, useIsAdmin, useJoined, useMembers, useOrg, type Community } from '../state/communities';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
 
@@ -49,6 +49,8 @@ function LiveCommunities() {
   const list = useCommunities();
   const org = useOrg(user?.uid);
   const joined = useJoined(user?.uid);
+  const isAdmin = useIsAdmin(user?.uid);
+  const openGroup = (c: Community) => Linking.openURL(c.whatsapp).catch(() => toast(t('n.cm.waFail')));
   const { setFollowing } = useStore();
   useEffect(() => { setFollowing(joined); }, [joined.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   const [form, setForm] = useState<'apply' | 'create' | null>(null);
@@ -57,7 +59,11 @@ function LiveCommunities() {
   const join = async (c: Community) => {
     if (!user?.uid) { toast(t('n.cm.signin')); return; }
     const on = !joined.includes(c.id);
-    try { await setJoined(user, c.id, on); toast(t(on ? 'n.cm.joinedToast' : 'n.cToastLeave')); } catch { toast(t('n.cm.fail')); }
+    try {
+      await setJoined(user, c.id, on);
+      toast(t(on ? 'n.cm.joinedToast' : 'n.cToastLeave'));
+      if (on && c.whatsapp) openGroup(c); // joining takes you straight into the official WhatsApp group
+    } catch { toast(t('n.cm.fail')); }
   };
 
   return (
@@ -65,7 +71,12 @@ function LiveCommunities() {
       <PageHead title={t('comm.title')} subtitle={t('n.cm.sub')} />
 
       <View style={styles.card}>
-        {org?.verified ? (
+        {isAdmin && !org?.verified ? (
+          <>
+            <Badge label={t('n.cm.admin')} tone="leaf" icon="check" />
+            <Button label={t('n.cm.create')} block onPress={() => setForm('create')} />
+          </>
+        ) : org?.verified ? (
           <>
             <Badge label={t('n.cm.verified')} tone="leaf" icon="check" />
             <Text style={styles.title}>{org.orgName}</Text>
@@ -96,14 +107,19 @@ function LiveCommunities() {
             <Text style={styles.desc}>{c.desc}</Text>
             <Text style={styles.members}>{t('n.cm.members', { n: (c.memberCount ?? 0).toLocaleString('en-IN') })}</Text>
             {mine ? <Button label={t('n.cm.seeMembers')} block variant="ghost" onPress={() => setSeeing(c)} />
-              : <Button label={on ? t('n.cJoined') : t('n.cJoin')} variant={on ? 'on' : 'primary'} block icon={on ? 'check' : undefined} onPress={() => join(c)} />}
+              : on ? (
+                <>
+                  <Button label={t('n.cm.openWa')} block icon="check" onPress={() => openGroup(c)} />
+                  <Button label={t('n.cm.leave')} variant="ghost" small onPress={() => join(c)} />
+                </>
+              ) : <Button label={t('n.cm.joinWa')} block onPress={() => join(c)} />}
             {mine || !user?.uid ? null : <Button label={t('b.report')} variant="ghost" small onPress={() => report(user, 'community', c.id, 'reported from app').then(() => toast(t('t.reported'))).catch(() => toast(t('n.cm.fail')))} />}
           </View>
         );
       }) : <Text style={[styles.small, styles.none]}>{t('n.cm.none')}</Text>}
 
       {form === 'apply' && user ? <ApplySheet onClose={() => setForm(null)} /> : null}
-      {form === 'create' && user && org ? <CreateSheet orgName={org.orgName} onClose={() => setForm(null)} /> : null}
+      {form === 'create' && user && (org || isAdmin) ? <CreateSheet orgName={org?.orgName ?? 'GoodNeighbour'} onClose={() => setForm(null)} /> : null}
       {seeing ? <MembersSheet c={seeing} onClose={() => setSeeing(null)} /> : null}
     </ScrollView>
   );
@@ -148,18 +164,21 @@ function ApplySheet({ onClose }: { onClose: () => void }) {
 function CreateSheet({ orgName, onClose }: { orgName: string; onClose: () => void }) {
   const { t } = useT();
   const { user, toast } = useStore();
-  const [v, set, ok] = useForm(['name', 'desc', 'city']);
+  const [v, set, ok] = useForm(['name', 'desc', 'city', 'whatsapp']);
   const [busy, setBusy] = useState(false);
   const submit = async () => {
     if (!ok) { toast(t('n.cm.err')); return; }
+    if (!WHATSAPP_RE.test(v.whatsapp.trim())) { toast(t('n.cm.waBad')); return; }
     setBusy(true);
-    try { await createCommunity(user!, orgName, v); toast(t('n.cm.created')); onClose(); } catch { toast(t('n.cm.fail')); setBusy(false); }
+    try { await createCommunity(user!, orgName, { ...v, whatsapp: v.whatsapp.trim() }); toast(t('n.cm.created')); onClose(); } catch { toast(t('n.cm.fail')); setBusy(false); }
   };
   return (
     <Sheet visible onClose={onClose} title={t('n.cm.create')}>
       <Field label={t('n.cm.cName')} value={v.name} onChange={set('name')} />
       <Field label={t('n.cm.cDesc')} value={v.desc} onChange={set('desc')} multiline />
       <Field label={t('n.cm.city')} value={v.city} onChange={set('city')} />
+      <Field label={t('n.cm.waLink')} value={v.whatsapp} onChange={set('whatsapp')} />
+      <Text style={styles.small}>{t('n.cm.waHelp')}</Text>
       <Button label={t('n.cm.submit')} block onPress={submit} disabled={busy} />
     </Sheet>
   );

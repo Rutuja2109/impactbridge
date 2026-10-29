@@ -68,9 +68,6 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
     const p = PAGES[page];
     return (
       <View style={[styles.root, pad]}>
-        <View style={styles.topRow}>
-          <Pressable onPress={() => setPage(3)} accessibilityRole="button" hitSlop={12}><Text style={styles.skip}>{t('n.w.skip')}</Text></Pressable>
-        </View>
         <View style={styles.center}>
           <View style={styles.circle}><Icon name={p.icon} size={64} color={colors.tealDark} /></View>
           <Text accessibilityRole="header" style={styles.title}>{t(`n.w.t${p.k}`)}</Text>

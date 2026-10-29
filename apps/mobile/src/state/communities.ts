@@ -6,7 +6,10 @@ import { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import type { User } from '../screens/Welcome';
 
-export type Community = { id: string; name: string; desc: string; city: string; ownerId: string; orgName: string; memberCount: number };
+export type Community = { id: string; name: string; desc: string; city: string; whatsapp: string; ownerId: string; orgName: string; memberCount: number };
+
+/** An invite link to the community's official WhatsApp group (WhatsApp > Group info > Invite via link). */
+export const WHATSAPP_RE = /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{10,}/;
 export type Org = { orgName: string; status: 'pending' | 'verified' | 'rejected'; verified: boolean };
 export type Member = { uid: string; name: string };
 
@@ -19,13 +22,15 @@ function useLive<T>(make: (() => (cb: (v: T) => void) => () => void) | null, fal
 
 export const useCommunities = () => useLive<Community[]>(db ? () => (cb) => onSnapshot(query(collection(db!, 'communities'), orderBy('createdAt', 'desc')), (s) => cb(s.docs.map((d) => ({ memberCount: 0, ...d.data(), id: d.id }) as Community)), () => {}) : null, [], []);
 export const useOrg = (uid?: string) => useLive<Org | null | undefined>(db && uid ? () => (cb) => onSnapshot(doc(db!, 'orgs', uid), (s) => cb(s.exists() ? (s.data() as Org) : null), () => cb(null)) : null, undefined, [uid]);
+/** True when this person has a document in the admins collection (created by hand in the Firebase console). */
+export const useIsAdmin = (uid?: string) => useLive<boolean>(db && uid ? () => (cb) => onSnapshot(doc(db!, 'admins', uid), (s) => cb(s.exists()), () => cb(false)) : null, false, [uid]);
 export const useJoined = (uid?: string) => useLive<string[]>(db && uid ? () => (cb) => onSnapshot(doc(db!, 'users', uid), (s) => cb((s.data()?.joined as string[]) ?? []), () => {}) : null, [], [uid]);
 export const useMembers = (cid: string | null, uid?: string) => useLive<Member[]>(db && cid && uid ? () => (cb) => onSnapshot(collection(db!, 'communities', cid, 'members'), (s) => cb(s.docs.map((d) => ({ uid: d.id, name: d.data().name }))), () => {}) : null, [], [cid, uid]);
 
 export const applyOrg = (u: User, data: { orgName: string; kind: string; regNo: string; contact: string }) =>
   setDoc(doc(db!, 'orgs', u.uid!), { ...data, ownerEmail: u.email, verified: false, status: 'pending', at: Date.now() });
 
-export const createCommunity = (u: User, orgName: string, data: { name: string; desc: string; city: string }) =>
+export const createCommunity = (u: User, orgName: string, data: { name: string; desc: string; city: string; whatsapp: string }) =>
   addDoc(collection(db!, 'communities'), { ...data, ownerId: u.uid, orgName, memberCount: 0, createdAt: Date.now() });
 
 export async function setJoined(u: User, cid: string, on: boolean) {

@@ -13,7 +13,7 @@
     "android": {
       "package": "org.goodneighbour.app",
       "adaptiveIcon": {
-        "backgroundColor": "#00918F",
+        "backgroundColor": "#00706E",
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,

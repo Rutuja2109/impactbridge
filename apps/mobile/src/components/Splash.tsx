@@ -90,9 +90,6 @@ export default function Splash({ onDone }: { onDone: () => void }) {
         <Text style={styles.name}>GoodNeighbour</Text>
         <Text style={styles.tag}>{t('home.tagline')}</Text>
       </Animated.View>
-      <Pressable onPress={finish} accessibilityRole="button" style={styles.skip} hitSlop={10}>
-        <Text style={styles.skipText}>{t('n.skip')}</Text>
-      </Pressable>
     </Animated.View>
   );
 }

@@ -41,8 +41,18 @@ export default function ProfileDrawer() {
   const back = () => setView('menu');
   const toImpact = () => { store.closeSheet(); store.goTab('impact'); };
 
+  const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL;
+  const adminMail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+  const adminWa = process.env.EXPO_PUBLIC_ADMIN_WHATSAPP;
   const sub: Record<string, [string, ReactNode]> = {
-    support: [t('n.support'), <Notice key="s" tone="blue" text={t('n.supportText')} />],
+    support: [t('n.support'), (
+      <>
+        <Notice tone="blue" text={t('n.sup.d')} />
+        {adminMail ? <Button label={t('n.sup.mail')} icon="share" block onPress={() => Linking.openURL(`mailto:${adminMail}?subject=GoodNeighbour%20help`).catch(() => {})} /> : null}
+        {adminWa ? <Button label={t('n.sup.wa')} icon="share" variant="ghost" block onPress={() => Linking.openURL(`https://wa.me/${adminWa.replace(/\D/g, '')}`).catch(() => {})} /> : null}
+        {!adminMail && !adminWa ? <Text style={styles.small}>{t('n.sup.none')}</Text> : null}
+      </>
+    )],
     legal: [`${t('n.terms')} · ${t('n.privacy')}`, (
       <>
         <Notice tone="blue" text={t('n.legalDemo')} />
@@ -57,7 +67,6 @@ export default function ProfileDrawer() {
     { text: t('c.close'), style: 'cancel' },
     { text: t('n.del.btn'), style: 'destructive', onPress: () => deleteAccount().then(() => { store.closeSheet(); store.goTab('home'); }).catch((e: { code?: string }) => store.toast(t(e?.code === 'auth/requires-recent-login' ? 'n.del.relogin' : 'n.cm.fail'))) },
   ]);
-  const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL;
   const menu: [IconName, string, () => void][] = [
     ['check', t('n.myBadges'), toImpact],
     ['chart', t('n.myCerts'), toImpact],
