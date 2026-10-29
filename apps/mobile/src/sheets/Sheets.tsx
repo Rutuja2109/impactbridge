@@ -38,10 +38,10 @@ function PostSheet() {
   const go = (flow: Flow) => open({ name: 'post', flow });
   return (
     <Sheet visible onClose={closeSheet} title={t('pc.title')} subtitle={t('pc.sub')}>
-      <Text style={s.note}>{t('post.demo')}</Text>
+      {firebaseReady ? null : <Text style={s.note}>{t('post.demo')}</Text>}
       <Option icon="heart" title={t('pc.problemT')} desc={t('pc.problemD')} onPress={() => go('problem')} />
       <Option icon="people" title={t('pc.projectT')} desc={t('pc.projectD')} onPress={() => go('project')} />
-      <Option icon="coin" title={t('pc.fundT')} desc={t('pc.fundD')} onPress={() => go('fund')} />
+      <Option icon="coin" title={t('pc.fundT')} desc={t(firebaseReady ? 'n.live.fundD' : 'pc.fundD')} onPress={() => go('fund')} />
     </Sheet>
   );
 }

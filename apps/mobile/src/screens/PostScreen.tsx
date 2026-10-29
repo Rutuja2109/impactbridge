@@ -290,7 +290,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
           );
         })}
         {emergency ? <Notice tone="red" text={t('emerg')} /> : null}
-        <Notice text={t('post.demo')} />
+        {firebaseReady ? null : <Notice text={t('post.demo')} />}
         <View style={styles.nav}>
           <Button label={t('b.back')} variant="ghost" onPress={() => goTo(5)} style={styles.flex} />
           <Button label={t('b.submit')} onPress={submit} style={styles.flex} />
@@ -306,7 +306,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
       </Pressable>
       <Text accessibilityRole="header" style={styles.h1}>{t(spec.title)}</Text>
       <Text style={styles.body}>{t(spec.sub)}</Text>
-      <Notice text={t('post.demo')} />
+      {firebaseReady ? null : <Notice text={t('post.demo')} />}
       {post.restored ? (
         <View style={styles.restored}>
           <Text style={[styles.small, styles.flex]}>{t('post.restored')}</Text>

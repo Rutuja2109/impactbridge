@@ -9,6 +9,7 @@ import ProjectCard from '../components/ProjectCard';
 import { Button, ChipRow, PageHead, Segmented, UntrNote } from '../components/ui';
 import { categories, fundPct, pledgedPct, type CauseId } from '../data';
 import { activeCount, NO_FILTERS } from '../data/filters';
+import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 import { useDiscoverResults } from './useDiscoverResults';
@@ -83,8 +84,8 @@ export default function DiscoverScreen() {
 
       {n === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>{t(fund ? 'disc.noneF' : 'disc.noneT')}</Text>
-          <Text style={styles.emptyText}>{t('disc.noneD')}</Text>
+          <Text style={styles.emptyTitle}>{t(fund ? 'disc.noneF' : firebaseReady && !d.q && d.cat === 'all' ? 'n.live.noneT' : 'disc.noneT')}</Text>
+          <Text style={styles.emptyText}>{t(firebaseReady && !d.q && d.cat === 'all' ? 'n.live.noneD' : 'disc.noneD')}</Text>
           <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null, f: NO_FILTERS })} />
         </View>
       ) : d.view === 'map' ? (

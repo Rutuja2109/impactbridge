@@ -11,7 +11,9 @@ import { myVolunteering } from '../data';
 import { PHOTOS } from '../data/photos';
 import { inr } from '../format';
 import { useT } from '../i18n';
-import { badgesFor } from '../state/achievements';
+import { badgesFor, liveBadges } from '../state/achievements';
+import { useJoined } from '../state/communities';
+import { useMyHelps, useMyPosts } from '../state/mine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
 import { deleteAccount, signOutAll } from '../auth';
@@ -35,7 +37,10 @@ export default function ProfileDrawer() {
   const close = () => Animated.timing(slide, { toValue: -panelW, duration: 200, useNativeDriver: true }).start(() => store.closeSheet());
 
   const activity = { myDonations: store.myDonations, sips: store.sips, joined: store.joined, going: store.going, following: store.following };
-  const badges = badgesFor(activity);
+  const myPosts = useMyPosts(store.user?.uid);
+  const myHelps = useMyHelps(store.user?.uid);
+  const myJoined = useJoined(store.user?.uid);
+  const badges = firebaseReady ? liveBadges({ posts: myPosts, helps: myHelps, joined: myJoined.length }) : badgesFor(activity);
   const given = store.myDonations.reduce((a, d) => a + d.a, 0);
   const hours = myVolunteering.reduce((a, v) => a + v.hours, 0);
   const back = () => setView('menu');

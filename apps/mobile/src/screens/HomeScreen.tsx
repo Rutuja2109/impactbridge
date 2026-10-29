@@ -31,9 +31,9 @@ export default function HomeScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }} showsVerticalScrollIndicator={false}>
       <HomeHero onNeedSupport={() => showSheet({ kind: 'post' })} onCanHelp={() => goTab('discover')} />
 
-      <Pressable onPress={() => showSheet({ kind: 'updates' })} accessibilityRole="button" accessibilityLabel={t('upd.label')} style={({ pressed }) => [styles.updates, pressed && styles.pressed]}>
+      <Pressable onPress={() => showSheet({ kind: 'updates' })} accessibilityRole="button" accessibilityLabel={t(firebaseReady ? 'n.live.updates' : 'upd.label')} style={({ pressed }) => [styles.updates, pressed && styles.pressed]}>
         <Icon name="bell" size={24} color={colors.tealDark} />
-        <Text style={styles.updatesText}>{t('upd.label')}</Text>
+        <Text style={styles.updatesText}>{t(firebaseReady ? 'n.live.updates' : 'upd.label')}</Text>
         {unread ? <View style={styles.dot}><Text style={styles.dotText}>{unread}</Text></View> : null}
         <Icon name="chev" size={20} color={colors.slate} />
       </Pressable>
