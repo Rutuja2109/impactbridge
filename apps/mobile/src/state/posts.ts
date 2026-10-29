@@ -7,7 +7,8 @@ import { useEffect } from 'react';
 import { applyLive, type PostDoc } from '../data';
 import { db } from '../firebase';
 import type { User } from '../screens/Welcome';
-import { PRIVATE, type Flow, type PostData } from './post';
+import { savePhotos } from './files';
+import { PRIVATE, type Attach, type Flow, type PostData } from './post';
 
 const FILES = ['files', 'cover', 'docs']; // the picker is a placeholder; no file is uploaded
 
@@ -20,6 +21,7 @@ export async function submitPost(u: User, flow: Flow, data: PostData): Promise<s
   }
   const ref = await addDoc(collection(db!, 'posts'), { flow, data: pub, ownerId: u.uid, ownerName: u.name, status: 'pending', createdAt: Date.now() });
   await setDoc(doc(db!, 'posts', ref.id, 'private', 'info'), { ...priv, ownerEmail: u.email });
+  await savePhotos(ref.id, { files: (data.files as Attach[]) ?? [], cover: (data.cover as Attach[]) ?? [], docs: (data.docs as Attach[]) ?? [] });
   return ref.id;
 }
 

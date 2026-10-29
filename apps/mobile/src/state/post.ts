@@ -1,8 +1,10 @@
 // The three post flows from the prototype (report a problem, create a community project, start a fundraiser):
 // field specs, validation rules and blank drafts. Pure functions, so the screen only renders and the rules
 // stay identical to the approved prototype. Specs are [field name, kind, required].
+import { firebaseReady } from '../firebase';
+
 export type Flow = 'problem' | 'project' | 'fund';
-export type Attach = { name: string; size: number };
+export type Attach = { name: string; size: number; b64?: string };
 export type Value = string | boolean | Attach[];
 export type PostData = Record<string, Value>;
 export type PostState = { step: number; max: number; mode: 'form' | 'review' | 'done'; data: PostData; errors: Record<string, string>; fromReview: boolean; ref: string; restored: boolean };
@@ -11,7 +13,7 @@ export type Spec = [name: string, kind: string, required: 0 | 1];
 const PROBLEM_STEPS: Record<number, Spec[]> = {
   1: [['title', 'text', 1], ['cat', 'cats', 1], ['desc', 'area', 1], ['help', 'area', 1]],
   2: [['city', 'text', 1], ['area', 'text', 0], ['affected', 'text', 1], ['count', 'num', 0], ['landmark', 'pin', 0]],
-  3: [['files', 'files', 0], ['started', 'date', 0], ['urgency', 'urg', 1], ['ongoing', 'ongoing', 0], ['actions', 'area', 0]],
+  3: [['files', 'files', 1], ['started', 'date', 0], ['urgency', 'urg', 1], ['ongoing', 'ongoing', 0], ['actions', 'area', 0]],
   4: [['outcome', 'area', 1], ['vols', 'num', 0], ['skills', 'text', 0], ['materials', 'text', 0], ['budget', 'num', 0], ['target', 'date', 0], ['partners', 'text', 0]],
   5: [['who', 'who', 1], ['orgName', 'text', 1], ['contact', 'contact', 1], ['display', 'text', 1], ['private', 'text', 1], ['consent', 'check', 1]],
 };
@@ -19,7 +21,7 @@ const FUND_STEPS: Record<number, Spec[]> = {
   1: [['ctype', 'ctype', 1], ['title', 'text', 1], ['cat', 'cats', 1], ['story', 'area', 1]],
   2: [['benName', 'text', 1], ['benAbout', 'text', 0], ['relation', 'relation', 1], ['orgName', 'text', 1], ['display', 'text', 1]],
   3: [['goal', 'num', 1], ['use', 'area', 1], ['deadline', 'date', 1], ['payLink', 'text', 0]],
-  4: [['cover', 'image', 0], ['docs', 'files', 0]],
+  4: [['cover', 'image', 1], ['docs', 'files', 1]],
   5: [['private', 'text', 1], ['consent', 'check', 1], ['accurate', 'check', 1]],
 };
 
@@ -86,6 +88,7 @@ export function fieldError(flow: Flow, d: PostData, name: string): string {
     case 'payLink': return s && !/^(https?|upi):\/\/\S+$/i.test(s) ? 'payLink' : '';
     case 'deadline': return isDate(isoDate(s)) && isoDate(s) > today() ? '' : 'deadline';
     case 'private': return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) || /^(\+?91)?\d{10}$/.test(s.replace(/[\s-]/g, '')) ? '' : 'private';
+    case 'files': case 'cover': case 'docs': return firebaseReady && !(Array.isArray(raw) && raw.length) ? `${name}Req` : '';
     default: return '';
   }
 }

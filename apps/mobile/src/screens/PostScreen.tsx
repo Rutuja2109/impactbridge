@@ -3,6 +3,7 @@
 // its text keys). Demonstration only: nothing is sent; drafts are saved on this device (never private details or files).
 import { firebaseReady } from '../firebase';
 import * as Location from 'expo-location';
+import { pickPhoto } from '../state/files';
 import { submitPost } from '../state/posts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef } from 'react';
@@ -123,6 +124,12 @@ export default function PostScreen({ flow }: { flow: Flow }) {
     if (kind === 'files' || kind === 'image') {
       const list = (d[name] as Attach[]) ?? [];
       const max = name === 'cover' ? 1 : 4;
+      const addLive = () => {
+        if (list.length >= max && name !== 'cover') { set((p) => ({ ...p, errors: { ...p.errors, [name]: 'files' } })); return; }
+        pickPhoto(`${name === 'docs' ? 'document' : 'photo'}-${list.length + 1}.jpg`)
+          .then((a) => { if (a) setField(name, name === 'cover' ? [a] : [...list, a]); })
+          .catch((err: Error) => store.toast(t(err.message === 'big' ? 'pic.big' : 'pic.fail')));
+      };
       const add = () => {
         if (list.length >= max && name !== 'cover') { set((p) => ({ ...p, errors: { ...p.errors, [name]: 'files' } })); return; }
         const n = list.length + 1;
@@ -132,8 +139,8 @@ export default function PostScreen({ flow }: { flow: Flow }) {
       return wrap(
         <>
           {label}{help}
-          <Button label={t(kind === 'files' ? 'b.choose' : 'b.chooseCover')} icon="plus" variant="ghost" small onPress={add} style={styles.self} />
-          <Text style={styles.hint}>{t('n.attachDemo')}</Text>
+          <Button label={t(kind === 'files' ? 'b.choose' : 'b.chooseCover')} icon="plus" variant="ghost" small onPress={firebaseReady ? addLive : add} style={styles.self} />
+          {firebaseReady ? null : <Text style={styles.hint}>{t('n.attachDemo')}</Text>}
           {list.map((a, i) => (
             <View key={`${a.name}-${i}`} style={styles.fileRow}>
               <Text style={styles.fileName} numberOfLines={1}>📄 {a.name}</Text>

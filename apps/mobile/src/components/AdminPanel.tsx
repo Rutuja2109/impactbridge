@@ -3,10 +3,11 @@
 // real checking; this screen only shows buttons.
 import { collection, doc, getDoc, onSnapshot, orderBy, query, updateDoc, where } from '@react-native-firebase/firestore';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { db } from '../firebase';
 import { useLive } from '../state/communities';
+import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
 import { Button } from './ui';
 
@@ -27,6 +28,7 @@ function PostCard({ p, review }: { p: PostRow; review: boolean }) {
   const [contact, setContact] = useState('');
   const [resp, setResp] = useState<Response[]>([]);
   const [busy, setBusy] = useState(false);
+  const photos = usePostPhotos(review ? p.id : null);
   useEffect(() => {
     if (review) getDoc(doc(db!, 'posts', p.id, 'private', 'info')).then((s) => { const x = s.data(); setContact(x ? [x.private, x.ownerEmail].filter(Boolean).join(' · ') : ''); }).catch(() => {});
     else return onSnapshot(collection(db!, 'posts', p.id, 'responses'), (s) => setResp(s.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Response, 'uid'>) }))), () => {});
@@ -38,6 +40,11 @@ function PostCard({ p, review }: { p: PostRow; review: boolean }) {
       <Text style={styles.title}>{p.data.title || '(no title)'}</Text>
       <Text style={styles.meta}>{p.flow} · {p.data.city || '—'} · by {p.ownerName || 'unknown'} · {new Date(p.at).toLocaleDateString()}</Text>
       <Text style={styles.body} numberOfLines={review ? 8 : 2}>{(p.data.desc || p.data.story || '').trim()}</Text>
+      {photos.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {photos.map((ph) => <Image key={ph.id} source={{ uri: `data:image/jpeg;base64,${ph.b64}` }} style={styles.thumb} />)}
+        </ScrollView>
+      ) : null}
       {review ? (
         <>
           {contact ? <Text style={styles.meta}>Private contact: {contact}</Text> : null}
@@ -128,4 +135,5 @@ const styles = StyleSheet.create({
   body: { fontSize: 14, color: colors.ink },
   row: { flexDirection: 'row', gap: space.s, marginTop: space.s },
   flex: { flex: 1 },
+  thumb: { width: 110, height: 110, borderRadius: radius.s, marginRight: space.s, marginTop: space.s },
 });

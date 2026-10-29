@@ -1,6 +1,8 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import PostPhotos from '../components/PostPhotos';
+import { firebaseReady } from '../firebase';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import { CTA_HEIGHT, DetailTop, NotFound, Row, StickyCta, detailStyles as d } from '../components/Detail';
 import { Badge, Button, CauseBadge, Legend, Panel, PanelTitle, SampleTag, StatGrid, TwoLayerBar, UntrTag, VerifyBadge } from '../components/ui';
@@ -34,13 +36,13 @@ export default function CampaignScreen({ id }: { id: string }) {
     <View style={d.screen}>
       <ScrollView contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + CTA_HEIGHT + space.xxl }}>
         <DetailTop cause={c.cat} id={c.id} placeholder={t('fund.placeholder')} />
+        {firebaseReady ? <PostPhotos postId={c.id} /> : null}
         <View style={d.wrap}>
           <Row>
             <VerifyBadge status={c.verify} />
             <CauseBadge cause={c.cat} />
             {urgent}
-            <SampleTag label={t('fund.sample')} />
-            <UntrTag />
+            {firebaseReady ? null : <><SampleTag label={t('fund.sample')} /><UntrTag /></>}
           </Row>
           <Text accessibilityRole="header" style={d.h1}>{c.title}</Text>
           <Text style={d.muted}>{c.short}</Text>

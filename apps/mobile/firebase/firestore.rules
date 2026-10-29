@@ -58,6 +58,12 @@ service cloud.firestore {
         allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
         allow read: if isAdmin();
       }
+      // Photos: the author adds them; everyone signed in sees photos of the post, but photos of documents only the author and admins.
+      match /files/{fid} {
+        allow create: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
+        allow read: if signedIn() && (resource.data.field != 'docs'
+          || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
+      }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
         allow create: if signedIn() && request.auth.uid == uid;

@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import PostPhotos from '../components/PostPhotos';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import { CTA_HEIGHT, DetailTop, NotFound, Row, StickyCta, detailStyles as d } from '../components/Detail';
 import Icon from '../components/Icon';
@@ -34,12 +35,12 @@ export default function ProjectScreen({ id }: { id: string }) {
     <View style={d.screen}>
       <ScrollView contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + (done ? 0 : CTA_HEIGHT) + space.xxl }}>
         <DetailTop cause={p.cat} id={p.id} />
+        {firebaseReady ? <PostPhotos postId={p.id} /> : null}
         <View style={d.wrap}>
           <Row>
             <StatusBadge project={p} />
             <CauseBadge cause={p.cat} />
-            <SampleTag label={t('c.sampleProject')} />
-            <UntrTag />
+            {firebaseReady ? null : <><SampleTag label={t('c.sampleProject')} /><UntrTag /></>}
           </Row>
           <Text accessibilityRole="header" style={d.h1}>{p.title}</Text>
           <View style={styles.meta}>
