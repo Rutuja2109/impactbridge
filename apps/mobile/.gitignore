@@ -29,6 +29,7 @@ yarn-error.*
 
 # local env files (the API address and any keys stay out of git)
 .env*
+!.env.example
 
 # TypeScript
 *.tsbuildinfo

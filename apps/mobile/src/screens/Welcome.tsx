@@ -1,8 +1,10 @@
-// First-run gate after the logo intro: three "what is this app" pages, then a demo login (email + password, or a simulated Google button).
-// Demo only: no account exists. Only the name and email are kept in this device's local storage; the password is never stored or sent.
+// First-run gate after the logo intro: three "what is this app" pages, then local email/password login,
+// or a real Google account sign-in flow using Expo AuthSession.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
@@ -13,17 +15,58 @@ import { colors, radius, space } from '../theme';
 export const USER_KEY = 'gn.user';
 export type User = { name: string; email: string };
 
+const GOOGLE_CONFIG = {
+  expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || undefined,
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
+  scopes: ['openid', 'profile', 'email'],
+};
+
+const GOOGLE_ENABLED = Object.values(GOOGLE_CONFIG).some(Boolean);
+
+async function fetchGoogleProfile(accessToken: string): Promise<{ name: string; email: string }> {
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + accessToken },
+  });
+
+  if (!res.ok) {
+    throw new Error('Google profile request failed.');
+  }
+
+  const profile = await res.json() as { name?: string; email?: string };
+  if (!profile.email) {
+    throw new Error('Google profile does not include an email address.');
+  }
+
+  return {
+    name: profile.name || profile.email.split('@')[0],
+    email: profile.email,
+  };
+}
+
 const PAGES: { icon: IconName; k: string }[] = [{ icon: 'heart', k: '1' }, { icon: 'coin', k: '2' }, { icon: 'people', k: '3' }];
 
 export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
   const { t } = useT();
   const insets = useSafeAreaInsets();
-  const [page, setPage] = useState(0); // 0-2 intro pages, 3 = login
+
+  useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
+  }, []);
+
+  const [page, setPage] = useState(0);
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [errors, setErrors] = useState<{ email?: string; pass?: string }>({});
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [request, , promptAsync] = Google.useAuthRequest(GOOGLE_CONFIG);
 
-  const finish = (u: User) => { AsyncStorage.setItem(USER_KEY, JSON.stringify(u)).catch(() => {}); onDone(u); };
+  const finish = useCallback((u: User) => {
+    AsyncStorage.setItem(USER_KEY, JSON.stringify(u)).catch(() => {});
+    onDone(u);
+  }, [onDone]);
+
   const login = () => {
     const e: typeof errors = {};
     const mail = email.trim();
@@ -32,11 +75,36 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
     setErrors(e);
     if (!e.email && !e.pass) {
       const local = mail.split('@')[0].replace(/[._-]+/g, ' ').trim();
-      finish({ name: local.replace(/\b\w/g, (c) => c.toUpperCase()), email: mail });
+      const nameParts = local.split(' ').filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1));
+      finish({ name: nameParts.join(' '), email: mail });
     }
   };
-  // Simulated Google sign-in: no Google account or network is involved.
-  const google = () => finish({ name: t('n.guest'), email: 'google.demo@example.com' });
+
+  const google = async () => {
+    if (!GOOGLE_ENABLED || !request) {
+      Alert.alert('Google sign-in is not configured', 'Add EXPO_PUBLIC_GOOGLE_* values to the mobile app .env file before testing Google login.');
+      return;
+    }
+
+    try {
+      setGoogleBusy(true);
+      const result = await promptAsync();
+      if (result.type !== 'success' || !result.authentication || !result.authentication.accessToken) {
+        if (result.type !== 'cancel') {
+          Alert.alert('Google sign-in failed', 'Google did not return a valid session. Please try again.');
+        }
+        return;
+      }
+
+      const profile = await fetchGoogleProfile(result.authentication.accessToken);
+      finish(profile);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Google sign-in failed', message);
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const pad = { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl };
 
@@ -49,8 +117,8 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
         </View>
         <View style={styles.center}>
           <View style={styles.circle}><Icon name={p.icon} size={64} color={colors.tealDark} /></View>
-          <Text accessibilityRole="header" style={styles.title}>{t(`n.w.t${p.k}`)}</Text>
-          <Text style={styles.desc}>{t(`n.w.d${p.k}`)}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{t('n.w.t' + p.k)}</Text>
+          <Text style={styles.desc}>{t('n.w.d' + p.k)}</Text>
         </View>
         <View style={styles.dots}>{PAGES.map((_, i) => <View key={i} style={[styles.dot, i === page && styles.dotOn]} />)}</View>
         <Button label={page < 2 ? t('n.w.next') : t('n.w.start')} block onPress={() => setPage(page + 1)} />
@@ -64,7 +132,7 @@ export default function Welcome({ onDone }: { onDone: (u: User) => void }) {
         <View style={styles.circle}><Icon name="heart" size={48} color={colors.tealDark} /></View>
         <Text accessibilityRole="header" style={styles.title}>{t('n.w.loginT')}</Text>
         <Text style={styles.desc}>{t('n.w.loginD')}</Text>
-        <Button label={t('n.w.google')} variant="ghost" block onPress={google} />
+        <Button label={googleBusy ? 'Signing in…' : t('n.w.google')} variant="ghost" block onPress={google} />
         <Text style={styles.small}>{t('n.w.gNote')}</Text>
         <View style={styles.orRow}><View style={styles.rule} /><Text style={styles.small}>{t('n.w.or')}</Text><View style={styles.rule} /></View>
         <Text style={styles.label}>{t('n.w.email')}</Text>

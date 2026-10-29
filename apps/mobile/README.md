@@ -31,6 +31,29 @@ npx expo start         # start the dev server, then scan the QR code with Expo G
 npx expo export --platform android   # check that an Android bundle builds (output goes to dist/, which is git-ignored)
 ```
 
+## Google sign-in setup
+
+To enable the real Google sign-in button in the app, create a Google Cloud OAuth client for the app:
+
+1. Create a Google Cloud project and enable the Google Identity API.
+2. Configure an OAuth client ID for Android using the package name `org.goodneighbour.app`.
+3. Configure an OAuth client ID for iOS using the bundle ID `org.goodneighbour.app`.
+4. Create a Web OAuth client and keep its client ID.
+5. Copy `apps/mobile/.env.example` to `apps/mobile/.env` and fill in the values:
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+```
+
+```env
+EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID=your_expo_client_id
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your_android_client_id
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your_ios_client_id
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
+```
+
+Once the IDs are set, the Google button in the welcome screen performs a real Google OAuth flow and stores only the signed-in user name and email on the device.
+
 ## Not set up yet (added when a feature needs it)
 
 Navigation, data fetching, secure token storage, push notifications, image and file pickers, translations,
