@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { colors, radius, shadow, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
@@ -18,21 +19,97 @@ const PEOPLE: [number, string, string][] = [
   [260, '#D9A066', '#E4D4FF'],
 ];
 
-function HeroArt() {
+// The illustration is drawn on a 360 x 120 grid. The heart and each neighbour sit in their own small layer on top
+// of the static scene, so they can move with the native driver (smooth even while the page scrolls).
+const VIEW_W = 360;
+const VIEW_H = 120;
+const pct = (n: number, of: number): `${number}%` => `${(n / of) * 100}%`;
+
+// Same motion as the prototype CSS: neighbours bob 3 units over 3s, 150ms apart; the heart pulses to 112% every 1.6s,
+// growing from its bottom tip.
+function useLoop(halfMs: number, delayMs: number, enabled: boolean) {
+  const value = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!enabled) {
+      value.setValue(0);
+      return;
+    }
+    const ease = Easing.inOut(Easing.ease);
+    const anim = Animated.sequence([
+      Animated.delay(delayMs),
+      Animated.loop(Animated.sequence([
+        Animated.timing(value, { toValue: 1, duration: halfMs, easing: ease, useNativeDriver: true }),
+        Animated.timing(value, { toValue: 0, duration: halfMs, easing: ease, useNativeDriver: true }),
+      ])),
+    ]);
+    anim.start();
+    return () => anim.stop();
+  }, [value, halfMs, delayMs, enabled]);
+  return value;
+}
+
+// Honour Android's "Remove animations" setting, as the prototype honours prefers-reduced-motion.
+function useReduceMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduce).catch(() => setReduce(false));
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
+    return () => sub.remove();
+  }, []);
+  return reduce;
+}
+
+function Neighbour({ x, skin, top, index, unit, animate }: { x: number; skin: string; top: string; index: number; unit: number; animate: boolean }) {
+  const t = useLoop(1500, index * 150, animate);
+  const translateY = t.interpolate({ inputRange: [0, 1], outputRange: [0, -3 * unit] });
+  // Body box on the grid: x-11..x+11 wide, y 49..96 tall.
   return (
-    <Svg width="100%" height="100%" viewBox="0 0 360 120" accessible={false}>
-      <Circle cx="298" cy="30" r="22" fill={colors.sun} opacity={0.95} />
-      <Path d="M20 96 C 70 36 130 36 180 96" fill="none" stroke="#fff" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
-      <Path d="M180 96 C 230 36 290 36 340 96" fill="none" stroke="#fff" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
-      <Rect x="0" y="94" width="360" height="26" fill={colors.tealDeep} opacity={0.55} />
-      {PEOPLE.map(([x, skin, top]) => (
-        <G key={x} transform={`translate(${x} 62)`}>
-          <Circle cy={-4} r={9} fill={skin} />
-          <Path d="M-11 34V18a11 11 0 0 1 22 0v16z" fill={top} />
-        </G>
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.layer, { left: pct(x - 11, VIEW_W), top: pct(49, VIEW_H), width: pct(22, VIEW_W), height: pct(47, VIEW_H), transform: [{ translateY }] }]}
+    >
+      <Svg width="100%" height="100%" viewBox={`${x - 11} 49 22 47`}>
+        <Circle cx={x} cy={58} r={9} fill={skin} />
+        <Path d={`M${x - 11} 96V80a11 11 0 0 1 22 0v16z`} fill={top} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+function Heart({ animate }: { animate: boolean }) {
+  const t = useLoop(800, 0, animate);
+  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  // Heart box on the grid: x 166..194, y 12..40 (one unit of headroom above its rounded top).
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.layer, styles.heart, { left: pct(166, VIEW_W), top: pct(12, VIEW_H), width: pct(28, VIEW_W), height: pct(28, VIEW_H), transform: [{ scale }] }]}
+    >
+      <Svg width="100%" height="100%" viewBox="166 12 28 28">
+        <Path d="M166 22c0-9 10-11 14-4 4-7 14-5 14 4 0 8-14 17-14 17s-14-9-14-17z" fill={colors.heart} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+function HeroArt() {
+  const [width, setWidth] = useState(0);
+  const reduceMotion = useReduceMotion();
+  const animate = !reduceMotion && width > 0;
+  const unit = width / VIEW_W; // pixels per grid unit, so the bob distance scales with the screen
+  return (
+    <View style={StyleSheet.absoluteFill} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessible={false} importantForAccessibility="no-hide-descendants">
+      <Svg width="100%" height="100%" viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
+        <Circle cx="298" cy="30" r="22" fill={colors.sun} opacity={0.95} />
+        <Path d="M20 96 C 70 36 130 36 180 96" fill="none" stroke="#fff" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
+        <Path d="M180 96 C 230 36 290 36 340 96" fill="none" stroke="#fff" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
+        <Rect x="0" y="94" width="360" height="26" fill={colors.tealDeep} opacity={0.55} />
+      </Svg>
+      {PEOPLE.map(([x, skin, top], i) => (
+        <Neighbour key={x} x={x} skin={skin} top={top} index={i} unit={unit} animate={animate} />
       ))}
-      <Path d="M166 22c0-9 10-11 14-4 4-7 14-5 14 4 0 8-14 17-14 17s-14-9-14-17z" fill={colors.heart} />
-    </Svg>
+      <Heart animate={animate} />
+    </View>
   );
 }
 
@@ -117,6 +194,8 @@ const styles = StyleSheet.create({
   tagline: { ...type.display, color: colors.white, marginTop: space.xs },
   sub: { ...type.body, color: colors.white, marginTop: space.s },
   art: { width: '100%', maxWidth: 420, aspectRatio: 3, alignSelf: 'center', marginTop: space.m },
+  layer: { position: 'absolute' },
+  heart: { transformOrigin: 'bottom' }, // grows from its tip, like the prototype's transform-origin
   actions: { flexDirection: 'row', gap: space.m, marginHorizontal: space.xxl, marginTop: -28 },
   action: {
     flex: 1,
