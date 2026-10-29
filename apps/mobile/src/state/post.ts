@@ -51,7 +51,7 @@ export const blankPost = (): PostData => ({
 export const freshPost = (): PostState => ({ step: 1, max: 1, mode: 'form', data: blankPost(), errors: {}, fromReview: false, ref: '', restored: false });
 
 export const specsOf = (flow: Flow, step: number) => FLOWS[flow].steps[step];
-export const kindOf = (name: string) => Object.values({ ...PROBLEM_STEPS, ...FUND_STEPS }).flat().find(([n]) => n === name)?.[1] ?? 'text';
+export const kindOf = (name: string) => [...Object.values(PROBLEM_STEPS), ...Object.values(FUND_STEPS)].flat().find(([n]) => n === name)?.[1] ?? 'text';
 
 export function visible(flow: Flow, d: PostData, name: string) {
   if (name === 'orgName') return flow === 'fund' ? d.ctype === 'org' : d.who === 'org';

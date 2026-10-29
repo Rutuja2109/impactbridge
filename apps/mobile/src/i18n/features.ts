@@ -2,6 +2,7 @@
 // the Ketto-style SIP panel and the trending row. Merged into NATIVE; every key exists in all three languages.
 export const FEATURES: Record<'en' | 'hi' | 'mr', Record<string, string>> = {
   en: {
+    'n.cName': 'GoodNeighbour community', 'n.cDesc': 'Join your neighbours who help each other with money, time and skills. More community features are coming soon.', 'n.cMembers': '{n} neighbours (sample count)', 'n.cJoin': 'Join community', 'n.cJoined': 'Joined', 'n.cToastJoin': 'Welcome to the community!', 'n.cToastLeave': 'You left the community.',
     'n.f.amount': 'Amount still needed', 'n.f.amountNote': 'Drag the bar to show needs in this range. Right end = no limit.', 'n.f.nolimit': 'No limit',
     'n.w.skip': 'Skip', 'n.w.next': 'Next', 'n.w.start': 'Get started',
     'n.w.t1': 'See needs near you', 'n.w.d1': 'Find real problems from local people and groups, from a school repair to a sick neighbour.',
@@ -46,6 +47,7 @@ export const FEATURES: Record<'en' | 'hi' | 'mr', Record<string, string>> = {
     'n.trendSub': 'Fundraisers and needs near you with the most support in this demo.', 'n.needTag': 'Need near you', 'n.volsNeeded': '{n} volunteers needed', 'n.pledgedShort': 'pledged',
   },
   hi: {
+    'n.cName': 'GoodNeighbour समुदाय', 'n.cDesc': 'अपने उन पड़ोसियों से जुड़ें जो पैसे, समय और हुनर से एक-दूसरे की मदद करते हैं। समुदाय की और सुविधाएँ जल्द आएँगी।', 'n.cMembers': '{n} पड़ोसी (नमूना संख्या)', 'n.cJoin': 'समुदाय से जुड़ें', 'n.cJoined': 'जुड़ चुके हैं', 'n.cToastJoin': 'समुदाय में आपका स्वागत है!', 'n.cToastLeave': 'आपने समुदाय छोड़ दिया।',
     'n.f.amount': 'अभी कितनी राशि चाहिए', 'n.f.amountNote': 'इस सीमा की ज़रूरतें देखने के लिए बार खींचें। दायाँ सिरा = कोई सीमा नहीं।', 'n.f.nolimit': 'कोई सीमा नहीं',
     'n.w.skip': 'छोड़ें', 'n.w.next': 'आगे', 'n.w.start': 'शुरू करें',
     'n.w.t1': 'अपने आसपास की ज़रूरतें देखें', 'n.w.d1': 'स्थानीय लोगों और संस्थाओं की असली समस्याएँ पाएँ, स्कूल की मरम्मत से लेकर बीमार पड़ोसी तक।',
@@ -90,6 +92,7 @@ export const FEATURES: Record<'en' | 'hi' | 'mr', Record<string, string>> = {
     'n.trendSub': 'इस डेमो में सबसे ज़्यादा समर्थन वाले अभियान और आस-पास की ज़रूरतें।', 'n.needTag': 'आस-पास की ज़रूरत', 'n.volsNeeded': '{n} स्वयंसेवक चाहिए', 'n.pledgedShort': 'वादा',
   },
   mr: {
+    'n.cName': 'GoodNeighbour समुदाय', 'n.cDesc': 'पैसे, वेळ आणि कौशल्यांनी एकमेकांना मदत करणाऱ्या शेजाऱ्यांशी जोडले जा. समुदायाची आणखी वैशिष्ट्ये लवकरच येत आहेत.', 'n.cMembers': '{n} शेजारी (नमुना संख्या)', 'n.cJoin': 'समुदायात सामील व्हा', 'n.cJoined': 'सामील झालात', 'n.cToastJoin': 'समुदायात स्वागत!', 'n.cToastLeave': 'तुम्ही समुदाय सोडला.',
     'n.f.amount': 'अजून किती रक्कम हवी', 'n.f.amountNote': 'या मर्यादेतील गरजा पाहण्यासाठी बार ओढा. उजवे टोक = मर्यादा नाही.', 'n.f.nolimit': 'मर्यादा नाही',
     'n.w.skip': 'वगळा', 'n.w.next': 'पुढे', 'n.w.start': 'सुरू करा',
     'n.w.t1': 'तुमच्या जवळच्या गरजा पहा', 'n.w.d1': 'स्थानिक लोक आणि संस्थांच्या खऱ्या समस्या शोधा, शाळेच्या दुरुस्तीपासून आजारी शेजाऱ्यापर्यंत.',
