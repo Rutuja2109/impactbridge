@@ -76,7 +76,7 @@ function HelpSheet({ id }: { id: string }) {
   const pick = (key: string, kind?: 'volunteer' | 'items') => {
     closeSheet();
     // Installed app: the offer is really sent to the organiser. Expo Go keeps the demo toast.
-    if (firebaseReady && kind && user?.uid) respond(user, id, kind).then(() => toast(t('n.rs.sent', { e: user.email }))).catch(() => toast(t('n.cm.fail')));
+    if (firebaseReady && kind && user?.uid) respond(user, id, kind, p.title).then(() => toast(t('n.rs.sent', { e: user.email }))).catch(() => toast(t('n.cm.fail')));
     else toast(t(key));
   };
   return (

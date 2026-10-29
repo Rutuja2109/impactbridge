@@ -1,7 +1,7 @@
 // Real posts. A submitted form is saved as a "pending" document; only an admin can approve it (status = 'approved' in the
 // Firebase console), and only then does it appear for everyone. The private contact stays in a separate document that
 // only its author can read. applyLive() turns the approved posts into the cards the screens already know.
-import { addDoc, collection, doc, onSnapshot, query, setDoc, where } from '@react-native-firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, query, setDoc, writeBatch, where } from '@react-native-firebase/firestore';
 import { useEffect } from 'react';
 
 import { applyLive, type PostDoc } from '../data';
@@ -40,5 +40,10 @@ export const report = (u: User, targetType: 'post' | 'community', targetId: stri
   addDoc(collection(db!, 'reports'), { targetType, targetId, reason, by: u.uid, at: Date.now() });
 
 /** Someone offers help on an approved post (time or items). The organiser gets a notification and sees the name and email. */
-export const respond = (u: User, postId: string, kind: 'volunteer' | 'items') =>
-  setDoc(doc(db!, 'posts', postId, 'responses', u.uid!), { kind, name: u.name, email: u.email, at: Date.now() });
+export async function respond(u: User, postId: string, kind: 'volunteer' | 'items', title = '') {
+  const at = Date.now();
+  const b = writeBatch(db!);
+  b.set(doc(db!, 'posts', postId, 'responses', u.uid!), { kind, name: u.name, email: u.email, at });
+  b.set(doc(db!, 'users', u.uid!, 'helps', postId), { kind, title, at }); // the person's own record, behind their badge and certificate
+  await b.commit();
+}

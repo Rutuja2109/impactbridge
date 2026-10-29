@@ -14,7 +14,7 @@ export type Org = { orgName: string; status: 'pending' | 'verified' | 'rejected'
 export type Member = { uid: string; name: string };
 
 /** Live Firestore data, or `fallback` until the first snapshot (and always when Firebase is not configured). */
-function useLive<T>(make: (() => (cb: (v: T) => void) => () => void) | null, fallback: T, deps: unknown[]): T {
+export function useLive<T>(make: (() => (cb: (v: T) => void) => () => void) | null, fallback: T, deps: unknown[]): T {
   const [v, setV] = useState<T>(fallback);
   useEffect(() => { setV(fallback); return make ? make()(setV) : undefined; }, deps); // eslint-disable-line react-hooks/exhaustive-deps
   return v;

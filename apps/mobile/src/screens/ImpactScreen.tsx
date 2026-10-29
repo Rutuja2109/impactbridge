@@ -45,7 +45,7 @@ export default function ImpactScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }}>
-      <PageHead title={t('imp.title')} subtitle={t('imp.sub')} />
+      <PageHead title={t('imp.title')} subtitle={t(firebaseReady ? 'n.imp.sub' : 'imp.sub')} />
       {firebaseReady ? null : <Notice text={tr('imp.notice')} rich style={styles.notice} />}
 
       <ImpactMine />
@@ -121,6 +121,8 @@ export default function ImpactScreen() {
         </>
       )}
 
+      {firebaseReady ? null : (
+        <>
       {/* My volunteering: time */}
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('imp.vol')}</Text>
@@ -153,6 +155,8 @@ export default function ImpactScreen() {
           <Button label={t('vol.find')} variant="ghost" small style={styles.self} onPress={() => goTab('community')} />
         </Panel>
       </View>
+        </>
+      )}
     </ScrollView>
   );
 }
