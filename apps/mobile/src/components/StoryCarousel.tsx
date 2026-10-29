@@ -33,6 +33,7 @@ export default function StoryCarousel() {
     if (i !== active) setActive(i);
   };
   const s = stories[active];
+  if (!s) return null;
 
   return (
     <View>

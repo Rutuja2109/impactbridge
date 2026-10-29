@@ -10,7 +10,7 @@ import StoryCarousel from '../components/StoryCarousel';
 import SipPanel from '../components/SipPanel';
 import NeedsCarousel from '../components/NeedsCarousel';
 import { Button, SampleTag, SectionHeader, UntrNote } from '../components/ui';
-import { campaignReceived, campaigns, campaignSupporters, categories, projects } from '../data';
+import { campaignReceived, campaigns, campaignSupporters, categories, projects, stories } from '../data';
 import { inr } from '../format';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
@@ -51,7 +51,8 @@ export default function HomeScreen() {
           {categories.map((c) => {
             const mine = campaigns.filter((x) => x.cat === c.id);
             const amount = inr(mine.reduce((a, x) => a + campaignReceived(x, donations[x.id]), 0));
-            const stat = mine.length === 1 ? t('feat.stat1', { a: amount }) : t('feat.statN', { n: mine.length, a: amount });
+            // Real content has no "sample" or "simulated" wording; a cause with nothing yet shows no figure.
+            const stat = firebaseReady ? (mine.length ? t('n.feat.live', { n: mine.length }) : '') : mine.length === 1 ? t('feat.stat1', { a: amount }) : t('feat.statN', { n: mine.length, a: amount });
             return (
               <Pressable
                 key={c.id}
@@ -65,7 +66,7 @@ export default function HomeScreen() {
                 <View style={styles.causeBody}>
                   <Text style={styles.causeName}>{t(`cat.${c.id}`)}</Text>
                   <Text style={styles.causeBlurb}>{t(`catb.${c.id}`)}</Text>
-                  <Text style={styles.causeStat}>{stat}</Text>
+                  {stat ? <Text style={styles.causeStat}>{stat}</Text> : null}
                 </View>
               </Pressable>
             );
@@ -74,16 +75,30 @@ export default function HomeScreen() {
         <Button label={t('feat.cta')} block onPress={() => openDiscover({ kind: 'fund', cat: 'all' })} />
       </View>
 
-      <View style={styles.gap} />
-      <SectionHeader title={t('n.nearTitle')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'projects', cat: 'all' })} subtitle={t('n.nearSub')} />
-      <UntrNote style={styles.note} />
-      <NeedsCarousel items={needs} />
+      {firebaseReady && !needs.length && !campaigns.length ? (
+        <View style={styles.empty}>
+          <Text accessibilityRole="header" style={styles.emptyT}>{t('n.empty.t')}</Text>
+          <Text style={styles.emptyD}>{t('n.empty.d')}</Text>
+        </View>
+      ) : null}
+      {needs.length ? (
+        <>
+          <View style={styles.gap} />
+          <SectionHeader title={t('n.nearTitle')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'projects', cat: 'all' })} subtitle={t('n.nearSub')} />
+          <UntrNote style={styles.note} />
+          <NeedsCarousel items={needs} />
+        </>
+      ) : null}
 
       {firebaseReady ? null : <SipPanel />}
 
-      <View style={styles.gap} />
-      <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />
-      <StoryCarousel />
+      {stories.length ? (
+        <>
+          <View style={styles.gap} />
+          <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />
+          <StoryCarousel />
+        </>
+      ) : null}
 
     </ScrollView>
   );
@@ -93,6 +108,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   pressed: { opacity: 0.85 },
   gap: { height: space.xl },
+  empty: { marginHorizontal: space.l, marginTop: space.xl, padding: space.xl, gap: 8, borderRadius: radius.l, backgroundColor: colors.paper, alignItems: 'center' },
+  emptyT: { ...type.title, color: colors.ink, textAlign: 'center' },
+  emptyD: { ...type.body, color: colors.slate, textAlign: 'center' },
   updates: {
     flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 14,
     borderRadius: radius.m, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, boxShadow: shadow.card,
