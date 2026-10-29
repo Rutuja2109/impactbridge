@@ -145,12 +145,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // The installed app never handles money: Donate opens the organiser's own payment page, and the demo SIP is off.
     showSheet: (s) => {
       if (firebaseReady && s.kind === 'sip') return;
-      if (firebaseReady && s.kind === 'donate') {
-        const link = campaignOf(s.id)?.payLink;
-        if (link && /^https?:\/\/|^upi:\/\//i.test(link)) Linking.openURL(link).catch(() => toast(t('n.pay.fail')));
-        else toast(t('n.pay.none'));
-        return;
-      }
+      if (firebaseReady && s.kind === 'donate' && !campaignOf(s.id)?.payLink) { toast(t('n.pay.none')); return; }
       setSheet(s);
     },
     closeSheet: () => setSheet(null),

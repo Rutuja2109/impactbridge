@@ -8,6 +8,7 @@ import Sheet, { sheetStyles as s } from '../components/Sheet';
 import { Button, ProgressBar, SampleTag, TwoLayerBar, UntrTag, StatGrid } from '../components/ui';
 import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pledgePct, pledgedPct, projectOf, projects } from '../data';
 import { firebaseReady } from '../firebase';
+import LiveDonateSheet from './LiveDonateSheet';
 import { inr } from '../format';
 import { report, respond } from '../state/posts';
 import { Rich, useT } from '../i18n';
@@ -184,7 +185,7 @@ export default function SheetHost() {
     case 'sip': return <SipSheet cause={sheet.cause} />;
     case 'profile': return <ProfileDrawer />;
     case 'filters': return <FilterSheet />;
-    case 'donate': return campaignOf(sheet.id) ? <DonateSheet id={sheet.id} /> : null;
+    case 'donate': return campaignOf(sheet.id) ? (firebaseReady ? <LiveDonateSheet id={sheet.id} /> : <DonateSheet id={sheet.id} />) : null;
   }
 }
 

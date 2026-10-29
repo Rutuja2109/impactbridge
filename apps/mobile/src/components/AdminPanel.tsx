@@ -9,6 +9,7 @@ import { db } from '../firebase';
 import { useLive } from '../state/communities';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
+import DonationsList from './DonationsList';
 import { Button } from './ui';
 
 type PostRow = { id: string; flow: string; status: string; ownerName: string; at: number; data: Record<string, string> };
@@ -55,6 +56,7 @@ function PostCard({ p, review }: { p: PostRow; review: boolean }) {
         </>
       ) : (
         <>
+          {p.flow === 'fund' ? <DonationsList postId={p.id} /> : null}
           <Text style={styles.meta}>{resp.length} offer{resp.length === 1 ? '' : 's'} of help</Text>
           {resp.map((r) => <Text key={r.uid} style={styles.meta}>• {r.name} ({r.kind}) {r.email}</Text>)}
           <Button label="Take down" small variant="ghost" disabled={busy} onPress={() => act('rejected')} />

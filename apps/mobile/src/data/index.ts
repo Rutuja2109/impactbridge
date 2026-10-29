@@ -72,7 +72,7 @@ export const pledgePct = (c: Campaign, donations: Donation[]) =>
   Math.min(100 - fundPct(c, donations), Math.round((campaignPledged(donations) / c.goal) * 100));
 
 /** What an approved post document looks like in Firestore (written by the post forms, approved by an admin). */
-export type PostDoc = { id: string; flow: 'problem' | 'project' | 'fund'; data: Record<string, unknown>; ownerId?: string; createdAt?: number };
+export type PostDoc = { id: string; flow: 'problem' | 'project' | 'fund'; data: Record<string, unknown>; ownerId?: string; createdAt?: number; received?: number; donors?: number };
 
 const num = (v: unknown) => (typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : 0);
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -93,7 +93,7 @@ export function applyLive(posts: PostDoc[]) {
         id: p.id, type: d.ctype === 'org' ? 'org' : 'individual', cat, org: null, urgent: false, featured: false,
         verify: 'unverified', goal: num(d.goal) || 1000, days: daysLeft(str(d.deadline)), x: spot(p.id, 1), y: spot(p.id, 2), lat: coord(d.lat, 90), lng: coord(d.lng, 180),
         title: str(d.title), short: str(d.story).slice(0, 120), story: str(d.story), beneficiary: str(d.benName), benAbout: str(d.benAbout),
-        organizer: str(d.display), base: { received: 0, donors: 0 }, updates: [], funds: [], donations: [],
+        organizer: str(d.display), base: { received: p.received ?? 0, donors: p.donors ?? 0 }, updates: [], funds: [], donations: [],
         payLink: str(d.payLink) || undefined,
       });
     } else {

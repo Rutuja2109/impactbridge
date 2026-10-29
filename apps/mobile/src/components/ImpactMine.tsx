@@ -15,6 +15,7 @@ import { useJoined } from '../state/communities';
 import { useMyHelps, useMyPosts } from '../state/mine';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
+import DonationsList from './DonationsList';
 import Icon from './Icon';
 import { LogoMark } from './Logo';
 import Sheet from './Sheet';
@@ -147,6 +148,7 @@ export default function ImpactMine() {
                 <Text style={styles.itemTitle} numberOfLines={2}>{p.title || '—'}</Text>
                 <Text style={styles.small}>{formatDate(iso(p.at), { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
               </View>
+              {p.flow === 'fund' && p.status === 'approved' ? <DonationsList postId={p.id} /> : null}
               <Pill label={t(`n.imp.st.${p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending'}`)} tone={p.status === 'approved' ? 'leaf' : p.status === 'rejected' ? 'brick' : 'amber'} />
             </View>
           )) : <Text style={styles.small}>{t('n.imp.postsNone')}</Text>}
