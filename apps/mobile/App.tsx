@@ -1,41 +1,69 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import BottomNav, { type TabId } from './src/components/BottomNav';
-import PostSheet from './src/components/PostSheet';
-import ComingSoonScreen from './src/screens/ComingSoonScreen';
+import BottomNav from './src/components/BottomNav';
+import DemoBanner from './src/components/DemoBanner';
+import { LangProvider } from './src/i18n';
+import CampaignScreen from './src/screens/CampaignScreen';
+import CommunityScreen from './src/screens/CommunityScreen';
+import DiscoverScreen from './src/screens/DiscoverScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import ImpactScreen from './src/screens/ImpactScreen';
+import ProjectScreen from './src/screens/ProjectScreen';
+import SheetHost from './src/sheets/Sheets';
+import { StoreProvider, useStore } from './src/state/store';
 import { colors } from './src/theme';
 
-// App shell: the five-destination bottom bar (Post is the centre plus button) and the screen for the chosen tab.
-// Everything shown is local sample data; nothing is sent anywhere and no permissions are requested.
-export default function App() {
-  const [tab, setTab] = useState<TabId>('home');
-  const [postOpen, setPostOpen] = useState(false);
+// App shell: demo banner, the current tab (or the detail screen on top of it), the five-destination bottom bar
+// with the centre plus, and whichever sheet is open. Everything is local sample data; nothing is sent anywhere
+// and no permissions are requested.
+function Shell() {
+  const { tab, stack, sheet, back, closeSheet } = useStore();
+  const top = stack[stack.length - 1];
 
-  const choosePost = (title: string) => {
-    setPostOpen(false);
-    // Let the sheet finish closing before the dialog appears.
-    setTimeout(() => Alert.alert(title, 'This form comes in a later step. Nothing is sent or saved.'), 250);
-  };
+  // Android Back closes the open sheet, then detail screens, then returns to Home.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (sheet) { closeSheet(); return true; }
+      return back();
+    });
+    return () => sub.remove();
+  }, [sheet, back, closeSheet]);
+
+  let screen;
+  if (top?.name === 'project') screen = <ProjectScreen key={top.id} id={top.id} />;
+  else if (top?.name === 'campaign') screen = <CampaignScreen key={top.id} id={top.id} />;
+  else if (tab === 'discover') screen = <DiscoverScreen />;
+  else if (tab === 'community') screen = <CommunityScreen />;
+  else if (tab === 'impact') screen = <ImpactScreen />;
+  else screen = <HomeScreen />;
 
   return (
+    <View style={styles.root}>
+      <DemoBanner />
+      <View style={styles.body}>{screen}</View>
+      <BottomNav />
+      <SheetHost />
+      <StatusBar style="light" />
+    </View>
+  );
+}
+
+export default function App() {
+  return (
     <SafeAreaProvider>
-      <View style={styles.root}>
-        {tab === 'home' && <HomeScreen onNeedSupport={() => setPostOpen(true)} onCanHelp={() => setTab('discover')} />}
-        {tab === 'discover' && <ComingSoonScreen title="Discover" icon="search" />}
-        {tab === 'community' && <ComingSoonScreen title="Community" icon="people" />}
-        {tab === 'impact' && <ComingSoonScreen title="Impact" icon="chart" />}
-        <BottomNav active={tab} onSelect={setTab} onPost={() => setPostOpen(true)} />
-        <PostSheet visible={postOpen} onClose={() => setPostOpen(false)} onChoose={(_, title) => choosePost(title)} />
-        <StatusBar style="dark" />
-      </View>
+      <LangProvider>
+        <StoreProvider>
+          <Shell />
+        </StoreProvider>
+      </LangProvider>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.white },
+  body: { flex: 1 },
 });

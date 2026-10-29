@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { useT } from '../i18n';
 import { colors, radius, shadow, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
 
@@ -34,15 +35,14 @@ function useLoop(halfMs: number, delayMs: number, enabled: boolean) {
       return;
     }
     const ease = Easing.inOut(Easing.ease);
-    const anim = Animated.sequence([
-      Animated.delay(delayMs),
-      Animated.loop(Animated.sequence([
-        Animated.timing(value, { toValue: 1, duration: halfMs, easing: ease, useNativeDriver: true }),
-        Animated.timing(value, { toValue: 0, duration: halfMs, easing: ease, useNativeDriver: true }),
-      ])),
-    ]);
-    anim.start();
-    return () => anim.stop();
+    // The loop is started on its own (not nested in a sequence): a native-driver loop nested in a sequence can play
+    // only once. The stagger delay is a plain timer instead.
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(value, { toValue: 1, duration: halfMs, easing: ease, useNativeDriver: true }),
+      Animated.timing(value, { toValue: 0, duration: halfMs, easing: ease, useNativeDriver: true }),
+    ]));
+    const timer = setTimeout(() => loop.start(), delayMs);
+    return () => { clearTimeout(timer); loop.stop(); };
   }, [value, halfMs, delayMs, enabled]);
   return value;
 }
@@ -137,6 +137,7 @@ function ActionCard({ icon, title, description, tint, ink, onPress, hint }: Acti
 type Props = { onNeedSupport: () => void; onCanHelp: () => void };
 
 export default function HomeHero({ onNeedSupport, onCanHelp }: Props) {
+  const { t } = useT();
   return (
     <View>
       <View style={styles.panel}>
@@ -149,9 +150,9 @@ export default function HomeHero({ onNeedSupport, onCanHelp }: Props) {
           </Defs>
           <Rect width="100%" height="100%" fill="url(#hero-bg)" />
         </Svg>
-        <Text style={styles.eyebrow}>Welcome, neighbour 👋</Text>
-        <Text style={styles.tagline} accessibilityRole="header">Small acts. Real change.</Text>
-        <Text style={styles.sub}>Your community. Your people. Your impact.</Text>
+        <Text style={styles.eyebrow}>{t('home.eyebrow')}</Text>
+        <Text style={styles.tagline} accessibilityRole="header">{t('home.tagline')}</Text>
+        <Text style={styles.sub}>{t('home.sub')}</Text>
         <View style={styles.art}>
           <HeroArt />
         </View>
@@ -159,21 +160,21 @@ export default function HomeHero({ onNeedSupport, onCanHelp }: Props) {
       <View style={styles.actions}>
         <ActionCard
           icon="heart"
-          title="I need support"
-          description="Tell neighbours what’s needed."
+          title={t('home.needT')}
+          description={t('home.needD')}
           tint="#FFF1E6"
           ink="#C2410C"
           onPress={onNeedSupport}
-          hint="Opens the choices for posting a problem, project or fundraiser"
+          hint={t('nav.postAria')}
         />
         <ActionCard
           icon="hand"
-          title="I can help"
-          description="Give money, time or a skill."
+          title={t('home.helpT')}
+          description={t('home.helpD')}
           tint={colors.tealSoft}
           ink={colors.tealDark}
           onPress={onCanHelp}
-          hint="Opens Discover"
+          hint={t('nav.discover')}
         />
       </View>
     </View>

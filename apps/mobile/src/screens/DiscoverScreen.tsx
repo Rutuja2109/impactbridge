@@ -1,0 +1,118 @@
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { NAV_HEIGHT } from '../components/BottomNav';
+import CampaignCard from '../components/CampaignCard';
+import Icon from '../components/Icon';
+import IllustrativeMap, { type MapItem } from '../components/IllustrativeMap';
+import ProjectCard from '../components/ProjectCard';
+import { Button, ChipRow, PageHead, Segmented, UntrNote } from '../components/ui';
+import { campaigns, categories, fundPct, pledgedPct, projects, type CauseId } from '../data';
+import { STRINGS } from '../i18n/strings.generated';
+import { useT } from '../i18n';
+import { useStore } from '../state/store';
+import { colors, radius, space } from '../theme';
+
+// Discover, as in the prototype: search, Projects / Fundraisers, the five causes, and a List / illustrative Map view.
+// Filters stay as they are when switching views or opening a card and coming back.
+export default function DiscoverScreen() {
+  const insets = useSafeAreaInsets();
+  const { t } = useT();
+  const { discover: d, setDiscover, open, donations } = useStore();
+  const fund = d.kind === 'fund';
+  const q = d.q.trim().toLowerCase();
+  const causeWords = (cat: CauseId) => `${t(`cat.${cat}`)} ${(STRINGS.en as Record<string, string>)[`cat.${cat}`]}`;
+  const inCat = (cat: CauseId) => d.cat === 'all' || cat === d.cat;
+  const matches = (words: string[]) => !q || words.join(' ').toLowerCase().includes(q);
+
+  const shownProjects = fund ? [] : projects.filter((p) => inCat(p.cat) && matches([p.title, p.org, p.area, p.desc, causeWords(p.cat)]));
+  const shownCampaigns = fund ? campaigns.filter((c) => inCat(c.cat) && matches([c.title, c.short, c.story, c.organizer, c.beneficiary, causeWords(c.cat)])) : [];
+  const n = fund ? shownCampaigns.length : shownProjects.length;
+  const count = fund ? (n === 1 ? t('disc.fcount1') : t('disc.fcountN', { n })) : (n === 1 ? t('disc.count1') : t('disc.countN', { n }));
+
+  const mapItems: MapItem[] = fund
+    ? shownCampaigns.map((c) => ({ id: c.id, cat: c.cat, x: c.x, y: c.y, title: c.title, meta: `${c.organizer} · ${t('map.fpct', { n: fundPct(c, donations[c.id]) })}` }))
+    : shownProjects.map((p) => ({ id: p.id, cat: p.cat, x: p.x, y: p.y, title: p.title, meta: `${p.area} · ${t('map.pct', { n: pledgedPct(p) })}` }));
+  const pin = mapItems.some((m) => m.id === d.pin) ? d.pin : null;
+
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }} keyboardShouldPersistTaps="handled">
+      <PageHead title={t('disc.title')} subtitle={t('disc.sub')} tag={t('c.sampleData')} />
+
+      <View style={styles.search}>
+        <Icon name="search" size={20} color={colors.slate} />
+        <TextInput
+          value={d.q}
+          onChangeText={(v) => setDiscover({ q: v })}
+          placeholder={t('disc.search')}
+          placeholderTextColor={colors.slate}
+          accessibilityLabel={t('disc.searchAria')}
+          returnKeyType="search"
+          style={styles.input}
+        />
+        {d.q ? <Text onPress={() => setDiscover({ q: '' })} accessibilityRole="button" accessibilityLabel={t('c.close')} style={styles.clearX}>✕</Text> : null}
+      </View>
+
+      <View style={styles.block}>
+        <Segmented
+          stretch
+          label={t('disc.kind')}
+          selected={d.kind}
+          onSelect={(k) => setDiscover({ kind: k as 'projects' | 'fund', pin: null })}
+          items={[{ id: 'projects', label: t('disc.projects') }, { id: 'fund', label: t('disc.fundraisers') }]}
+        />
+      </View>
+
+      <ChipRow
+        label={t('disc.filter')}
+        selected={d.cat}
+        onSelect={(id) => setDiscover({ cat: id as 'all' | CauseId, pin: null })}
+        items={[{ id: 'all', label: t('disc.all') }, ...categories.map((c) => ({ id: c.id, label: t(`cat.${c.id}`) }))]}
+      />
+
+      <View style={styles.toolbar}>
+        <Text style={styles.count} accessibilityLiveRegion="polite">{count}</Text>
+        <Segmented
+          label={t('disc.view')}
+          selected={d.view}
+          onSelect={(v) => setDiscover({ view: v as 'list' | 'map' })}
+          items={[{ id: 'list', label: t('disc.list') }, { id: 'map', label: t('disc.map') }]}
+        />
+      </View>
+      <UntrNote style={styles.note} />
+
+      {n === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>{t(fund ? 'disc.noneF' : 'disc.noneT')}</Text>
+          <Text style={styles.emptyText}>{t('disc.noneD')}</Text>
+          <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null })} />
+        </View>
+      ) : d.view === 'map' ? (
+        <IllustrativeMap
+          items={mapItems}
+          selected={pin}
+          onSelect={(id) => setDiscover({ pin: id })}
+          onOpen={(id) => open({ name: fund ? 'campaign' : 'project', id })}
+        />
+      ) : fund ? (
+        shownCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} />)
+      ) : (
+        shownProjects.map((p) => <ProjectCard key={p.id} project={p} />)
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.white },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: space.l, marginTop: space.m, minHeight: 50, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  input: { flex: 1, fontSize: 16, color: colors.ink, paddingVertical: 10 },
+  clearX: { fontSize: 16, color: colors.slate, paddingHorizontal: 4 },
+  block: { marginHorizontal: space.l, marginTop: space.m, marginBottom: space.m },
+  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginHorizontal: space.l, marginVertical: space.m },
+  count: { flex: 1, fontSize: 14, color: colors.slate },
+  note: { marginHorizontal: space.l, marginBottom: space.m },
+  empty: { marginHorizontal: space.l, alignItems: 'center', gap: 8, padding: space.xxl, borderRadius: radius.m, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.line },
+  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, textAlign: 'center' },
+  emptyText: { fontSize: 15, color: colors.slate, textAlign: 'center' },
+});

@@ -16,6 +16,18 @@ export const colors = {
   amber: '#B45309',
   amberSoft: '#FEF3C7',
   sampleBg: '#EEF2EF',
+  // status colours from the prototype's badges
+  leaf: '#047857',
+  leafSoft: '#E3F5EC',
+  brick: '#B42318',
+  brickSoft: '#FDECEA',
+  grey: '#4B5563',
+  greySoft: '#EEF0F2',
+  violet: '#5B21B6',
+  violetSoft: '#EDE9FE',
+  blueInk: '#2A3F8F',
+  blueSoft: '#EBEFFC',
+  banner: '#0B2A1F',
 } as const;
 
 export const space = { xs: 4, s: 8, m: 12, l: 16, xl: 24, xxl: 32 } as const;
