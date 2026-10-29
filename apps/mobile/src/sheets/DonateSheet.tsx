@@ -30,7 +30,8 @@ export default function DonateSheet({ id }: { id: string }) {
   const value = custom.trim() ? Number(custom.trim()) : amount;
   const valid = (!custom.trim() || /^\d+$/.test(custom.trim())) && value >= 10 && value <= 100000;
   const shownAs = name.trim() || t('cd.anon');
-  const onCampaign = store.stack[store.stack.length - 1]?.name === 'campaign' && store.stack[store.stack.length - 1]?.id === id;
+  const topRoute = store.stack[store.stack.length - 1];
+  const onCampaign = topRoute?.name === 'campaign' && topRoute.id === id;
 
   const next = () => {
     if (step === 1 && !valid) { setErr(true); return; }

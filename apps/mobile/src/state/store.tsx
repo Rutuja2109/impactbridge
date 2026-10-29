@@ -6,9 +6,11 @@ import { Animated, StyleSheet, Text } from 'react-native';
 import { campaigns, type CauseId, type Donation } from '../data';
 import { NO_FILTERS, type Filters } from '../data/filters';
 import { colors, radius, space, type } from '../theme';
+import type { User } from '../screens/Welcome';
+import { freshPost, type Flow, type PostState } from './post';
 
 export type TabId = 'home' | 'discover' | 'community' | 'impact';
-export type Route = { name: 'project'; id: string } | { name: 'campaign'; id: string };
+export type Route = { name: 'project'; id: string } | { name: 'campaign'; id: string } | { name: 'post'; flow: Flow };
 export type Sheet =
   | { kind: 'post' }
   | { kind: 'updates' }
@@ -36,6 +38,10 @@ type Store = {
   donations: Record<string, Donation[]>;
   myDonations: MyDonation[];
   sips: Sip[];
+  posts: Record<Flow, PostState>;
+  user: User | null;
+  setUser: (u: User | null) => void;
+  setPost: (flow: Flow, fn: (p: PostState) => PostState) => void;
   startSip: (cause: CauseId, amount: number, cid: string | null, name?: string, message?: string) => void;
   setSipStatus: (id: string, status: Sip['status']) => void;
   goTab: (tab: TabId) => void;
@@ -65,7 +71,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [going, setGoing] = useState<string[]>([]);
   const [donations, setDonations] = useState<Record<string, Donation[]>>(initialDonations);
   const [myDonations, setMyDonations] = useState<MyDonation[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [sips, setSips] = useState<Sip[]>([]);
+  const [posts, setPosts] = useState<Record<Flow, PostState>>({ problem: freshPost(), project: freshPost(), fund: freshPost() });
 
   // toast
   const [toastText, setToastText] = useState('');
@@ -86,7 +94,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   tabRef.current = tab;
 
   const store = useMemo<Store>(() => ({
-    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips,
+    tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, setUser,
+    setPost: (flow, fn) => setPosts((all) => ({ ...all, [flow]: fn(all[flow]) })),
     // The first month of a campaign SIP is recorded as a simulated donation so the campaign total moves once, now.
     startSip: (cause, amount, cid, name = '', message = '') => {
       setSips((all) => [...all, { id: `sip-${all.length + 1}`, cause, amount, cid, status: 'active', started: new Date().toISOString().slice(0, 10) }]);
@@ -126,7 +135,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDonations((all) => ({ ...all, [cid]: all[cid].map((d, i) => (i === index ? { ...d, s: 'received' } : d)) }));
     },
     toast,
-  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, toast]);
+  }), [tab, stack, sheet, discover, following, joined, going, donations, myDonations, sips, posts, user, toast]);
 
   return (
     <StoreContext.Provider value={store}>

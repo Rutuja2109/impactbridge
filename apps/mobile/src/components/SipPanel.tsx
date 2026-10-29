@@ -69,15 +69,15 @@ export default function SipPanel() {
 }
 
 const styles = StyleSheet.create({
-  panel: { marginHorizontal: space.l, marginTop: space.xxl, paddingTop: 40, paddingBottom: 24, paddingHorizontal: 24, borderRadius: 28, backgroundColor: '#F7E4D9' },
-  ribbon: { position: 'absolute', top: 0, right: 28, backgroundColor: '#2563EB', paddingHorizontal: 12, paddingVertical: 6, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
+  panel: { marginHorizontal: space.l, marginTop: space.xxl, paddingTop: 40, paddingBottom: 24, paddingHorizontal: 24, borderRadius: 28, backgroundColor: '#FFF0C2' },
+  ribbon: { position: 'absolute', top: 0, right: 28, backgroundColor: colors.tealDark, paddingHorizontal: 12, paddingVertical: 6, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
   ribbonText: { color: colors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   head: { flex: 1, fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },
-  em: { fontFamily: 'serif', fontStyle: 'italic', fontWeight: '700' },
+  em: { fontFamily: 'serif', fontStyle: 'italic', fontWeight: '700', color: '#B45309' },
   givers: { alignItems: 'center', gap: 6, maxWidth: 140 },
   stack: { flexDirection: 'row' },
-  face: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#F7E4D9' },
+  face: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF0C2' },
   giversText: { fontSize: 13, fontWeight: '700', color: colors.ink, textAlign: 'center' },
   desc: { fontSize: 15, lineHeight: 22, color: '#3D4A44', marginTop: space.m },
   cardsScroll: { marginHorizontal: -24, marginTop: space.xl },
@@ -89,6 +89,6 @@ const styles = StyleSheet.create({
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: space.xl },
   from: { fontSize: 14, color: '#3D4A44' },
   price: { fontSize: 26, fontWeight: '800', color: colors.ink },
-  cta: { backgroundColor: '#2A8C8C', borderRadius: radius.pill, paddingHorizontal: 24, paddingVertical: 14 },
+  cta: { backgroundColor: '#D97706', borderRadius: radius.pill, paddingHorizontal: 24, paddingVertical: 14 },
   ctaText: { color: colors.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.6 },
 });

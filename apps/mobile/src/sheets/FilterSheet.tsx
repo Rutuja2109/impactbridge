@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon from '../components/Icon';
 import { Button } from '../components/ui';
-import { activeCount, areas, NO_FILTERS, type Filters } from '../data/filters';
+import RangeBar from '../components/RangeBar';
+import { activeCount, areas, MONEY_MAX, moneyOn, NO_FILTERS, type Filters } from '../data/filters';
+import { inr } from '../format';
 import { useT } from '../i18n';
 import { useDiscoverResults } from '../screens/useDiscoverResults';
 import { useStore } from '../state/store';
@@ -32,9 +34,11 @@ export default function FilterSheet() {
     id: 'sort', title: t('n.f.sort'), mode: 'radio', value: [f.sort], set: ([v]) => patch('sort', v as Filters['sort']),
     options: [['relevant', 'n.f.sort.relevant'], ['urgent', 'n.f.sort.urgent'], ['nearly', 'n.f.sort.nearly'], ['most', fund ? 'n.f.sort.mostF' : 'n.f.sort.mostP']].map(([id, k]) => ({ id, label: t(k) })),
   };
+  const amount: Section = { id: 'amount', title: t('n.f.amount'), mode: 'check', value: moneyOn(f) ? ['1'] : [], set: () => {}, options: [] };
   const sections: Section[] = fund
     ? [
         sort,
+        amount,
         { id: 'verify', title: t('n.f.verify'), mode: 'check', value: f.verify, set: (v) => patch('verify', v as Filters['verify']), options: [['docs', 'v.docs'], ['pending', 'v.pending'], ['unverified', 'v.unverified']].map(([id, k]) => ({ id, label: t(k) })) },
         { id: 'who', title: t('n.f.who'), mode: 'check', value: f.who, set: (v) => patch('who', v as Filters['who']), options: [['individual', 'fund.individual'], ['org', 'fund.org']].map(([id, k]) => ({ id, label: t(k) })) },
         { id: 'urgent', title: t('fund.urgent'), mode: 'check', value: f.urgent ? ['1'] : [], set: (v) => patch('urgent', v.length > 0), options: [{ id: '1', label: t('n.f.urgentOnly') }] },
@@ -51,6 +55,13 @@ export default function FilterSheet() {
   const current = sections.find((s) => s.id === open) ?? sections[0];
   const chosen = (s: Section) => (s.id === 'sort' ? s.value[0] !== 'relevant' : s.id === 'within' ? f.within !== 0 : s.value.length > 0);
   const toggle = (s: Section, id: string) => s.set(s.mode === 'radio' ? [id] : s.value.includes(id) ? s.value.filter((v) => v !== id) : [...s.value, id]);
+  const bar = (key: string) => (
+    <View key={key} style={styles.bar}>
+      <Text style={styles.barText}>{inr(f.money[0])} – {f.money[1] >= MONEY_MAX ? t('n.f.nolimit') : inr(f.money[1])}</Text>
+      <RangeBar min={0} max={MONEY_MAX} value={f.money} onChange={(v) => patch('money', v)} label={t('n.f.amount')} />
+      <Text style={styles.barNote}>{t('n.f.amountNote')}</Text>
+    </View>
+  );
   const apply = () => { setDiscover({ f, pin: null }); closeSheet(); };
 
   return (
@@ -77,9 +88,9 @@ export default function FilterSheet() {
               })}
             </ScrollView>
             <ScrollView style={styles.options} contentContainerStyle={styles.optionsBody}>
-              {current.options.map((o) => {
+              {current.options.flatMap((o) => {
                 const on = current.value.includes(o.id);
-                return (
+                const row = (
                   <Pressable key={o.id} onPress={() => toggle(current, o.id)} accessibilityRole={current.mode === 'radio' ? 'radio' : 'checkbox'} accessibilityState={{ checked: on }} style={styles.optionRow}>
                     <View style={[styles.box, current.mode === 'radio' && styles.round, on && styles.boxOn]}>
                       {on ? <Icon name="check" size={14} color={colors.white} strokeWidth={3} /> : null}
@@ -87,7 +98,9 @@ export default function FilterSheet() {
                     <Text style={styles.optionText}>{o.label}</Text>
                   </Pressable>
                 );
+                return current.id === 'help' && o.id === 'money' ? [row, bar('b')] : [row];
               })}
+              {current.id === 'amount' ? bar('a') : null}
             </ScrollView>
           </View>
           <View style={styles.foot}>
@@ -124,4 +137,7 @@ const styles = StyleSheet.create({
   optionText: { flex: 1, fontSize: 16, color: colors.ink },
   foot: { flexDirection: 'row', gap: 12, paddingHorizontal: space.xl, paddingTop: space.m, borderTopWidth: 1, borderTopColor: colors.line },
   footBtn: { flex: 1 },
+  bar: { marginLeft: 38, marginBottom: space.m, gap: 4 },
+  barText: { fontSize: 15, fontWeight: '800', color: colors.tealDark },
+  barNote: { fontSize: 12, lineHeight: 16, color: colors.slate },
 });

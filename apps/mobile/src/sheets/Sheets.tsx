@@ -8,6 +8,7 @@ import { Button, ProgressBar, SampleTag, TwoLayerBar, UntrTag, StatGrid } from '
 import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pledgePct, pledgedPct, projectOf, projects } from '../data';
 import { inr } from '../format';
 import { Rich, useT } from '../i18n';
+import type { Flow } from '../state/post';
 import { useStore } from '../state/store';
 import { colors, space, type } from '../theme';
 import DonateSheet from './DonateSheet';
@@ -30,15 +31,14 @@ function Option({ icon, title, desc, onPress }: { icon?: IconName; title: string
 
 function PostSheet() {
   const { t } = useT();
-  const { closeSheet, toast } = useStore();
-  const choose = (title: string) => { closeSheet(); toast(`${title}: ${t('n.formLater')}`); };
+  const { closeSheet, open } = useStore();
+  const go = (flow: Flow) => open({ name: 'post', flow });
   return (
     <Sheet visible onClose={closeSheet} title={t('pc.title')} subtitle={t('pc.sub')}>
-      {/* The prototype's post.demo note mentions saved drafts; the native forms (and drafts) come in the next stage. */}
-      <Text style={s.note}>{t('n.formLater')}</Text>
-      <Option icon="heart" title={t('pc.problemT')} desc={t('pc.problemD')} onPress={() => choose(t('pc.problemT'))} />
-      <Option icon="people" title={t('pc.projectT')} desc={t('pc.projectD')} onPress={() => choose(t('pc.projectT'))} />
-      <Option icon="coin" title={t('pc.fundT')} desc={t('pc.fundD')} onPress={() => choose(t('pc.fundT'))} />
+      <Text style={s.note}>{t('post.demo')}</Text>
+      <Option icon="heart" title={t('pc.problemT')} desc={t('pc.problemD')} onPress={() => go('problem')} />
+      <Option icon="people" title={t('pc.projectT')} desc={t('pc.projectD')} onPress={() => go('project')} />
+      <Option icon="coin" title={t('pc.fundT')} desc={t('pc.fundD')} onPress={() => go('fund')} />
     </Sheet>
   );
 }

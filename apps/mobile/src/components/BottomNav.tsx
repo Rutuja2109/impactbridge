@@ -21,7 +21,8 @@ export default function BottomNav() {
   const insets = useSafeAreaInsets();
   const { t } = useT();
   const { tab, stack, goTab, showSheet } = useStore();
-  const active: TabId = stack.length ? 'discover' : tab;
+  const top = stack[stack.length - 1];
+  const active: TabId | null = top?.name === 'post' ? null : stack.length ? 'discover' : tab;
 
   const item = (it: (typeof TABS)[number]) => {
     const selected = it.id === active;
@@ -41,14 +42,15 @@ export default function BottomNav() {
       {item(TABS[0])}
       {item(TABS[1])}
       <View style={styles.item}>
-        <Pressable
-          onPress={() => showSheet({ kind: 'post' })}
-          accessibilityRole="button"
-          accessibilityLabel={t('nav.postAria')}
-          style={({ pressed }) => [styles.plus, pressed && styles.plusPressed]}
-        >
-          <Icon name="plus" size={28} color={colors.white} strokeWidth={2.4} />
-        </Pressable>
+          <Pressable
+            onPress={() => showSheet({ kind: 'post' })}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('nav.postAria')}
+            style={({ pressed }) => [styles.plus, pressed && styles.plusPressed]}
+          >
+            <Icon name="plus" size={28} color={colors.white} strokeWidth={2.4} />
+          </Pressable>
       </View>
       {item(TABS[2])}
       {item(TABS[3])}
@@ -71,5 +73,5 @@ const styles = StyleSheet.create({
     width: 60, height: 60, borderRadius: 30, marginTop: -30, alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.tealDark, borderWidth: 4, borderColor: colors.white, boxShadow: shadow.raised,
   },
-  plusPressed: { backgroundColor: colors.tealDeep },
+  plusPressed: { backgroundColor: colors.tealDeep, transform: [{ scale: 0.88 }] },
 });

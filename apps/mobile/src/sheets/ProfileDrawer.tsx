@@ -13,6 +13,8 @@ import { PHOTOS } from '../data/photos';
 import { inr } from '../format';
 import { useT } from '../i18n';
 import { badgesFor, certificatesFor, type Certificate } from '../state/achievements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { USER_KEY } from '../screens/Welcome';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
@@ -127,8 +129,8 @@ export default function ProfileDrawer() {
             <>
               <View style={styles.head}>
                 <View style={styles.bigAvatar}><Icon name="people" size={40} color={colors.white} /></View>
-                <Text style={styles.name}>{t('n.guest')}</Text>
-                <Text style={styles.small}>{t('n.guestSub')}</Text>
+                <Text style={styles.name}>{store.user && !store.user.guest ? store.user.name : t('n.guest')}</Text>
+                <Text style={styles.small}>{store.user && !store.user.guest ? `+91 ${store.user.phone}` : t('n.guestSub')}</Text>
               </View>
               <View style={styles.stats}>
                 {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].map(([v, l]) => (
@@ -142,8 +144,7 @@ export default function ProfileDrawer() {
                   <Icon name="chev" size={18} color={colors.slate} />
                 </Pressable>
               ))}
-              <Button label={t('n.signUp')} block onPress={() => store.toast(t('n.authLater'))} style={styles.signUp} />
-              <Text style={styles.login}>{t('n.haveAccount')} <Text style={styles.link} onPress={() => store.toast(t('n.authLater'))}>{t('n.logIn')}</Text></Text>
+              <Button label={t('n.w.logout')} variant="ghost" block onPress={() => { AsyncStorage.removeItem(USER_KEY).catch(() => {}); store.closeSheet(); store.goTab('home'); store.setUser(null); }} style={styles.signUp} />
               <View style={styles.legal}>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.terms')}</Text>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.privacy')}</Text>

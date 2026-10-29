@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const { t } = useT();
   const { showSheet, goTab, openDiscover, donations } = useStore();
   const needs = projects.filter((p) => p.status !== 'Completed');
-  const causeW = Math.min(236, Math.round(width * 0.62));
+  const causeW = Math.min(180, Math.round(width * 0.46));
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + insets.bottom + space.xxl }} showsVerticalScrollIndicator={false}>
@@ -45,7 +45,7 @@ export default function HomeScreen() {
         </View>
         <Text accessibilityRole="header" style={styles.featTitle}>{t('feat.title')}</Text>
         <Text style={styles.featSub}>{t('feat.sub')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={causeW + 14} decelerationRate="fast" contentContainerStyle={styles.causeRow} style={styles.causeScroll} accessibilityLabel={t('feat.aria')}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={causeW + 12} decelerationRate="fast" contentContainerStyle={styles.causeRow} style={styles.causeScroll} accessibilityLabel={t('feat.aria')}>
           {categories.map((c) => {
             const mine = campaigns.filter((x) => x.cat === c.id);
             const amount = inr(mine.reduce((a, x) => a + campaignReceived(x, donations[x.id]), 0));
@@ -72,12 +72,14 @@ export default function HomeScreen() {
         <Button label={t('feat.cta')} block onPress={() => openDiscover({ kind: 'fund', cat: 'all' })} />
       </View>
 
+      <View style={styles.gap} />
       <SectionHeader title={t('n.nearTitle')} link={t('fund.seeAll')} onLink={() => openDiscover({ kind: 'projects', cat: 'all' })} subtitle={t('n.nearSub')} />
       <UntrNote style={styles.note} />
       <NeedsCarousel items={needs} />
 
       <SipPanel />
 
+      <View style={styles.gap} />
       <SectionHeader title={t('story.title')} subtitle={t('story.sub')} />
       <StoryCarousel />
 
@@ -88,24 +90,25 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   pressed: { opacity: 0.85 },
+  gap: { height: space.xl },
   updates: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.l, padding: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 14,
     borderRadius: radius.m, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, boxShadow: shadow.card,
   },
   updatesText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.ink },
-  feat: { marginHorizontal: space.l, marginTop: space.xl, padding: 20, borderRadius: radius.l, overflow: 'hidden', gap: 8 },
+  feat: { marginHorizontal: space.l, marginTop: space.xxl, padding: 18, borderRadius: radius.l, overflow: 'hidden', gap: 10 },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.tealDeep },
-  featTitle: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.tealDeep },
+  featTitle: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.tealDeep },
   featSub: { ...type.body, color: colors.slate },
   causeScroll: { marginHorizontal: -20 },
-  causeRow: { paddingHorizontal: 20, gap: 14, paddingVertical: 8 },
+  causeRow: { paddingHorizontal: 20, gap: 12, paddingVertical: 10 },
   causeCard: { aspectRatio: 4 / 5, borderRadius: radius.m, overflow: 'hidden', justifyContent: 'flex-end', boxShadow: shadow.card },
-  causeBody: { padding: 16, gap: 5 },
-  causeName: { fontSize: 20, lineHeight: 25, fontWeight: '800', color: colors.white },
-  causeBlurb: { fontSize: 14, lineHeight: 19, color: colors.white },
+  causeBody: { padding: 12, gap: 4 },
+  causeName: { fontSize: 17, lineHeight: 21, fontWeight: '800', color: colors.white },
+  causeBlurb: { fontSize: 12, lineHeight: 16, color: colors.white },
   causeStat: { alignSelf: 'flex-start', fontSize: 12, lineHeight: 16, fontWeight: '700', color: colors.white, backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' },
-  note: { marginHorizontal: space.l, marginBottom: space.m },
+  note: { marginHorizontal: space.l, marginBottom: space.l },
   sip: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 16, borderRadius: radius.m, backgroundColor: '#FFF4E0', borderWidth: 1, borderColor: '#F5D9A8' },
   sipIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.tealDark, alignItems: 'center', justifyContent: 'center' },
   sipText: { flex: 1, gap: 4 },
