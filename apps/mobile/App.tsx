@@ -11,6 +11,7 @@ import Splash from './src/components/Splash';
 import { watchAuth } from './src/auth';
 import { firebaseReady } from './src/firebase';
 import { registerPush } from './src/push';
+import { touchProfile } from './src/state/profile';
 import { useLiveSync } from './src/state/posts';
 import { LangProvider } from './src/i18n';
 import CampaignScreen from './src/screens/CampaignScreen';
@@ -32,7 +33,7 @@ function Shell() {
   useLiveSync(user?.uid, bumpData); // approved posts from Firestore (installed app only)
   const [loaded, setLoaded] = useState(false); // saved demo login read from this device
   useEffect(() => {
-    if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) registerPush(u.uid, u.name, u.email); });
+    if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) { touchProfile(u.uid, u.name, u.email); registerPush(u.uid, u.name, u.email); } });
     AsyncStorage.getItem(USER_KEY).then((v) => { if (v) setUser(JSON.parse(v) as User); }).catch(() => {}).finally(() => setLoaded(true));
   }, [setUser]);
   const top = stack[stack.length - 1];

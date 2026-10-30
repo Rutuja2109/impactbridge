@@ -7,8 +7,11 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { db } from '../firebase';
 import { useLive } from '../state/communities';
+import { loadSample, removeSample } from '../state/sample';
+import { useStore } from '../state/store';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
+import AdminMetrics from './AdminMetrics';
 import DonationsList from './DonationsList';
 import { Button } from './ui';
 
@@ -113,11 +116,28 @@ function Reports() {
   );
 }
 
+function SampleData() {
+  const { user, toast } = useStore();
+  const [busy, setBusy] = useState(false);
+  const run = (job: () => Promise<number>, done: string) => { setBusy(true); job().then((n) => toast(`${done}: ${n}`)).catch(() => toast('Could not finish. Publish the latest rules.')).finally(() => setBusy(false)); };
+  return (
+    <>
+      <Text style={styles.h}>Sample data (for testing)</Text>
+      <Text style={styles.meta}>Adds six posts marked [Sample] so you can try every screen. Remove them before you publish.</Text>
+      <View style={styles.row}>
+        <View style={styles.flex}><Button label="Add samples" small block disabled={busy} onPress={() => user && run(() => loadSample(user), 'Added')} /></View>
+        <View style={styles.flex}><Button label="Remove samples" small block variant="ghost" disabled={busy} onPress={() => run(removeSample, 'Removed')} /></View>
+      </View>
+    </>
+  );
+}
+
 export default function AdminPanel() {
   const pending = postsBy('pending');
   const live = postsBy('approved');
   return (
     <>
+      <AdminMetrics />
       <Text style={styles.h}>Posts to review ({pending.length})</Text>
       {pending.length ? null : <Text style={styles.meta}>Nothing waiting.</Text>}
       {pending.map((p) => <PostCard key={p.id} p={p} review />)}
@@ -125,6 +145,7 @@ export default function AdminPanel() {
       <Text style={styles.h}>Live posts ({live.length})</Text>
       {live.map((p) => <PostCard key={p.id} p={p} review={false} />)}
       <Reports />
+      <SampleData />
     </>
   );
 }

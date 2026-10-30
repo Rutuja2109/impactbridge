@@ -4,6 +4,9 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'ac.title': 'Account',
+    'ac.d': 'Deleting your account removes your profile and sign-in for good. Your badges and certificates go with it. This cannot be undone.',
+    'ac.type': 'To delete, type DELETE below.',
     'cd.head': '{r}% received',
     'cd.barAria': '{r} percent received, {p} percent more reported but not yet confirmed',
     'cd.recv': 'received',
@@ -56,6 +59,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'ac.title': 'खाता',
+    'ac.d': 'खाता हटाने पर आपकी प्रोफ़ाइल और साइन-इन हमेशा के लिए हट जाएँगे। आपके बैज और प्रमाणपत्र भी चले जाएँगे। इसे वापस नहीं किया जा सकता।',
+    'ac.type': 'हटाने के लिए नीचे DELETE लिखें।',
     'cd.head': '{r}% प्राप्त',
     'cd.barAria': '{r} प्रतिशत प्राप्त, {p} प्रतिशत और बताया गया पर अभी पुष्ट नहीं',
     'cd.recv': 'प्राप्त',
@@ -108,6 +114,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'ac.title': 'खाते',
+    'ac.d': 'खाते हटवल्यावर तुमचे प्रोफाइल आणि साइन-इन कायमचे हटते. तुमचे बॅज आणि प्रमाणपत्रेही जातात. हे परत करता येत नाही.',
+    'ac.type': 'हटवण्यासाठी खाली DELETE लिहा.',
     'cd.head': '{r}% मिळाले',
     'cd.barAria': '{r} टक्के मिळाले, आणखी {p} टक्के कळवले पण अजून पक्के नाही',
     'cd.recv': 'मिळाले',

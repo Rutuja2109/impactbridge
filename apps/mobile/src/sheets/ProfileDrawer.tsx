@@ -2,7 +2,7 @@
 // My donations & SIPs (these three open the Impact page), Help, Invite, legal links and the version. Sign-up and log-in come in a later stage.
 // Everything is computed from this session's demo activity; nothing is sent anywhere.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Animated, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Animated, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
@@ -23,7 +23,7 @@ import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
 const VERSION = '0.1.0';
-type View_ = 'menu' | 'support' | 'legal' | 'admin';
+type View_ = 'menu' | 'support' | 'legal' | 'admin' | 'account';
 
 export default function ProfileDrawer() {
   const { t } = useT();
@@ -51,7 +51,16 @@ export default function ProfileDrawer() {
   const adminMail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
   const adminWa = process.env.EXPO_PUBLIC_ADMIN_WHATSAPP;
   const isAdmin = useIsAdmin(store.user?.uid);
+  const [typed, setTyped] = useState('');
   const sub: Record<string, [string, ReactNode]> = {
+    account: [t('ac.title'), (
+      <>
+        <Notice tone="blue" text={t('ac.d')} />
+        <Text style={styles.small}>{t('ac.type')}</Text>
+        <TextInput value={typed} onChangeText={setTyped} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={colors.slate} style={styles.delInput} accessibilityLabel={t('ac.type')} />
+        <Button label={t('n.del.btn')} variant="ghost" block disabled={typed.trim().toUpperCase() !== "DELETE"} onPress={() => confirmDelete()} />
+      </>
+    )],
     admin: ['Admin', <AdminPanel key="admin" />],
     support: [t('n.support'), (
       <>
@@ -79,6 +88,7 @@ export default function ProfileDrawer() {
     ['check', t('n.myBadges'), toImpact],
     ['chart', t('n.myCerts'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
+    ...(firebaseReady && store.user?.uid ? [['people', t('ac.title'), () => { setTyped(''); setView('account'); }] as [IconName, string, () => void]] : []),
     ...(isAdmin ? [['check', 'Admin', () => setView('admin')] as [IconName, string, () => void]] : []),
     ['share', t('n.refer'), () => { Share.share({ message: t('n.referText') }).catch(() => undefined); }],
   ];
@@ -112,7 +122,6 @@ export default function ProfileDrawer() {
                 </Pressable>
               ))}
               <Button label={t('n.w.logout')} variant="ghost" block onPress={() => { AsyncStorage.removeItem(USER_KEY).catch(() => {}); signOutAll().catch(() => {}); store.closeSheet(); store.goTab('home'); store.setUser(null); }} style={styles.signUp} />
-              {firebaseReady && store.user?.uid ? <Button label={t('n.del.btn')} variant="ghost" block onPress={confirmDelete} /> : null}
               <View style={styles.legal}>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.terms')}</Text>
                 <Text style={styles.link} onPress={() => (privacyUrl ? Linking.openURL(privacyUrl).catch(() => {}) : setView('legal'))}>{t('n.privacy')}</Text>
@@ -135,6 +144,7 @@ export default function ProfileDrawer() {
 }
 
 const styles = StyleSheet.create({
+  delInput: { borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.ink, letterSpacing: 2 },
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(11, 42, 31, 0.45)' },
   panel: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.white, borderTopRightRadius: 24, borderBottomRightRadius: 24 },
   content: { paddingHorizontal: space.xl, gap: space.s },

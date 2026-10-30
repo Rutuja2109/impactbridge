@@ -18,6 +18,7 @@ service cloud.firestore {
     // A person's own profile and push token.
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if isAdmin();   // the dashboard counts accounts
     }
 
     // Organisation verification requests. 'verified' and 'status' are admin-only.
@@ -50,7 +51,8 @@ service cloud.firestore {
     // Posts: saved as 'pending'; only an admin (Firebase console) can approve them. Everyone signed in can read approved posts.
     match /posts/{pid} {
       allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid || isAdmin());
-      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending';
+      allow create: if (signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending') || isAdmin();
+      allow delete: if isAdmin();
       // An admin edits anything (approve, reject); the author can only update the confirmed-money totals (see donations below).
       allow update: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['received', 'donors']));
@@ -58,16 +60,18 @@ service cloud.firestore {
       // The author's private contact: only the author can read or write it.
       match /private/{doc} {
         allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
-        allow read: if isAdmin();
+        allow read, delete: if isAdmin();
       }
       // Photos: the author adds them; everyone signed in sees photos of the post, but photos of documents only the author and admins.
       match /files/{fid} {
+        allow delete: if isAdmin();
         allow create: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
         allow read: if signedIn() && (resource.data.field != 'docs'
           || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
       // Payments people report for a fundraiser: the donor writes one as 'pledged'; the author or an admin settles it.
       match /donations/{did} {
+        allow delete: if isAdmin();
         allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pledged'
           && request.resource.data.amount is number && request.resource.data.amount >= 10 && request.resource.data.amount <= 100000
           && get(/databases/$(database)/documents/posts/$(pid)).data.status == 'approved';
@@ -78,10 +82,16 @@ service cloud.firestore {
       }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
+        allow delete: if isAdmin();
         allow create: if signedIn() && request.auth.uid == uid;
         allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
     }
+
+    // Counts for the admin dashboard across every post's offers of help, payments and community members.
+    match /{path=**}/responses/{x} { allow read: if isAdmin(); }
+    match /{path=**}/donations/{x} { allow read: if isAdmin(); }
+    match /{path=**}/members/{x} { allow read: if isAdmin(); }
 
     // Reports about posts or communities: anyone signed in can file one; only admins (console) can read them.
     match /reports/{rid} {
