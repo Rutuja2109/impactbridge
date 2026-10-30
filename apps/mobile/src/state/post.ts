@@ -7,7 +7,7 @@ export type Flow = 'problem' | 'project' | 'fund';
 export type Attach = { name: string; size: number; b64?: string; thumb?: string };
 export type Value = string | boolean | Attach[];
 export type PostData = Record<string, Value>;
-export type PostState = { step: number; max: number; mode: 'form' | 'review' | 'done'; data: PostData; errors: Record<string, string>; fromReview: boolean; ref: string; restored: boolean };
+export type PostState = { step: number; max: number; mode: 'form' | 'review' | 'done'; data: PostData; errors: Record<string, string>; fromReview: boolean; ref: string; restored: boolean; editId: string };
 export type Spec = [name: string, kind: string, required: 0 | 1];
 
 const PROBLEM_STEPS: Record<number, Spec[]> = {
@@ -50,7 +50,7 @@ export const blankPost = (): PostData => ({
   who: '', orgName: '', contact: '', display: '', private: '', consent: false, files: [],
   payLink: '', ctype: '', story: '', benName: '', benAbout: '', relation: '', goal: '', use: '', deadline: '', cover: [], docs: [], accurate: false,
 });
-export const freshPost = (): PostState => ({ step: 1, max: 1, mode: 'form', data: blankPost(), errors: {}, fromReview: false, ref: '', restored: false });
+export const freshPost = (): PostState => ({ step: 1, max: 1, mode: 'form', data: blankPost(), errors: {}, fromReview: false, ref: '', restored: false, editId: '' });
 
 export const specsOf = (flow: Flow, step: number) => FLOWS[flow].steps[step];
 export const kindOf = (name: string) => [...Object.values(PROBLEM_STEPS), ...Object.values(FUND_STEPS)].flat().find(([n]) => n === name)?.[1] ?? 'text';

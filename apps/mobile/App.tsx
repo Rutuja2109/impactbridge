@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -13,7 +13,8 @@ import { firebaseReady } from './src/firebase';
 import { registerPush } from './src/push';
 import { touchProfile } from './src/state/profile';
 import { useLiveSync } from './src/state/posts';
-import { LangProvider } from './src/i18n';
+import { LangProvider, useT } from './src/i18n';
+import { useFeed } from './src/state/feed';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
 import DiscoverScreen from './src/screens/DiscoverScreen';
@@ -29,8 +30,19 @@ import { colors } from './src/theme';
 // with the centre plus, and whichever sheet is open. Everything is local sample data; nothing is sent anywhere
 // and no permissions are requested.
 function Shell() {
-  const { tab, stack, sheet, back, closeSheet, user, setUser, bumpData } = useStore();
+  const { tab, stack, sheet, back, closeSheet, user, setUser, bumpData, toast } = useStore();
+  const { t } = useT();
   useLiveSync(user?.uid, bumpData); // approved posts from Firestore (installed app only)
+  const feed = useFeed(firebaseReady ? user?.uid : undefined).items;
+  const newest = useRef<{ id: string; at: number } | null>(null);
+  useEffect(() => {
+    if (!firebaseReady || !user) return;
+    const top = feed[0];
+    if (!top) return;
+    // The first list is the history; only items that arrive after it (and are newer) are announced.
+    if (newest.current && top.id !== newest.current.id && top.at > newest.current.at) toast(t(top.kind === 'community' ? 'fd.toastC' : 'fd.toastP', { t: top.title }));
+    newest.current = { id: top.id, at: top.at };
+  }, [feed]); // eslint-disable-line react-hooks/exhaustive-deps
   const [loaded, setLoaded] = useState(false); // saved demo login read from this device
   useEffect(() => {
     if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) { touchProfile(u.uid, u.name, u.email); registerPush(u.uid, u.name, u.email); } });

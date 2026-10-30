@@ -14,6 +14,7 @@ import { campaignReceived, campaigns, campaignSupporters, categories, projects, 
 import { inr } from '../format';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
+import { useFeed } from '../state/feed';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
 
@@ -23,7 +24,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { t } = useT();
-  const { showSheet, goTab, openDiscover, donations, unread } = useStore();
+  const { showSheet, goTab, openDiscover, donations, unread: notesUnread, user } = useStore();
+  const feed = useFeed(firebaseReady ? user?.uid : undefined);
+  const unread = notesUnread + (firebaseReady ? feed.unread : 0);
   const needs = projects.filter((p) => p.status !== 'Completed');
   const causeW = Math.min(180, Math.round(width * 0.46));
 

@@ -10,7 +10,7 @@ export type Project = {
   id: string; cat: CauseId; title: string; org: string; area: string;
   status: 'Open' | 'In progress' | 'Completed'; verified?: boolean;
   raised: number; goal: number; received: number; vols: number; volsNeeded: number; hours: number; days: number;
-  x: number; y: number; lat?: number; lng?: number; at?: number; desc: string; needs: string[];
+  x: number; y: number; lat?: number; lng?: number; at?: number; ownerId?: string; desc: string; needs: string[];
 };
 export type Org = { id: string; name: string; type: string; area: string; members: number; projects: number; about: string };
 export type Opportunity = { id: string; title: string; org: string; when: string; spots: number; skill: string };
@@ -19,7 +19,7 @@ export type Outcome = { k: string; reported: number; verified: number };
 export type Donation = { n: string; a: number; m: string; s: 'received' | 'pledged'; mine?: boolean };
 export type Campaign = {
   id: string; type: 'individual' | 'org'; cat: CauseId; org: string | null; urgent?: boolean; featured?: boolean;
-  verify: 'docs' | 'pending' | 'unverified'; goal: number; days: number; x: number; y: number; lat?: number; lng?: number; at?: number;
+  verify: 'docs' | 'pending' | 'unverified'; goal: number; days: number; x: number; y: number; lat?: number; lng?: number; at?: number; ownerId?: string;
   title: string; short: string; story: string; beneficiary: string; benAbout: string; organizer: string;
   base: { received: number; donors: number };
   updates: { ago: number; text: string }[];
@@ -96,7 +96,7 @@ export function applyLive(posts: PostDoc[]) {
     if (p.flow === 'fund') {
       camp.push({
         id: p.id, type: d.ctype === 'org' ? 'org' : 'individual', cat, org: null, urgent: false, featured: false,
-        verify: 'unverified', goal: num(d.goal) || 1000, days: daysLeft(str(d.deadline)), x: spot(p.id, 1), y: spot(p.id, 2), lat: coord(d.lat, 90), lng: coord(d.lng, 180), at: p.reviewedAt ?? p.createdAt,
+        verify: 'unverified', goal: num(d.goal) || 1000, days: daysLeft(str(d.deadline)), x: spot(p.id, 1), y: spot(p.id, 2), lat: coord(d.lat, 90), lng: coord(d.lng, 180), at: p.reviewedAt ?? p.createdAt, ownerId: p.ownerId,
         title: str(d.title), short: str(d.story).slice(0, 120), story: str(d.story), beneficiary: str(d.benName), benAbout: str(d.benAbout),
         organizer: str(d.display), base: { received: p.received ?? 0, donors: p.donors ?? 0 }, updates: [], funds: [], donations: [],
         payLink: str(d.payLink) || undefined,
@@ -105,7 +105,7 @@ export function applyLive(posts: PostDoc[]) {
       proj.push({
         id: p.id, cat, title: str(d.title), org: '', area: str(d.city), status: 'Open', verified: false,
         raised: 0, goal: num(d.budget), received: 0, vols: 0, volsNeeded: num(d.vols), hours: 0, days: daysLeft(str(d.target)),
-        x: spot(p.id, 3), y: spot(p.id, 4), lat: coord(d.lat, 90), lng: coord(d.lng, 180), at: p.reviewedAt ?? p.createdAt, desc: str(d.desc) || str(d.help),
+        x: spot(p.id, 3), y: spot(p.id, 4), lat: coord(d.lat, 90), lng: coord(d.lng, 180), at: p.reviewedAt ?? p.createdAt, ownerId: p.ownerId, desc: str(d.desc) || str(d.help),
         needs: [str(d.help)].filter(Boolean),
       });
     }

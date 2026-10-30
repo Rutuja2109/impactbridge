@@ -3,7 +3,7 @@
 // its text keys). Demonstration only: nothing is sent; drafts are saved on this device (never private details or files).
 import { firebaseReady } from '../firebase';
 import { pickPhoto } from '../state/files';
-import { submitPost } from '../state/posts';
+import { submitPost, updatePost } from '../state/posts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -97,7 +97,8 @@ export default function PostScreen({ flow }: { flow: Flow }) {
   };
   const submit = () => {
     // Installed app: the post is really saved (pending review). Expo Go: the old demo reference number.
-    if (firebaseReady && store.user?.uid) submitPost(store.user, flow, d).then((id) => finish(spec.ref.replace('DEMO', 'POST') + id.slice(0, 6).toUpperCase())).catch(() => store.toast(t('n.cm.fail')));
+    if (firebaseReady && store.user?.uid && post.editId) updatePost(store.user, post.editId, d).then(() => finish(`GN-EDIT-${post.editId.slice(0, 6).toUpperCase()}`)).catch(() => store.toast(t('n.cm.fail')));
+    else if (firebaseReady && store.user?.uid) submitPost(store.user, flow, d).then((id) => finish(spec.ref.replace('DEMO', 'POST') + id.slice(0, 6).toUpperCase())).catch(() => store.toast(t('n.cm.fail')));
     else finish(spec.ref + Math.floor(100000 + Math.random() * 900000));
   };
 
@@ -291,6 +292,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
         <View style={styles.inline}><Badge label={t('st.pending')} tone="amber" />{fund ? <Badge label={t('v.unverified')} tone="grey" /> : null}</View>
         <Text style={styles.body}>{fund ? t('done.fundBody', { t: str('title').trim() }) : t('done.body', { t: str('title').trim(), c: str('city').trim() })}</Text>
         {!fund && d.urgency === 'emergency' ? <Notice tone="red" text={t('emerg')} /> : null}
+        {post.editId ? <Notice tone="blue" text={t('done.edited')} /> : null}
         <Notice tone="green" text={t('done.demo')} />
         <Button label={t('b.another')} block onPress={() => { set(() => freshPost()); }} />
         <Button label={t('b.home')} variant="ghost" block onPress={() => store.goTab('home')} />
@@ -351,6 +353,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
           <Button label={t('b.discard')} variant="ghost" small onPress={discard} />
         </View>
       ) : null}
+      {post.editId ? <Notice tone="blue" text={t('ed.banner')} /> : null}
       {stepsBar}
       <Text accessibilityRole="header" style={styles.h2}>{stepName(post.step)}</Text>
       <Text style={styles.small}>{t('post.stepOf', { n: post.step, t: 5 })} · {t('post.reqNote')}</Text>

@@ -8,7 +8,9 @@ import { db } from '../firebase';
 import { useT } from '../i18n';
 import { useLive } from '../state/communities';
 import { usePostPhotos } from '../state/files';
+import { loadForEdit } from '../state/posts';
 import { type MyPost } from '../state/mine';
+import { freshPost } from '../state/post';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import DonationsList from './DonationsList';
@@ -22,8 +24,9 @@ const text = (v: unknown) => (typeof v === 'string' ? v : '');
 
 export default function MyPostSheet({ post, onClose }: { post: MyPost; onClose: () => void }) {
   const { t, formatDate } = useT();
-  const { open } = useStore();
+  const { open, setPost, toast } = useStore();
   const [, tick] = useState(0);
+  const [editing, setEditing] = useState(false);
   const full = useLive<Full>(db ? () => (cb) => onSnapshot(doc(db!, 'posts', post.id), (s) => cb(s.exists() ? { data: (s.data()?.data ?? {}) as Record<string, unknown>, status: String(s.data()?.status ?? 'pending') } : null), () => cb(null)) : null, null, [post.id]);
   const offers = useLive<Offer[]>(db ? () => (cb) => onSnapshot(collection(db!, 'posts', post.id, 'responses'), (s) => cb(s.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Offer, 'uid'>) })).sort((a, b) => b.at - a.at)), () => cb([])) : null, [], [post.id]);
   const photos = usePostPhotos(post.id);
@@ -33,6 +36,19 @@ export default function MyPostSheet({ post, onClose }: { post: MyPost; onClose: 
   const d = full?.data ?? {};
   const where = [text(d.area), text(d.city)].filter(Boolean).join(', ');
   const about = text(d.desc) || text(d.story);
+  // Opens the post form filled with this post; sending it again puts it back in review.
+  const edit = () => {
+    setEditing(true);
+    loadForEdit(post.id)
+      .then((r) => {
+        if (!r) { toast(t('n.cm.fail')); return; }
+        setPost(r.flow, () => ({ ...freshPost(), data: r.data, editId: post.id, max: 5, restored: true }));
+        onClose();
+        open({ name: 'post', flow: r.flow });
+      })
+      .catch(() => toast(t('n.cm.fail')))
+      .finally(() => setEditing(false));
+  };
   const goLive = () => { onClose(); open({ name: post.flow === 'fund' ? 'campaign' : 'project', id: post.id }); tick((x) => x + 1); };
 
   return (
@@ -54,6 +70,9 @@ export default function MyPostSheet({ post, onClose }: { post: MyPost; onClose: 
       {about ? <Text style={styles.body}>{about}</Text> : null}
       {text(d.help) ? <Text style={styles.body}>{t('mp.help')}: {text(d.help)}</Text> : null}
       {post.flow === 'fund' && text(d.goal) ? <Text style={styles.line}>{t('mp.goal')}: ₹{text(d.goal)} · UPI {text(d.payLink)}</Text> : null}
+
+      <Button label={t('mp.edit')} variant="ghost" block disabled={editing} onPress={edit} />
+      {st === 'approved' ? <Text style={styles.small}>{t('mp.editWarn')}</Text> : null}
 
       {st === 'approved' ? (
         <>

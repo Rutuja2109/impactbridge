@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import type { User } from '../screens/Welcome';
 
-export type Community = { id: string; name: string; desc: string; city: string; whatsapp: string; ownerId: string; orgName: string; memberCount: number };
+export type Community = { id: string; name: string; desc: string; city: string; whatsapp: string; ownerId: string; orgName: string; memberCount: number; createdAt?: number };
 
 /** An invite link to the community's official WhatsApp group (WhatsApp > Group info > Invite via link). */
 export const WHATSAPP_RE = /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{10,}/;

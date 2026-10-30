@@ -63,7 +63,7 @@ exports.onHelpOffered = onDocumentCreated('posts/{pid}/responses/{uid}', async (
   await push(await tokensFor([post.ownerId]), title, body, { pid: event.params.pid });
 });
 
-// Your post was approved: tell the author.
+// A post was approved: tell the author, and tell everyone else who has notifications on that there is something new to see.
 exports.onPostApproved = onDocumentUpdated('posts/{pid}', async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
@@ -72,4 +72,23 @@ exports.onPostApproved = onDocumentUpdated('posts/{pid}', async (event) => {
   const body = `"${after.data?.title || 'Your post'}" was approved and neighbours can now see it.`;
   await db.collection(`users/${after.ownerId}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
   await push(await tokensFor([after.ownerId]), title, body, { pid: event.params.pid });
+
+  const users = await db.collection('users').where('pushToken', '!=', null).get();
+  const everyone = users.docs.filter((d) => d.id !== after.ownerId).map((d) => d.data().pushToken);
+  const kind = after.flow === 'fund' ? 'fundraiser' : after.flow === 'project' ? 'community project' : 'need';
+  await push(everyone, `New ${kind} in ${after.data?.city || 'your area'}`, `${after.data?.title || 'A neighbour needs help'}. Tap to see how you can help.`, { pid: event.params.pid });
+});
+
+// The organiser confirmed (or rejected) a payment: tell the donor.
+exports.onGiveSettled = onDocumentUpdated('users/{uid}/gives/{gid}', async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (before.status === after.status || after.status === 'pledged') return;
+  const received = after.status === 'received';
+  const title = received ? 'Payment received' : 'Payment not received';
+  const body = received
+    ? `The organiser confirmed receiving your Rs ${after.amount} for "${after.title}". Thank you!`
+    : `The organiser says your Rs ${after.amount} for "${after.title}" was not received.`;
+  await db.collection(`users/${event.params.uid}/notifications`).add({ title, body, pid: after.postId, read: false, at: Date.now() });
+  await push(await tokensFor([event.params.uid]), title, body, { pid: after.postId });
 });
