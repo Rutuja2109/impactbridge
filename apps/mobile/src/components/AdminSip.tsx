@@ -9,7 +9,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { db } from '../firebase';
 import { inr } from '../format';
 import { useLive } from '../state/communities';
-import { saveSipConfig, useSipConfig, type Sip } from '../state/sip';
+import { saveSipConfig, settleSipPayment, usePendingSipPayments, useSipConfig, type Sip, type SipMode } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space } from '../theme';
 import { Button } from './ui';
@@ -20,12 +20,14 @@ export default function AdminSip() {
   const { toast, user } = useStore();
   const cfg = useSipConfig();
   const [name, setName] = useState('');
-  const [payee, setPayee] = useState('');
+  const [upi, setUpi] = useState('');
   const [note, setNote] = useState('');
   const [on, setOn] = useState(false);
+  const [mode, setMode] = useState<SipMode>('reminder');
+  const waiting = usePendingSipPayments();
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setName(cfg.payeeName); setOn(cfg.enabled); }, [cfg.payeeName, cfg.enabled]);
-  useEffect(() => { getDoc(doc(db!, 'config', 'sipPrivate')).then((s) => { setPayee(String(s.data()?.payee ?? '')); setNote(String(s.data()?.note ?? '')); }).catch(() => undefined); }, []);
+  useEffect(() => { setName(cfg.payeeName); setOn(cfg.enabled); setMode(cfg.mode); setUpi(cfg.payeeUpi); }, [cfg.payeeName, cfg.enabled, cfg.mode, cfg.payeeUpi]);
+  useEffect(() => { getDoc(doc(db!, 'config', 'sipPrivate')).then((s) => { setNote(String(s.data()?.note ?? '')); }).catch(() => undefined); }, []);
 
   const sips = useLive<Sip[]>(db ? () => (cb) => onSnapshot(collection(db!, 'sips'), (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Sip, 'id'>) }))), () => cb([])) : null, [], []);
   const payouts = useLive<Payout[]>(db ? () => (cb) => onSnapshot(collection(db!, 'payouts'), (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Payout, 'id'>) }))), () => cb([])) : null, [], []);
@@ -45,7 +47,7 @@ export default function AdminSip() {
 
   const save = () => {
     setBusy(true);
-    saveSipConfig({ enabled: on, payeeName: name, payee, note })
+    saveSipConfig({ enabled: on, mode, payeeName: name, payeeUpi: upi, note })
       .then(() => toast('Saved'))
       .catch(() => toast('Could not save. Publish the latest rules.'))
       .finally(() => setBusy(false));
@@ -57,14 +59,34 @@ export default function AdminSip() {
       <View style={styles.card}>
         <Text style={styles.title}>Who receives monthly gifts</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Receiver's name (donors see this)" placeholderTextColor={colors.slate} />
-        <TextInput style={styles.input} value={payee} onChangeText={setPayee} placeholder="Number or UPI ID (donors see only the last digits)" placeholderTextColor={colors.slate} autoCapitalize="none" />
+        <TextInput style={styles.input} value={upi} onChangeText={setUpi} placeholder="UPI ID donors pay to, e.g. name@okbank" placeholderTextColor={colors.slate} autoCapitalize="none" />
         <TextInput style={styles.input} value={note} onChangeText={setNote} placeholder="Private note (optional)" placeholderTextColor={colors.slate} />
-        <Text style={styles.meta}>Razorpay pays into the bank account set in the Razorpay dashboard. This receiver is what donors are shown and what you use when passing money on.</Text>
+        <View style={styles.row}>
+          <View style={styles.flex}><Button label="Reminder mode (free)" small block variant={mode === 'reminder' ? 'primary' : 'ghost'} onPress={() => setMode('reminder')} /></View>
+          <View style={styles.flex}><Button label="Autopay (Razorpay)" small block variant={mode === 'autopay' ? 'primary' : 'ghost'} onPress={() => setMode('autopay')} /></View>
+        </View>
+        <Text style={styles.meta}>Reminder mode: each month the donor is reminded and pays this UPI ID in their UPI app, then you confirm it below. Autopay mode: Razorpay charges automatically and pays into the bank account in the Razorpay dashboard (needs the server set up, see SIP_SETUP.md).</Text>
         <View style={styles.row}>
           <View style={styles.flex}><Button label={on ? 'Monthly giving: ON' : 'Monthly giving: OFF'} small block variant={on ? 'primary' : 'ghost'} onPress={() => setOn((x) => !x)} /></View>
           <View style={styles.flex}><Button label="Save" small block disabled={busy} onPress={save} /></View>
         </View>
       </View>
+
+      {waiting.length ? (
+        <View style={styles.card}>
+          <Text style={styles.title}>Monthly payments waiting to be confirmed ({waiting.length})</Text>
+          {waiting.map((w) => (
+            <View key={w.id} style={styles.pay}>
+              <Text style={styles.label} numberOfLines={2}>{w.name || 'Donor'} · {inr(w.amount)} · {w.title}</Text>
+              <Text style={styles.meta}>{new Date(w.at).toLocaleString()}</Text>
+              <View style={styles.row}>
+                <View style={styles.flex}><Button label="Received" small block onPress={() => { settleSipPayment(w, true).catch(() => toast('Could not save')); }} /></View>
+                <View style={styles.flex}><Button label="Not received" small block variant="ghost" onPress={() => { settleSipPayment(w, false).catch(() => toast('Could not save')); }} /></View>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.card}>
         <Text style={styles.title}>Totals</Text>
@@ -115,6 +137,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, color: colors.slate },
   row: { flexDirection: 'row', gap: space.s },
   flex: { flex: 1 },
+  pay: { gap: 4, paddingTop: space.s, borderTopWidth: 1, borderTopColor: colors.line },
   line: { flexDirection: 'row', justifyContent: 'space-between' },
   label: { flex: 1, fontSize: 14, color: colors.slate },
   val: { fontSize: 14, fontWeight: '800', color: colors.ink },

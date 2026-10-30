@@ -1,4 +1,14 @@
-# Monthly giving (SIP) with Razorpay: setup
+# Monthly giving (SIP): setup
+
+Two modes, switched in the app under Admin > Monthly giving (SIP):
+
+**Reminder mode (free, no server needed).** Nothing to deploy. As admin enter the receiver's name and the UPI ID donors should pay (for example `name@okbank`), choose *Reminder mode*, switch it ON and Save. Donors pick an amount and a day; each month their phone reminds them and opens PhonePe / GPay with your UPI ID and the amount filled in. They tap "I have paid" and you confirm each payment in Admin > Monthly payments waiting. Only publish `firestore.rules`. It is not automatic: the donor taps pay each month.
+
+**Autopay mode (Razorpay UPI AutoPay).** The rest of this page. Needs the Blaze plan, a Razorpay account and, for live money, a registered business.
+
+---
+
+# Autopay mode with Razorpay: setup
 
 Test mode first. Nothing real is charged until you switch Razorpay to live keys.
 

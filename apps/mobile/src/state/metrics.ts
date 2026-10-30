@@ -58,6 +58,7 @@ export function useMetrics(tick: number) {
       reports: n(collection(db!, 'reports')),
       sipActive: n(query(collection(db!, 'sips'), where('status', '==', 'active'))),
       sipCharges: n(collectionGroup(db!, 'charges')),
+      sipPaid: n(query(collection(db!, 'sipPayments'), where('status', '==', 'received'))),
       sipRun: () => getAggregateFromServer(query(collection(db!, 'sips'), where('status', '==', 'active')), { t: sum('amount') }).then((s) => Number(s.data().t ?? 0)),
       sipCollected: () => getAggregateFromServer(posts, { t: sum('sipTotal') }).then((s) => Number(s.data().t ?? 0)),
       ...Object.fromEntries(CAUSES.map((c) => [`cause_${c}`, n(query(posts, where('data.cat', '==', c)))])),

@@ -12,7 +12,7 @@ import { TIER_COLOR, TIER_SOFT, certNo, liveStats, type LiveBadge, type LiveCert
 import { useJoined } from '../state/communities';
 import { useMyGives, type Give } from '../state/donations';
 import { useMyHelps, useMyPosts, type MyPost } from '../state/mine';
-import { cancelSip, useMySips } from '../state/sip';
+import { stopSip, useMySips } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
@@ -197,10 +197,13 @@ export default function ImpactLive() {
                 </Text>
               </View>
               {live ? (
-                <Button small variant="ghost" label={t('sip.stop')} onPress={() => Alert.alert(t('sip.stopT'), t('sip.stopD'), [
-                  { text: t('c.close'), style: 'cancel' },
-                  { text: t('sip.stop'), style: 'destructive', onPress: () => { cancelSip(x.id).then(() => store.toast(t('sip.stopped'))).catch((e: Error) => store.toast(e.message)); } },
-                ])} />
+                <View style={styles.sipBtns}>
+                  {x.mode === 'reminder' ? <Button small label={t('sip.payMonth')} onPress={() => store.showSheet({ kind: 'donate', id: x.postId, sip: x.id })} /> : null}
+                  <Button small variant="ghost" label={t('sip.stop')} onPress={() => Alert.alert(t('sip.stopT'), t('sip.stopD'), [
+                    { text: t('c.close'), style: 'cancel' },
+                    { text: t('sip.stop'), style: 'destructive', onPress: () => { stopSip(x).then(() => store.toast(t('sip.stopped'))).catch((e: Error) => store.toast(e.message)); } },
+                  ])} />
+                </View>
               ) : null}
             </View>
           );
@@ -281,6 +284,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0, gap: 2 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   gv: { fontSize: 13, fontWeight: '700', color: colors.amber },
+  sipBtns: { gap: 6, alignItems: 'stretch' },
   gvOk: { color: colors.leaf },
   gvNo: { color: colors.brick },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: radius.m },

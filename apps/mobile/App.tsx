@@ -13,6 +13,7 @@ import { firebaseReady } from './src/firebase';
 import { registerPush } from './src/push';
 import { touchProfile } from './src/state/profile';
 import { useLiveSync } from './src/state/posts';
+import * as Notifications from 'expo-notifications';
 import { LangProvider, useT } from './src/i18n';
 import { useFeed } from './src/state/feed';
 import CampaignScreen from './src/screens/CampaignScreen';
@@ -48,6 +49,14 @@ function Shell() {
     if (firebaseReady) return watchAuth((u) => { setUser(u); setLoaded(true); if (u?.uid) { touchProfile(u.uid, u.name, u.email); registerPush(u.uid, u.name, u.email); } });
     AsyncStorage.getItem(USER_KEY).then((v) => { if (v) setUser(JSON.parse(v) as User); }).catch(() => {}).finally(() => setLoaded(true));
   }, [setUser]);
+  const { showSheet } = useStore();
+  useEffect(() => {
+    if (!firebaseReady) return undefined;
+    const open = (d: Record<string, unknown> | undefined) => { if (d?.sipId && d.sipPost) showSheet({ kind: 'donate', id: String(d.sipPost), sip: String(d.sipId) }); };
+    const sub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data as Record<string, unknown> | undefined));
+    Notifications.getLastNotificationResponseAsync().then((r) => open(r?.notification.request.content.data as Record<string, unknown> | undefined)).catch(() => undefined);
+    return () => sub.remove();
+  }, [showSheet]);
   const top = stack[stack.length - 1];
   const [intro, setIntro] = useState(true); // the launch intro plays on every app start
 

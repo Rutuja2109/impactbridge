@@ -201,7 +201,7 @@ export default function SheetHost() {
     case 'sip': return <SipSheet cause={sheet.cause} />;
     case 'profile': return <ProfileDrawer />;
     case 'filters': return <FilterSheet />;
-    case 'donate': return campaignOf(sheet.id) ? (firebaseReady ? <LiveDonateSheet id={sheet.id} /> : <DonateSheet id={sheet.id} />) : null;
+    case 'donate': return campaignOf(sheet.id) ? (firebaseReady ? <LiveDonateSheet id={sheet.id} sip={sheet.sip} /> : <DonateSheet id={sheet.id} />) : null;
   }
 }
 

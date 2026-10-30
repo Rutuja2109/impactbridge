@@ -116,11 +116,25 @@ service cloud.firestore {
     // Monthly giving (SIP). Only the server (Cloud Functions) creates and changes these, after Razorpay confirms; people can only read their own.
     match /sips/{sid} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      // Reminder mode (no payment company): the donor saves a plan, can stop it, and the admin updates its totals.
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.mode == 'reminder'
+        && request.resource.data.status == 'active' && request.resource.data.paidCount == 0 && request.resource.data.totalPaid == 0
+        && request.resource.data.amount is number && request.resource.data.amount >= 100 && request.resource.data.amount <= 15000;
+      allow update: if signedIn() && ((resource.data.uid == request.auth.uid && resource.data.mode == 'reminder' && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])) || isAdmin());
       match /charges/{cid} {
         allow read: if signedIn() && (get(/databases/$(database)/documents/sips/$(sid)).data.uid == request.auth.uid || isAdmin());
       }
     }
     match /{path=**}/charges/{x} { allow read: if isAdmin(); }
+
+    // Reminder mode: each monthly payment a donor says they made. The donor adds it as 'pledged'; only an admin can confirm it.
+    match /sipPayments/{pid} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pledged'
+        && request.resource.data.amount is number && request.resource.data.amount >= 100 && request.resource.data.amount <= 15000;
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'confirmedAt']);
+    }
 
     // The admin's monthly-giving settings: whether it is on, and the name and number/UPI ID the money is collected into.
     // config/sip is public (on/off, receiver's name and the last digits); config/sipPrivate holds the full number or UPI ID, admins only.
