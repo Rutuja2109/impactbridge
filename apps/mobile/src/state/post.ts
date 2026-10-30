@@ -4,7 +4,7 @@
 import { firebaseReady } from '../firebase';
 
 export type Flow = 'problem' | 'project' | 'fund';
-export type Attach = { name: string; size: number; b64?: string };
+export type Attach = { name: string; size: number; b64?: string; thumb?: string };
 export type Value = string | boolean | Attach[];
 export type PostData = Record<string, Value>;
 export type PostState = { step: number; max: number; mode: 'form' | 'review' | 'done'; data: PostData; errors: Record<string, string>; fromReview: boolean; ref: string; restored: boolean };

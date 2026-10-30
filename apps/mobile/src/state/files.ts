@@ -17,7 +17,10 @@ export async function pickPhoto(label: string): Promise<Attach | null> {
   if (res.canceled || !res.assets[0]) return null;
   for (const [width, compress] of [[900, 0.5], [700, 0.35], [500, 0.25]] as const) {
     const out = await ImageManipulator.manipulateAsync(res.assets[0].uri, [{ resize: { width } }], { compress, format: ImageManipulator.SaveFormat.JPEG, base64: true });
-    if (out.base64 && out.base64.length <= LIMIT) return { name: label, size: Math.round(out.base64.length * 0.75), b64: out.base64 };
+    if (out.base64 && out.base64.length <= LIMIT) {
+      const small = await ImageManipulator.manipulateAsync(res.assets[0].uri, [{ resize: { width: 360 } }], { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+      return { name: label, size: Math.round(out.base64.length * 0.75), b64: out.base64, thumb: small.base64 };
+    }
   }
   throw new Error('big');
 }

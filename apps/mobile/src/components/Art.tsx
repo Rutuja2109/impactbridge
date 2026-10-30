@@ -1,18 +1,27 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-import { catOf, type CauseId } from '../data';
+import { catOf, thumbs, type CauseId } from '../data';
+import { firebaseReady } from '../firebase';
 import { PHOTOS } from '../data/photos';
 import { useT } from '../i18n';
 import { colors, radius, type } from '../theme';
-import { IconShapes } from './Icon';
+import Icon, { IconShapes } from './Icon';
 
 // Cause photos for covers and cause cards; the fictional stories keep a drawn illustration (PortraitArt with people).
 
 /** Landscape cover (320 x 160 grid); circle positions vary per item, as in the prototype. */
-export function CoverArt({ cause, id, height, placeholder }: { cause: CauseId; id: string; height: number; placeholder?: string }) {
+export function CoverArt({ cause, id, height, placeholder, uri }: { cause: CauseId; id: string; height: number; placeholder?: string; uri?: string }) {
   const c = catOf(cause);
   const { t } = useT();
+  if (firebaseReady) {
+    const pic = uri ?? thumbs[id];
+    return (
+      <View style={{ height, backgroundColor: c.color, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }} accessible={false} importantForAccessibility="no-hide-descendants">
+        {pic ? <Image source={{ uri: `data:image/jpeg;base64,${pic}` }} style={{ width: '100%', height }} resizeMode="cover" /> : <View style={{ opacity: 0.4 }}><Icon name={cause === 'medical' ? 'heart' : 'people'} size={56} color={colors.white} /></View>}
+      </View>
+    );
+  }
   return (
     <View style={{ height, backgroundColor: c.color, overflow: 'hidden' }} accessible={false} importantForAccessibility="no-hide-descendants">
       <Image source={PHOTOS[cause].source} style={{ width: '100%', height }} resizeMode="cover" />

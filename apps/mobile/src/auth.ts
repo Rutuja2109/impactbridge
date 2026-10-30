@@ -5,7 +5,7 @@ import {
   GoogleAuthProvider, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithCredential,
   sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type getAuth,
 } from '@react-native-firebase/auth';
-import { deleteDoc, doc } from '@react-native-firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, query, where } from '@react-native-firebase/firestore';
 
 import { auth, db, googleWebClientId } from './firebase';
 import type { User } from './screens/Welcome';
@@ -68,6 +68,22 @@ export const watchAuth = (cb: (u: User | null) => void) => (auth ? onAuthStateCh
 export async function deleteAccount() {
   const u = auth?.currentUser;
   if (!u) return;
-  if (db) await deleteDoc(doc(db, 'users', u.uid)).catch(() => {});
+  if (db) {
+    // Posts the person shared, with their photos, private contact, offers of help and reports of payments.
+    const mine = await getDocs(query(collection(db, 'posts'), where('ownerId', '==', u.uid))).catch(() => null);
+    for (const p of mine?.docs ?? []) {
+      for (const sub of ['files', 'private', 'responses', 'donations']) {
+        const rows = await getDocs(collection(db, 'posts', p.id, sub)).catch(() => null);
+        await Promise.all((rows?.docs ?? []).map((d) => deleteDoc(d.ref).catch(() => {})));
+      }
+      await deleteDoc(p.ref).catch(() => {});
+    }
+    // Their own records: help given, notifications, joined communities and the profile itself.
+    for (const sub of ['helps', 'notifications']) {
+      const rows = await getDocs(collection(db, 'users', u.uid, sub)).catch(() => null);
+      await Promise.all((rows?.docs ?? []).map((d) => deleteDoc(d.ref).catch(() => {})));
+    }
+    await deleteDoc(doc(db, 'users', u.uid)).catch(() => {});
+  }
   await deleteUser(u);
 }

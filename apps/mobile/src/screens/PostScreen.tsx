@@ -220,7 +220,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
   const preview = (
     <View style={styles.card} accessibilityLabel={t('rev.public')}>
       <View>
-        <CoverArt cause={cat} id="pv" height={140} placeholder="x" />
+        <CoverArt cause={cat} id="pv" height={140} placeholder="x" uri={([...((d.cover as Attach[]) ?? []), ...((d.files as Attach[]) ?? [])].find((a) => a.thumb))?.thumb} />
         <View style={styles.badges}>
           <Badge label={t('st.pending')} tone="amber" />
           {d.cat ? <CauseBadge cause={cat} /> : null}

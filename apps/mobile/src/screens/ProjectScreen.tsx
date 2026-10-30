@@ -23,7 +23,7 @@ export default function ProjectScreen({ id }: { id: string }) {
   if (!p) return <NotFound onBack={() => openDiscover({ kind: 'projects' })} />;
 
   const done = p.status === 'Completed';
-  const reached = done ? (p.verified ? 7 : 6) : p.status === 'In progress' ? 5 : 4;
+  const reached = firebaseReady ? (p.raised > 0 || p.vols > 0 ? 4 : 3) : done ? (p.verified ? 7 : 6) : p.status === 'In progress' ? 5 : 4;
   const pl = pledgedPct(p);
   const rc = receivedPct(p);
   // "by {o}" puts the name first in Hindi and Marathi, so split around it; the name links to Community, as in the prototype.
@@ -46,9 +46,7 @@ export default function ProjectScreen({ id }: { id: string }) {
           <View style={styles.meta}>
             <Icon name="pin" size={16} color={colors.slate} />
             <Text style={d.small}>
-              {p.area} · {byBefore}
-              <Text style={styles.link} onPress={() => goTab('community')} accessibilityRole="link">{p.org}</Text>
-              {byAfter}
+              {p.org ? <>{p.area} · {byBefore}<Text style={styles.link} onPress={() => goTab('community')} accessibilityRole="link">{p.org}</Text>{byAfter}</> : p.area}
             </Text>
           </View>
 

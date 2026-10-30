@@ -19,7 +19,9 @@ export async function submitPost(u: User, flow: Flow, data: PostData): Promise<s
     if (FILES.includes(k)) continue;
     (PRIVATE.includes(k) ? priv : pub)[k] = v;
   }
-  const ref = await addDoc(collection(db!, 'posts'), { flow, data: pub, ownerId: u.uid, ownerName: u.name, status: 'pending', createdAt: Date.now() });
+  const pics = [...((data.cover as Attach[]) ?? []), ...((data.files as Attach[]) ?? [])];
+  const thumb = pics.find((a) => a.thumb)?.thumb ?? '';
+  const ref = await addDoc(collection(db!, 'posts'), { flow, data: pub, ownerId: u.uid, ownerName: u.name, status: 'pending', createdAt: Date.now(), thumb });
   await setDoc(doc(db!, 'posts', ref.id, 'private', 'info'), { ...priv, ownerEmail: u.email });
   await savePhotos(ref.id, { files: (data.files as Attach[]) ?? [], cover: (data.cover as Attach[]) ?? [], docs: (data.docs as Attach[]) ?? [] });
   return ref.id;

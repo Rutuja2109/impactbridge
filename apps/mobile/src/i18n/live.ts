@@ -4,6 +4,8 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'n.referText': 'Join me on GoodNeighbour: small acts, real change.',
+    'lv.noMoney': 'No money needed',
     'ac.title': 'Account',
     'ac.d': 'Deleting your account removes your profile and sign-in for good. Your badges and certificates go with it. This cannot be undone.',
     'ac.type': 'To delete, type DELETE below.',
@@ -59,6 +61,8 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'n.referText': 'GoodNeighbour पर मेरे साथ जुड़ें: छोटे कदम, असली बदलाव।',
+    'lv.noMoney': 'पैसों की ज़रूरत नहीं',
     'ac.title': 'खाता',
     'ac.d': 'खाता हटाने पर आपकी प्रोफ़ाइल और साइन-इन हमेशा के लिए हट जाएँगे। आपके बैज और प्रमाणपत्र भी चले जाएँगे। इसे वापस नहीं किया जा सकता।',
     'ac.type': 'हटाने के लिए नीचे DELETE लिखें।',
@@ -114,6 +118,8 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'n.referText': 'GoodNeighbour वर माझ्यासोबत या: छोटी पावले, खरा बदल.',
+    'lv.noMoney': 'पैशांची गरज नाही',
     'ac.title': 'खाते',
     'ac.d': 'खाते हटवल्यावर तुमचे प्रोफाइल आणि साइन-इन कायमचे हटते. तुमचे बॅज आणि प्रमाणपत्रेही जातात. हे परत करता येत नाही.',
     'ac.type': 'हटवण्यासाठी खाली DELETE लिहा.',

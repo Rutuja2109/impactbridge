@@ -52,7 +52,7 @@ service cloud.firestore {
     match /posts/{pid} {
       allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid || isAdmin());
       allow create: if (signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending') || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid);
       // An admin edits anything (approve, reject); the author can only update the confirmed-money totals (see donations below).
       allow update: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['received', 'donors']));
@@ -61,17 +61,18 @@ service cloud.firestore {
       match /private/{doc} {
         allow read, write: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
         allow read, delete: if isAdmin();
+        allow delete: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
       }
       // Photos: the author adds them; everyone signed in sees photos of the post, but photos of documents only the author and admins.
       match /files/{fid} {
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
         allow create: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid;
         allow read: if signedIn() && (resource.data.field != 'docs'
           || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
       // Payments people report for a fundraiser: the donor writes one as 'pledged'; the author or an admin settles it.
       match /donations/{did} {
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
         allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pledged'
           && request.resource.data.amount is number && request.resource.data.amount >= 10 && request.resource.data.amount <= 100000
           && get(/databases/$(database)/documents/posts/$(pid)).data.status == 'approved';
@@ -82,7 +83,7 @@ service cloud.firestore {
       }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
         allow create: if signedIn() && request.auth.uid == uid;
         allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
@@ -101,12 +102,12 @@ service cloud.firestore {
 
     // The offers of help a person has made (behind their badge and certificate): theirs alone.
     match /users/{uid}/helps/{pid} {
-      allow read, create: if signedIn() && request.auth.uid == uid;
+      allow read, create, delete: if signedIn() && request.auth.uid == uid;
     }
 
     // In-app notifications are written by the Cloud Function only; the person can read and mark their own.
     match /users/{uid}/notifications/{nid} {
-      allow read, update: if signedIn() && request.auth.uid == uid;
+      allow read, update, delete: if signedIn() && request.auth.uid == uid;
     }
   }
 }

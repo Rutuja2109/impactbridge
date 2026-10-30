@@ -72,7 +72,7 @@ export const pledgePct = (c: Campaign, donations: Donation[] = []) =>
   Math.min(100 - fundPct(c, donations), Math.round((campaignPledged(donations) / c.goal) * 100));
 
 /** What an approved post document looks like in Firestore (written by the post forms, approved by an admin). */
-export type PostDoc = { id: string; flow: 'problem' | 'project' | 'fund'; data: Record<string, unknown>; ownerId?: string; createdAt?: number; received?: number; donors?: number };
+export type PostDoc = { id: string; flow: 'problem' | 'project' | 'fund'; data: Record<string, unknown>; ownerId?: string; createdAt?: number; received?: number; donors?: number; thumb?: string };
 
 const num = (v: unknown) => (typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : 0);
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -82,10 +82,15 @@ const daysLeft = (iso: string) => { const t = Date.parse(iso); return Number.isN
 const spot = (id: string, k: number) => 12 + ([...id].reduce((a, c) => (a * 31 + c.charCodeAt(0) + k) % 997, 7) % 76);
 
 /** Replace the lists with the approved posts. Arrays are updated in place because modules hold references to them. */
+/** Small cover picture of each live post (base64 JPEG), filled by applyLive. */
+export const thumbs: Record<string, string> = {};
+
 export function applyLive(posts: PostDoc[]) {
   const proj: Project[] = [];
   const camp: Campaign[] = [];
+  for (const k of Object.keys(thumbs)) delete thumbs[k];
   for (const p of posts) {
+    if (p.thumb) thumbs[p.id] = p.thumb;
     const d = p.data;
     const cat = (categories.some((c) => c.id === d.cat) ? d.cat : 'medical') as CauseId;
     if (p.flow === 'fund') {

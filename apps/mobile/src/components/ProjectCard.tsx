@@ -26,13 +26,13 @@ export default function ProjectCard({ project: p }: { project: Project }) {
         <View style={styles.body}>
           <Text style={styles.title}>{p.title}</Text>
           <View style={styles.meta}>
-            <Text style={styles.metaText}>{p.org} · {p.area}</Text>
+            <Text style={styles.metaText}>{p.org ? `${p.org} · ${p.area}` : p.area}</Text>
             <SampleTag label={t('c.sample')} />
             <UntrTag />
           </View>
-          <ProgressBar value={pct} label={t('c.pledgedAria')} />
+          {p.goal > 0 ? <ProgressBar value={pct} label={t('c.pledgedAria')} /> : null}
           <View style={styles.row}>
-            <Rich text={tr('c.pledgedOf', { a: inr(p.raised), b: inr(p.goal) })} style={styles.amount} boldStyle={styles.amountBold} />
+            {p.goal > 0 ? <Rich text={tr('c.pledgedOf', { a: inr(p.raised), b: inr(p.goal) })} style={styles.amount} boldStyle={styles.amountBold} /> : <Text style={styles.amount}>{p.vols > 0 ? '' : t('lv.noMoney')}</Text>}
             <Text style={styles.days}>{done ? t('c.fullyPledged') : t('c.daysLeft', { n: p.days })}</Text>
           </View>
         </View>
