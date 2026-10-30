@@ -92,3 +92,6 @@ exports.onGiveSettled = onDocumentUpdated('users/{uid}/gives/{gid}', async (even
   await db.collection(`users/${event.params.uid}/notifications`).add({ title, body, pid: after.postId, read: false, at: Date.now() });
   await push(await tokensFor([event.params.uid]), title, body, { pid: after.postId });
 });
+
+// Monthly giving (SIP) with Razorpay: see sip.js for the one-time setup.
+Object.assign(exports, require('./sip'));

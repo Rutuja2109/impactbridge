@@ -10,7 +10,7 @@ import { useLive } from './communities';
 export type DonationStatus = 'pledged' | 'received' | 'not_received';
 export type Donation = { id: string; uid: string; name: string; amount: number; ref: string; status: DonationStatus; at: number };
 /** The donor's own copy of a payment, so they can follow it from their Impact page. */
-export type Give = { id: string; postId: string; title: string; amount: number; status: DonationStatus; at: number; confirmedAt?: number };
+export type Give = { id: string; postId: string; title: string; amount: number; status: DonationStatus; at: number; confirmedAt?: number; via?: string };
 export type Supporter = { id: string; name: string; amount: number; at: number };
 
 export const UPI_ID = /^[A-Za-z0-9._-]{2,}@[A-Za-z][A-Za-z0-9]{1,}$/;

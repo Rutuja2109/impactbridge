@@ -24,6 +24,7 @@ export default function AdminMetrics() {
     ['Posts', [['Total', v('posts')], ['Today', v('postsToday')], ['This week', v('posts7')], ['Waiting for review', v('pending')], ['Live', v('approved')], ['Rejected', v('rejected')], ['Problems', v('problems')], ['Community projects', v('projects')], ['Fundraisers', v('funds')], ['Sample posts', v('samples')]]],
     ['Posts by cause', [['Medical', v('cause_medical')], ['Animals', v('cause_animals')], ['Education', v('cause_education')], ['Food & hunger', v('cause_food')], ['Environment', v('cause_environment')]]],
     ['Help and money', [['Offers of help (time or items)', v('helps')], ['Payments reported by donors', v('donations')], ['Payments confirmed by organisers', v('donors')], ['Payments waiting', waiting], ['Money confirmed received', v('money', true)]]],
+    ['Monthly giving (SIP)', [['Active monthly gifts', v('sipActive')], ['Monthly run-rate', v('sipRun', true)], ['Automatic charges so far', v('sipCharges')], ['Collected through SIP', v('sipCollected', true)]]],
     ['Communities', [['Communities', v('communities')], ['Joins', v('members')], ['Organisations verified', v('orgsVerified')], ['Organisations waiting', v('orgsPending')]]],
     ['Safety', [['Reports received', v('reports')]]],
   ];

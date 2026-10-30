@@ -113,6 +113,27 @@ service cloud.firestore {
       allow read, create, delete: if signedIn() && request.auth.uid == uid;
     }
 
+    // Monthly giving (SIP). Only the server (Cloud Functions) creates and changes these, after Razorpay confirms; people can only read their own.
+    match /sips/{sid} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      match /charges/{cid} {
+        allow read: if signedIn() && (get(/databases/$(database)/documents/sips/$(sid)).data.uid == request.auth.uid || isAdmin());
+      }
+    }
+    match /{path=**}/charges/{x} { allow read: if isAdmin(); }
+
+    // The admin's monthly-giving settings: whether it is on, and the name and number/UPI ID the money is collected into.
+    // config/sip is public (on/off, receiver's name and the last digits); config/sipPrivate holds the full number or UPI ID, admins only.
+    match /config/{name} {
+      allow read: if (signedIn() && name != 'sipPrivate') || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // The admin's record of money passed on to an organiser from monthly giving.
+    match /payouts/{pid} {
+      allow read, create: if isAdmin();
+    }
+
     // A donor's own copy of each payment they reported, so they can follow it. The organiser (or an admin) can only change its status.
     match /users/{uid}/gives/{gid} {
       allow read, delete: if signedIn() && request.auth.uid == uid;

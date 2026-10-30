@@ -3,7 +3,7 @@
 // from their account, and any badge or certificate can be shared as a picture.
 import * as Sharing from 'expo-sharing';
 import { useRef, useState, type ComponentRef } from 'react';
-import { Pressable, Share, StyleSheet, Text, View, findNodeHandle } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, Text, View, findNodeHandle } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { inr } from '../format';
@@ -12,6 +12,7 @@ import { TIER_COLOR, TIER_SOFT, certNo, liveStats, type LiveBadge, type LiveCert
 import { useJoined } from '../state/communities';
 import { useMyGives, type Give } from '../state/donations';
 import { useMyHelps, useMyPosts, type MyPost } from '../state/mine';
+import { cancelSip, useMySips } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import Icon, { type IconName } from './Icon';
@@ -116,6 +117,7 @@ export default function ImpactLive() {
   const helps = useMyHelps(uid);
   const gives = useMyGives(uid);
   const joined = useJoined(uid);
+  const sips = useMySips(uid).filter((x) => x.status !== 'created');
   const [shown, setShown] = useState<Shown>(null);
   const [open, setOpen] = useState<MyPost | null>(null);
   const card = useRef<ComponentRef<typeof View>>(null);
@@ -174,11 +176,35 @@ export default function ImpactLive() {
               <Text style={styles.itemTitle} numberOfLines={2}>{g.title || '—'}</Text>
               <Text style={styles.small}>{inr(g.amount)} · {formatDate(iso(g.at), { day: 'numeric', month: 'short' })}</Text>
               <Text style={[styles.gv, g.status === 'received' && styles.gvOk, g.status === 'not_received' && styles.gvNo]}>
-                {g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
+                {g.via === 'sip' ? `✓ ${t('gv.sip')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
               </Text>
             </View>
           </View>
         )) : <Text style={styles.small}>{t('gv.none')}</Text>}
+      </View>
+
+      <View style={styles.sec}>
+        <Text accessibilityRole="header" style={styles.h2}>{t('sip.title')}</Text>
+        {sips.length ? sips.map((x) => {
+          const live = ['authenticated', 'active', 'pending', 'halted', 'paused'].includes(x.status);
+          return (
+            <View key={x.id} style={styles.item}>
+              <View style={styles.grow}>
+                <Text style={styles.itemTitle} numberOfLines={2}>{x.title || '—'}</Text>
+                <Text style={styles.small}>{t('sip.perMonth', { a: inr(x.amount) })} · {t('sip.paid', { n: x.paidCount, a: inr(x.totalPaid) })}</Text>
+                <Text style={[styles.gv, x.status === 'active' && styles.gvOk, (x.status === 'halted' || x.status === 'cancelled') && styles.gvNo]}>
+                  {t(`sip.st.${x.status}`)}{live && x.nextChargeAt ? ` · ${t('sip.next', { d: formatDate(iso(x.nextChargeAt), { day: 'numeric', month: 'short' }) })}` : ''}
+                </Text>
+              </View>
+              {live ? (
+                <Button small variant="ghost" label={t('sip.stop')} onPress={() => Alert.alert(t('sip.stopT'), t('sip.stopD'), [
+                  { text: t('c.close'), style: 'cancel' },
+                  { text: t('sip.stop'), style: 'destructive', onPress: () => { cancelSip(x.id).then(() => store.toast(t('sip.stopped'))).catch((e: Error) => store.toast(e.message)); } },
+                ])} />
+              ) : null}
+            </View>
+          );
+        }) : <Text style={styles.small}>{t('sip.none')}</Text>}
       </View>
 
       <View style={styles.sec}>

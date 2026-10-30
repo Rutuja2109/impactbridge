@@ -12,6 +12,7 @@ import { useStore } from '../state/store';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
 import AdminMetrics from './AdminMetrics';
+import AdminSip from './AdminSip';
 import DonationsList from './DonationsList';
 import { Button } from './ui';
 
@@ -152,6 +153,7 @@ export default function AdminPanel() {
       <Text style={styles.h}>Live posts ({live.length})</Text>
       {live.map((p) => <PostCard key={p.id} p={p} review={false} />)}
       <Reports />
+      <AdminSip />
       <SampleData />
     </>
   );

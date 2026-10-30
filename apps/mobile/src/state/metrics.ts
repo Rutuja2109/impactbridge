@@ -56,6 +56,10 @@ export function useMetrics(tick: number) {
       orgsVerified: n(query(orgs, where('status', '==', 'verified'))),
       orgsPending: n(query(orgs, where('status', '==', 'pending'))),
       reports: n(collection(db!, 'reports')),
+      sipActive: n(query(collection(db!, 'sips'), where('status', '==', 'active'))),
+      sipCharges: n(collectionGroup(db!, 'charges')),
+      sipRun: () => getAggregateFromServer(query(collection(db!, 'sips'), where('status', '==', 'active')), { t: sum('amount') }).then((s) => Number(s.data().t ?? 0)),
+      sipCollected: () => getAggregateFromServer(posts, { t: sum('sipTotal') }).then((s) => Number(s.data().t ?? 0)),
       ...Object.fromEntries(CAUSES.map((c) => [`cause_${c}`, n(query(posts, where('data.cat', '==', c)))])),
     };
     const keys = Object.keys(jobs);
