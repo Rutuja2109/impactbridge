@@ -8,7 +8,7 @@ import IllustrativeMap, { type MapItem } from '../components/IllustrativeMap';
 import OsmMap, { type GeoItem } from '../components/OsmMap';
 import ProjectCard from '../components/ProjectCard';
 import { Button, ChipRow, PageHead, Segmented, UntrNote } from '../components/ui';
-import { catOf, categories, fundPct, pledgedPct, type CauseId } from '../data';
+import { campaigns, catOf, categories, fundPct, pledgedPct, type CauseId } from '../data';
 import { activeCount, NO_FILTERS } from '../data/filters';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
@@ -22,16 +22,19 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useT();
   const { discover: d, setDiscover, open, donations, showSheet } = useStore();
-  const { fund, projectList: shownProjects, campaignList: shownCampaigns, count: n } = useDiscoverResults(d.f);
-  const nFilters = activeCount(d.f, fund);
-  const count = fund ? (n === 1 ? t('disc.fcount1') : t('disc.fcountN', { n })) : (n === 1 ? t('disc.count1') : t('disc.countN', { n }));
+  const { all, fund, projectList: shownProjects, campaignList: shownCampaigns, count: n } = useDiscoverResults(d.f);
+  const nFilters = all ? 0 : activeCount(d.f, fund);
+  const count = all ? (n === 1 ? t('n.live.count1') : t('n.live.countN', { n })) : fund ? (n === 1 ? t('disc.fcount1') : t('disc.fcountN', { n })) : (n === 1 ? t('disc.count1') : t('disc.countN', { n }));
 
+  const kindOf = (id: string): 'campaign' | 'project' => (campaigns.some((c) => c.id === id) ? 'campaign' : 'project');
+  // One newest-first list of both kinds when "All" is chosen.
+  const mixed = all ? [...shownProjects.map((p) => ({ at: p.at ?? 0, node: <ProjectCard key={p.id} project={p} /> })), ...shownCampaigns.map((c) => ({ at: c.at ?? 0, node: <CampaignCard key={c.id} campaign={c} /> }))].sort((a, b) => b.at - a.at) : [];
   const mapItems: MapItem[] = fund
     ? shownCampaigns.map((c) => ({ id: c.id, cat: c.cat, x: c.x, y: c.y, title: c.title, meta: `${c.organizer} · ${t('map.fpct', { n: fundPct(c, donations[c.id]) })}` }))
     : shownProjects.map((p) => ({ id: p.id, cat: p.cat, x: p.x, y: p.y, title: p.title, meta: `${p.area} · ${t('map.pct', { n: pledgedPct(p) })}` }));
-  const geoItems: GeoItem[] = (fund ? shownCampaigns : shownProjects)
+  const geoItems: GeoItem[] = ([...(fund ? [] : shownProjects), ...(fund || all ? shownCampaigns : [])] as (typeof shownProjects[number] | typeof shownCampaigns[number])[])
     .filter((x) => typeof x.lat === 'number' && typeof x.lng === 'number')
-    .map((x) => ({ id: x.id, lat: x.lat as number, lng: x.lng as number, title: x.title, meta: fund ? (x as typeof shownCampaigns[number]).organizer : (x as typeof shownProjects[number]).area, color: catOf(x.cat).color }));
+    .map((x) => ({ id: x.id, lat: x.lat as number, lng: x.lng as number, title: x.title, meta: 'organizer' in x ? x.organizer : x.area, color: catOf(x.cat).color }));
   const pin = mapItems.some((m) => m.id === d.pin) ? d.pin : null;
 
   return (
@@ -52,10 +55,12 @@ export default function DiscoverScreen() {
         />
         {d.q ? <Text onPress={() => setDiscover({ q: '' })} accessibilityRole="button" accessibilityLabel={t('c.close')} style={styles.clearX}>✕</Text> : null}
       </View>
+        {all ? null : (
         <Pressable onPress={() => showSheet({ kind: 'filters' })} accessibilityRole="button" accessibilityLabel={nFilters ? `${t('n.f.btn')}. ${t('n.f.applied', { n: nFilters })}` : t('n.f.btn')} style={[styles.filterBtn, nFilters > 0 && styles.filterOn]}>
           <Icon name="filter" size={22} color={nFilters ? colors.white : colors.tealDark} />
           {nFilters > 0 ? <View style={styles.badge}><Text style={styles.countText}>{nFilters}</Text></View> : null}
         </Pressable>
+        )}
       </View>
 
       <View style={styles.block}>
@@ -63,8 +68,8 @@ export default function DiscoverScreen() {
           stretch
           label={t('disc.kind')}
           selected={d.kind}
-          onSelect={(k) => setDiscover({ kind: k as 'projects' | 'fund', pin: null })}
-          items={[{ id: 'projects', label: t('disc.projects') }, { id: 'fund', label: t('disc.fundraisers') }]}
+          onSelect={(k) => setDiscover({ kind: k as 'all' | 'projects' | 'fund', pin: null })}
+          items={firebaseReady ? [{ id: 'all', label: t('disc.all') }, { id: 'projects', label: t('disc.projects') }, { id: 'fund', label: t('disc.fundraisers') }] : [{ id: 'projects', label: t('disc.projects') }, { id: 'fund', label: t('disc.fundraisers') }]}
         />
       </View>
 
@@ -93,7 +98,7 @@ export default function DiscoverScreen() {
           <Button label={t('disc.clear')} variant="ghost" small onPress={() => setDiscover({ q: '', cat: 'all', pin: null, f: NO_FILTERS })} />
         </View>
       ) : d.view === 'map' && firebaseReady ? (
-        <OsmMap items={geoItems} onOpen={(id) => open({ name: fund ? 'campaign' : 'project', id })} />
+        <OsmMap items={geoItems} onOpen={(id) => open({ name: kindOf(id), id })} />
       ) : d.view === 'map' ? (
         <IllustrativeMap
           items={mapItems}
@@ -101,6 +106,8 @@ export default function DiscoverScreen() {
           onSelect={(id) => setDiscover({ pin: id })}
           onOpen={(id) => open({ name: fund ? 'campaign' : 'project', id })}
         />
+      ) : all ? (
+        mixed.map((m) => m.node)
       ) : fund ? (
         shownCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} />)
       ) : (

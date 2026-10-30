@@ -25,7 +25,7 @@ export type Sheet =
   | { kind: 'profile' }
   | { kind: 'filters' }
   | { kind: 'org'; id: string };
-export type DiscoverState = { q: string; cat: 'all' | CauseId; kind: 'projects' | 'fund'; view: 'list' | 'map'; pin: string | null; f: Filters };
+export type DiscoverState = { q: string; cat: 'all' | CauseId; kind: 'all' | 'projects' | 'fund'; view: 'list' | 'map'; pin: string | null; f: Filters };
 export type MyDonation = { cid: string; a: number; n: string; monthly?: boolean };
 /** A simulated monthly giving plan (SIP), as on Ketto: a fixed amount every month for a cause. Nothing is charged. */
 export type Sip = { id: string; cause: CauseId; amount: number; cid: string | null; status: 'active' | 'paused' | 'cancelled'; started: string };
@@ -78,7 +78,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>('home');
   const [stack, setStack] = useState<Route[]>([]);
   const [sheet, setSheet] = useState<Sheet | null>(null);
-  const [discover, setDiscoverState] = useState<DiscoverState>({ q: '', cat: 'all', kind: 'projects', view: 'list', pin: null, f: NO_FILTERS });
+  const [discover, setDiscoverState] = useState<DiscoverState>({ q: '', cat: 'all', kind: firebaseReady ? 'all' : 'projects', view: 'list', pin: null, f: NO_FILTERS });
   const [following, setFollowing] = useState<string[]>([]);
   const [joined, setJoined] = useState<string[]>([]);
   const [going, setGoing] = useState<string[]>([]);

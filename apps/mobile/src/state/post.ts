@@ -12,7 +12,7 @@ export type Spec = [name: string, kind: string, required: 0 | 1];
 
 const PROBLEM_STEPS: Record<number, Spec[]> = {
   1: [['title', 'text', 1], ['cat', 'cats', 1], ['desc', 'area', 1], ['help', 'area', 1]],
-  2: [['city', 'text', 1], ['area', 'text', 0], ['affected', 'text', 1], ['count', 'num', 0], ['landmark', 'pin', 0]],
+  2: [['city', 'text', 1], ['area', 'text', 0], ['affected', 'text', 1], ['count', 'num', 0], ['landmark', 'pin', firebaseReady ? 1 : 0]],
   3: [['files', 'files', 1], ['started', 'date', 0], ['urgency', 'urg', 1], ['ongoing', 'ongoing', 0], ['actions', 'area', 0]],
   4: [['outcome', 'area', 1], ['vols', 'num', 0], ['skills', 'text', 0], ['materials', 'text', 0], ['budget', 'num', 0], ['target', 'date', 0], ['partners', 'text', 0]],
   5: [['who', 'who', 1], ['orgName', 'text', 1], ['contact', 'contact', 1], ['display', 'text', 1], ['private', 'text', 1], ['consent', 'check', 1]],
@@ -45,7 +45,7 @@ export const PRIVATE = ['private', 'docs']; // reviewers only: never shown on pu
 export const FILE_FIELDS = ['files', 'cover', 'docs'];
 
 export const blankPost = (): PostData => ({
-  title: '', cat: '', desc: '', help: '', city: '', area: '', affected: '', count: '', landmark: '', pin: false, lat: '', lng: '',
+  title: '', cat: '', desc: '', help: '', city: '', area: '', affected: '', count: '', landmark: '', pin: false, lat: '', lng: '', geoName: '', locVia: '', locDist: '',
   started: '', urgency: 'normal', ongoing: '', actions: '', outcome: '', vols: '', skills: '', materials: '', budget: '', target: '', partners: '',
   who: '', orgName: '', contact: '', display: '', private: '', consent: false, files: [],
   payLink: '', ctype: '', story: '', benName: '', benAbout: '', relation: '', goal: '', use: '', deadline: '', cover: [], docs: [], accurate: false,
@@ -85,6 +85,7 @@ export function fieldError(flow: Flow, d: PostData, name: string): string {
     case 'goal': return isInt(s, 1000) && Number(s) <= 5000000 ? '' : 'goal';
     case 'started': return s && (!isDate(isoDate(s)) || isoDate(s) > today()) ? 'started' : '';
     case 'target': return s && (!isDate(isoDate(s)) || isoDate(s) <= today()) ? 'target' : '';
+    case 'landmark': return firebaseReady && typeof d.lat !== 'string' || firebaseReady && !d.lat ? 'pinReq' : '';
     case 'payLink': return /^(https?|upi):\/\/\S+$/i.test(s) || /^[A-Za-z0-9._-]{2,}@[A-Za-z][A-Za-z0-9]{1,}$/.test(s) || (!s && !firebaseReady) ? '' : 'payLink';
     case 'deadline': return isDate(isoDate(s)) && isoDate(s) > today() ? '' : 'deadline';
     case 'private': return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) || /^(\+?91)?\d{10}$/.test(s.replace(/[\s-]/g, '')) ? '' : 'private';

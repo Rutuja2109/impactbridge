@@ -2,15 +2,15 @@
 // "Create a community project" and "Start a fundraiser". Rules and wording come from the prototype (state/post.ts and
 // its text keys). Demonstration only: nothing is sent; drafts are saved on this device (never private details or files).
 import { firebaseReady } from '../firebase';
-import * as Location from 'expo-location';
 import { pickPhoto } from '../state/files';
 import { submitPost } from '../state/posts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CoverArt } from '../components/Art';
+import LocationPicker, { fmtDist, type Picked } from '../components/LocationPicker';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import Icon from '../components/Icon';
 import { Badge, Button, CauseBadge, Notice, SampleTag } from '../components/ui';
@@ -54,16 +54,18 @@ export default function PostScreen({ flow }: { flow: Flow }) {
     set((p) => ({ ...p, step, mode, errors: {}, restored: false }));
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
-  // Installed app: the pin is the phone's real position (asked for permission first), saved as latitude and longitude.
-  const pinMyLocation = async () => {
-    try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (perm.status !== 'granted') { store.toast(t('pin.denied')); return; }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      set((p) => ({ ...p, data: { ...p.data, pin: true, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) } }));
-    } catch { store.toast(t('pin.fail')); }
+  // Installed app: the picked place (already checked against the map by the picker) fills the location fields.
+  const [picker, setPicker] = useState(false);
+  const onPick = (pk: Picked) => {
+    set((st) => {
+      const data: PostState['data'] = { ...st.data, pin: true, lat: pk.lat.toFixed(6), lng: pk.lng.toFixed(6), geoName: pk.name, locVia: pk.via, locDist: pk.dist === undefined ? '' : String(Math.round(pk.dist)) };
+      if (!String(data.city ?? '').trim() && pk.city) data.city = pk.city;
+      if (!String(data.area ?? '').trim() && pk.area) data.area = pk.area;
+      const errors = { ...st.errors }; delete errors.landmark; delete errors.city;
+      return { ...st, data, errors };
+    });
+    setPicker(false);
   };
-  const clearLocation = () => set((p) => ({ ...p, data: { ...p.data, pin: false, lat: '', lng: '' } }));
   const setField = (name: string, value: PostState['data'][string]) =>
     set((p) => {
       const data = { ...p.data, [name]: value };
@@ -151,13 +153,31 @@ export default function PostScreen({ flow }: { flow: Flow }) {
         </>,
       );
     }
+    if (kind === 'pin' && firebaseReady) {
+      const has = str('lat') !== '';
+      const via = str('locVia') || 'pin';
+      return wrap(
+        <>
+          {label}{help}
+          {has ? (
+            <View style={styles.pinCard}>
+              <Text style={styles.pinTitle}>{t('lp.cardTitle')}</Text>
+              <Text style={styles.body}>{str('geoName')}</Text>
+              <Text style={styles.hint}>{t(`lp.src.${via}`)}{via === 'gps' ? ` · ${t('lp.at')}` : str('locDist') ? ` · ${t('lp.far', { d: fmtDist(Number(str('locDist'))) })}` : ''}</Text>
+            </View>
+          ) : null}
+          <Button label={t(has ? 'lp.change' : 'lp.pinBtn')} icon="pin" variant={has ? 'on' : 'primary'} small onPress={() => setPicker(true)} style={styles.self} />
+          <TextInput {...inputProps} value={str(name)} onChangeText={(v) => setField(name, v)} maxLength={200} placeholder={t('lp.landmark')} placeholderTextColor={colors.slate} />
+        </>,
+      );
+    }
     if (kind === 'pin') {
       return wrap(
         <>
           {label}{help}
           <TextInput {...inputProps} value={str(name)} onChangeText={(v) => setField(name, v)} maxLength={200} />
-          <Button label={t(d.pin ? 'b.unpin' : 'b.pin')} icon="pin" variant={d.pin ? 'on' : 'ghost'} small onPress={() => (firebaseReady ? (d.pin ? clearLocation() : pinMyLocation()) : setField('pin', !d.pin))} style={styles.self} />
-          {d.pin ? <Text style={styles.hint}>{t('pin.placed')}{firebaseReady ? '' : ` · ${t('n.pinNote')}`}</Text> : null}
+          <Button label={t(d.pin ? 'b.unpin' : 'b.pin')} icon="pin" variant={d.pin ? 'on' : 'ghost'} small onPress={() => setField('pin', !d.pin)} style={styles.self} />
+          {d.pin ? <Text style={styles.hint}>{t('pin.placed')} · {t('n.pinNote')}</Text> : null}
         </>,
       );
     }
@@ -208,7 +228,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
   const shown = (name: string): string => {
     const v = d[name]; const kind = kindOf(name);
     if (FILE_FIELDS.includes(name)) { const a = v as Attach[]; return a.length ? `${t(name === 'cover' ? 'rev.cover' : 'rev.files', { n: a.length })}: ${a.map((x) => x.name).join(', ')}` : ''; }
-    if (kind === 'pin') return [str(name).trim(), d.pin ? t('rev.pin') : ''].filter(Boolean).join(' · ');
+    if (kind === 'pin') return [str(name).trim(), d.pin ? (firebaseReady && str('geoName') ? str('geoName') : t('rev.pin')) : ''].filter(Boolean).join(' · ');
     if (kind === 'check') return v ? '✓' : '';
     if (kind !== 'text' && kind !== 'area' && kind !== 'num' && kind !== 'date') { const o = choices(kind).find(([x]) => x === v); return o ? t(o[1]) : ''; }
     if (kind === 'date') return str(name) ? formatDate(isoDate(str(name)), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -343,6 +363,7 @@ export default function PostScreen({ flow }: { flow: Flow }) {
         {post.fromReview ? <Button label={t('b.toReview')} variant="ghost" onPress={() => { const e = validateStep(flow, d, post.step); if (Object.keys(e).length) { set((p) => ({ ...p, errors: e })); store.toast(t('t.fix')); } else goTo(post.step, 'review'); }} style={styles.flex} /> : null}
         <Button label={post.step < 5 ? t('b.next') : t('b.review')} onPress={next} style={styles.flex} />
       </View>
+      <LocationPicker visible={picker} initial={str('lat') ? { lat: Number(str('lat')), lng: Number(str('lng')) } : null} onClose={() => setPicker(false)} onPick={onPick} />
     </ScrollView>
   );
 }
@@ -352,6 +373,8 @@ const styles = StyleSheet.create({
   wrap: { padding: space.l, gap: space.m },
   flex: { flex: 1 },
   self: { alignSelf: 'flex-start' },
+  pinCard: { gap: 2, padding: space.m, borderRadius: radius.m, backgroundColor: colors.tealSoft },
+  pinTitle: { fontSize: 13, fontWeight: '800', color: colors.tealDeep },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   h1: { fontSize: 28, lineHeight: 34, fontWeight: '800', color: colors.ink },

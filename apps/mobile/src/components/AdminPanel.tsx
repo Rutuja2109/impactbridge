@@ -3,7 +3,7 @@
 // real checking; this screen only shows buttons.
 import { collection, doc, getDoc, onSnapshot, orderBy, query, updateDoc, where } from '@react-native-firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { db } from '../firebase';
 import { useLive } from '../state/communities';
@@ -48,6 +48,13 @@ function PostCard({ p, review }: { p: PostRow; review: boolean }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {photos.map((ph) => <Image key={ph.id} source={{ uri: `data:image/jpeg;base64,${ph.b64}` }} style={styles.thumb} />)}
         </ScrollView>
+      ) : null}
+      {p.data.lat ? (
+        <>
+          <Text style={styles.meta}>📍 {p.data.geoName || `${p.data.lat}, ${p.data.lng}`}</Text>
+          <Text style={styles.meta}>{p.data.locVia === 'gps' ? 'Poster was at this spot (GPS matched)' : p.data.locDist ? `Poster's phone was ${Number(p.data.locDist) >= 1000 ? `${(Number(p.data.locDist) / 1000).toFixed(1)} km` : `${p.data.locDist} m`} from the pin` : p.data.locVia === 'search' ? 'Found by map search, GPS not used' : 'Placed on the map, GPS not used'}</Text>
+          <Button label="Open in Google Maps" small variant="ghost" onPress={() => { Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.data.lat},${p.data.lng}`).catch(() => {}); }} />
+        </>
       ) : null}
       {review ? (
         <>
