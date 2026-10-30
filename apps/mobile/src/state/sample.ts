@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import type { User } from '../screens/Welcome';
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
-const SUB = ['files', 'donations', 'responses', 'private'];
+const SUB = ['files', 'donations', 'responses', 'private', 'supporters'];
 
 type Seed = { flow: 'problem' | 'project' | 'fund'; data: Record<string, string> };
 const base = { display: 'Sample organiser', affected: 'Sample residents', private: 'sample@example.com', who: 'individual', contact: 'email' };

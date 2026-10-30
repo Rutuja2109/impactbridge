@@ -37,7 +37,7 @@ export async function setJoined(u: User, cid: string, on: boolean) {
   const b = writeBatch(db!);
   const member = doc(db!, 'communities', cid, 'members', u.uid!);
   if (on) b.set(member, { name: u.name, at: Date.now() }); else b.delete(member);
-  b.set(doc(db!, 'users', u.uid!), { joined: on ? arrayUnion(cid) : arrayRemove(cid) }, { merge: true });
+  b.set(doc(db!, 'users', u.uid!), { joined: on ? arrayUnion(cid) : arrayRemove(cid), ...(on ? { inCommunity: true } : {}) }, { merge: true });
   await b.commit();
 }
 

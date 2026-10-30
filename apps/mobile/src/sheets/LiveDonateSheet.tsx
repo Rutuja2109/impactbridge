@@ -38,7 +38,7 @@ export default function LiveDonateSheet({ id }: { id: string }) {
   };
   const paid = () => {
     if (!user?.uid) return;
-    recordDonation(user, id, value, ref.trim()).then(() => setDone(true)).catch(() => toast(t('n.cm.fail')));
+    recordDonation(user, id, c.title, value, ref.trim()).then(() => setDone(true)).catch(() => toast(t('n.cm.fail')));
   };
 
   return (

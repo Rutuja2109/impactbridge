@@ -12,8 +12,9 @@ import { myVolunteering } from '../data';
 import { PHOTOS } from '../data/photos';
 import { inr } from '../format';
 import { useT } from '../i18n';
-import { badgesFor, liveBadges } from '../state/achievements';
+import { badgesFor, liveStats } from '../state/achievements';
 import { useIsAdmin, useJoined } from '../state/communities';
+import { useMyGives } from '../state/donations';
 import { useMyHelps, useMyPosts } from '../state/mine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USER_KEY } from '../screens/Welcome';
@@ -22,7 +23,6 @@ import { firebaseReady } from '../firebase';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
-const VERSION = '0.1.0';
 type View_ = 'menu' | 'support' | 'legal' | 'admin' | 'account';
 
 export default function ProfileDrawer() {
@@ -41,7 +41,9 @@ export default function ProfileDrawer() {
   const myPosts = useMyPosts(store.user?.uid);
   const myHelps = useMyHelps(store.user?.uid);
   const myJoined = useJoined(store.user?.uid);
-  const badges = firebaseReady ? liveBadges({ posts: myPosts, helps: myHelps, joined: myJoined.length }) : badgesFor(activity);
+  const myGives = useMyGives(store.user?.uid);
+  const live = liveStats({ posts: myPosts, helps: myHelps, joined: myJoined.length, gives: myGives });
+  const badges = badgesFor(activity);
   const given = store.myDonations.reduce((a, d) => a + d.a, 0);
   const hours = myVolunteering.reduce((a, v) => a + v.hours, 0);
   const back = () => setView('menu');
@@ -85,6 +87,7 @@ export default function ProfileDrawer() {
     { text: t('n.del.btn'), style: 'destructive', onPress: () => deleteAccount().then(() => { store.closeSheet(); store.goTab('home'); }).catch((e: { code?: string }) => store.toast(t(e?.code === 'auth/requires-recent-login' ? 'n.del.relogin' : 'n.cm.fail'))) },
   ]);
   const menu: [IconName, string, () => void][] = [
+    ...(firebaseReady ? [['pin', t('mp.menu'), toImpact] as [IconName, string, () => void]] : []),
     ['check', t('n.myBadges'), toImpact],
     ['chart', t('n.myCerts'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
@@ -110,7 +113,9 @@ export default function ProfileDrawer() {
                 <Text style={styles.small}>{store.user?.email || store.user?.phone || t('n.guestSub')}</Text>
               </View>
               <View style={styles.stats}>
-                {[[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]].filter((_, i) => !firebaseReady || i === 2).map(([v, l]) => (
+                {(firebaseReady
+                  ? [[t(`lvl.${live.level}`), t('lvl.label', { n: live.level })], [String(live.points), t('ip.points')], [String(live.badges.filter((b) => b.tier > 0).length), t('n.statBadges')]]
+                  : [[inr(given), t('n.statGiven')], [String(hours), t('n.statHours')], [`${badges.filter((b) => b.earned).length}/${badges.length}`, t('n.statBadges')]]).map(([v, l]) => (
                   <View key={l} style={styles.stat}><Text style={styles.statV}>{v}</Text><Text style={styles.statL}>{l}</Text></View>
                 ))}
               </View>
@@ -125,7 +130,6 @@ export default function ProfileDrawer() {
               <View style={styles.legal}>
                 <Text style={styles.link} onPress={() => setView('legal')}>{t('n.terms')}</Text>
                 <Text style={styles.link} onPress={() => (privacyUrl ? Linking.openURL(privacyUrl).catch(() => {}) : setView('legal'))}>{t('n.privacy')}</Text>
-                <Text style={styles.small}>{t('n.version', { v: VERSION })}</Text>
               </View>
             </>
           ) : (

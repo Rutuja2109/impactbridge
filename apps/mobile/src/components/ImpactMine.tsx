@@ -10,12 +10,9 @@ import { campaignOf } from '../data';
 import { firebaseReady } from '../firebase';
 import { inr } from '../format';
 import { useT } from '../i18n';
-import { badgesFor, certificatesFor, liveBadges, liveCertificates, type Badge, type Certificate } from '../state/achievements';
-import { useJoined } from '../state/communities';
-import { useMyHelps, useMyPosts } from '../state/mine';
+import { badgesFor, certificatesFor, type Badge, type Certificate } from '../state/achievements';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
-import DonationsList from './DonationsList';
 import Icon from './Icon';
 import { LogoMark } from './Logo';
 import Sheet from './Sheet';
@@ -79,16 +76,12 @@ type Shown = { kind: 'cert'; cert: Certificate } | { kind: 'badge'; badge: Badge
 export default function ImpactMine() {
   const { t, formatDate } = useT();
   const store = useStore();
-  const uid = store.user?.uid;
-  const posts = useMyPosts(uid);
-  const helps = useMyHelps(uid);
-  const joined = useJoined(uid);
   const [shown, setShown] = useState<Shown>(null);
   const card = useRef<ComponentRef<typeof View>>(null);
 
   const activity = { myDonations: store.myDonations, sips: store.sips, joined: store.joined, going: store.going, following: store.following };
-  const badges = firebaseReady ? liveBadges({ posts, helps, joined: joined.length }) : badgesFor(activity);
-  const certs = firebaseReady ? liveCertificates(badges) : certificatesFor(activity);
+  const badges = badgesFor(activity);
+  const certs = certificatesFor(activity);
   const share = () => {
     if (!shown) return;
     const label = shown.kind === 'badge' ? t(`n.b.${shown.badge.id}`) : t('n.cert.title');
@@ -97,13 +90,6 @@ export default function ImpactMine() {
 
   return (
     <>
-      {firebaseReady ? (
-        <View style={styles.tiles}>
-          {[[posts.length, 'n.imp.tPosts'], [helps.length, 'n.imp.tHelp'], [joined.length, 'n.imp.tComm']].map(([n, k]) => (
-            <View key={String(k)} style={styles.tile}><Text style={styles.tileN}>{n}</Text><Text style={styles.tileL}>{t(String(k))}</Text></View>
-          ))}
-        </View>
-      ) : null}
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.myBadges')}</Text>
@@ -139,21 +125,6 @@ export default function ImpactMine() {
         )) : <Text style={styles.small}>{t('n.certNone2')}</Text>}
       </View>
 
-      {firebaseReady ? (
-        <View style={styles.sec}>
-          <Text accessibilityRole="header" style={styles.h2}>{t('n.imp.posts')}</Text>
-          {posts.length ? posts.map((p) => (
-            <View key={p.id} style={styles.item}>
-              <View style={styles.grow}>
-                <Text style={styles.itemTitle} numberOfLines={2}>{p.title || '—'}</Text>
-                <Text style={styles.small}>{formatDate(iso(p.at), { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-              </View>
-              {p.flow === 'fund' && p.status === 'approved' ? <DonationsList postId={p.id} /> : null}
-              <Pill label={t(`n.imp.st.${p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending'}`)} tone={p.status === 'approved' ? 'leaf' : p.status === 'rejected' ? 'brick' : 'amber'} />
-            </View>
-          )) : <Text style={styles.small}>{t('n.imp.postsNone')}</Text>}
-        </View>
-      ) : (
         <View style={styles.sec}>
           <Text accessibilityRole="header" style={styles.h2}>{t('n.myGiving')}</Text>
           {store.sips.map((s) => (
@@ -178,7 +149,6 @@ export default function ImpactMine() {
           ))}
           {!store.sips.length && !store.myDonations.length ? <Text style={styles.small}>{t('n.givingNone')}</Text> : <SampleTag label={t('dn.simTag')} />}
         </View>
-      )}
 
       {shown ? (
         <Sheet visible onClose={() => setShown(null)} title={shown.kind === 'badge' ? t(`n.b.${shown.badge.id}`) : t('n.cert.title')}>

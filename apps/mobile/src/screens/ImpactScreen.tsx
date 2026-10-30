@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '../components/BottomNav';
+import ImpactLive from '../components/ImpactLive';
 import ImpactMine from '../components/ImpactMine';
 import { Badge, Button, CauseBadge, Notice, PageHead, Panel, SampleTag } from '../components/ui';
 import { campaignOf, campaignPledged, campaignReceived, campaigns, myVolunteering, opportunities, outcomes, projects, type CauseId, type Outcome } from '../data';
@@ -48,7 +49,7 @@ export default function ImpactScreen() {
       <PageHead title={t('imp.title')} subtitle={t(firebaseReady ? 'n.imp.sub' : 'imp.sub')} />
       {firebaseReady ? null : <Notice text={tr('imp.notice')} rich style={styles.notice} />}
 
-      <ImpactMine />
+      {firebaseReady ? <ImpactLive /> : <ImpactMine />}
 
       {firebaseReady ? null : (
         <>

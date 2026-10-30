@@ -81,6 +81,11 @@ service cloud.firestore {
         allow update: if signedIn() && (get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin())
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       }
+      // Payments the organiser has confirmed, shown on the fundraiser page: the organiser (or an admin) writes them, everyone reads.
+      match /supporters/{sid} {
+        allow read: if signedIn();
+        allow create, delete: if signedIn() && (get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
+      }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
         allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
@@ -103,6 +108,16 @@ service cloud.firestore {
     // The offers of help a person has made (behind their badge and certificate): theirs alone.
     match /users/{uid}/helps/{pid} {
       allow read, create, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // A donor's own copy of each payment they reported, so they can follow it. The organiser (or an admin) can only change its status.
+    match /users/{uid}/gives/{gid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.status == 'pledged'
+        && request.resource.data.amount is number && request.resource.data.amount >= 10 && request.resource.data.amount <= 100000;
+      allow read: if isAdmin();
+      allow update: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/posts/$(resource.data.postId)).data.ownerId == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'confirmedAt']);
     }
 
     // In-app notifications are written by the Cloud Function only; the person can read and mark their own.

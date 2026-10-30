@@ -1,8 +1,11 @@
 // Badges and demo certificates, worked out from what the person did in this session plus the sample
 // volunteering record. Nothing here is issued by a real organisation; every certificate says so.
+// The installed app uses the second half of this file (liveStats and friends): real activity, tiers, points and levels.
 import type { IconName } from '../components/Icon';
 import { firebaseReady } from '../firebase';
 import { campaignOf, myVolunteering, type CauseId } from '../data';
+import type { Give } from './donations';
+import type { MyHelp, MyPost } from './mine';
 import type { MyDonation, Sip } from './store';
 
 export type Badge = { id: string; icon: IconName; earned: boolean; progress?: [number, number]; at?: number };
@@ -39,18 +42,59 @@ export function certificatesFor(a: Activity): Certificate[] {
   return [...vol, ...don];
 }
 
-type LiveActivity = { posts: { at: number }[]; helps: { at: number }[]; joined: number };
-const first = (xs: { at: number }[]) => (xs.length ? Math.min(...xs.map((x) => x.at || Date.now())) : undefined);
+// ---------------------------------------------------------------------------------------------------------------------
+// Installed app: real activity -> points, level, badge tiers (Bronze / Silver / Gold) and certificates.
 
-/** Badges from what the signed-in person really did: shared a post, offered help, joined a community. Saved with their account. */
-export function liveBadges(a: LiveActivity): Badge[] {
-  return [
-    { id: 'poster', icon: 'heart', earned: a.posts.length > 0, at: first(a.posts) },
-    { id: 'helper', icon: 'hand', earned: a.helps.length > 0, at: first(a.helps) },
-    { id: 'member', icon: 'people', earned: a.joined > 0 },
+export type Tier = 0 | 1 | 2 | 3; // 0 = not earned yet
+export type LiveBadge = { id: string; icon: IconName; tier: Tier; value: number; tiers: [number, number, number]; at?: number };
+export type LiveCert =
+  | { id: string; kind: 'tier'; badge: string; tier: 1 | 2 | 3; value: number; at: number }
+  | { id: string; kind: 'gift'; title: string; amount: number; at: number }
+  | { id: string; kind: 'level'; level: number; points: number; at: number };
+export type LiveStats = { posts: MyPost[]; helps: MyHelp[]; joined: number; gives: Give[] };
+
+export const LEVELS = [0, 30, 100, 250, 600]; // points needed for level 0..4
+export const TIER_COLOR = ['#C9D1CC', '#B87333', '#8E9AA6', '#E0A800'] as const;
+export const TIER_SOFT = ['#EEF0F2', '#F6E7D8', '#E8ECF0', '#FFF3CC'] as const;
+
+const earliest = (xs: { at: number }[]) => (xs.length ? Math.min(...xs.map((x) => x.at || Date.now())) : undefined);
+
+/** Everything the Impact page needs, in one pass. */
+export function liveStats(s: LiveStats) {
+  const approved = s.posts.filter((p) => p.status === 'approved').length;
+  const paid = s.gives.filter((g) => g.status === 'received');
+  const rupees = paid.reduce((n, g) => n + g.amount, 0);
+  const kinds = [s.posts.length > 0, s.helps.length > 0, paid.length > 0, s.joined > 0].filter(Boolean).length;
+
+  const points = s.posts.length * 10 + approved * 20 + s.helps.length * 15 + paid.reduce((n, g) => n + 20 + Math.floor(g.amount / 100), 0) + s.joined * 10;
+  let level = 0;
+  LEVELS.forEach((need, i) => { if (points >= need) level = i; });
+  const nextNeed = LEVELS[level + 1];
+
+  const def: [string, IconName, number, [number, number, number], number | undefined][] = [
+    ['voice', 'heart', s.posts.length, [1, 3, 10], earliest(s.posts)],
+    ['trusted', 'check', approved, [1, 3, 10], earliest(s.posts.filter((p) => p.status === 'approved'))],
+    ['helper', 'hand', s.helps.length, [1, 5, 15], earliest(s.helps)],
+    ['giver', 'coin', paid.length, [1, 3, 10], earliest(paid)],
+    ['generous', 'chart', rupees, [500, 2500, 10000], earliest(paid)],
+    ['builder', 'people', s.joined, [1, 3, 5], undefined],
+    ['allround', 'bell', kinds, [2, 3, 4], undefined],
   ];
+  const badges: LiveBadge[] = def.map(([id, icon, value, tiers, at]) => ({
+    id, icon, value, tiers, at, tier: (value >= tiers[2] ? 3 : value >= tiers[1] ? 2 : value >= tiers[0] ? 1 : 0) as Tier,
+  }));
+
+  const certs: LiveCert[] = [];
+  badges.forEach((b) => { if (b.tier > 0) certs.push({ id: `t-${b.id}-${b.tier}`, kind: 'tier', badge: b.id, tier: b.tier as 1 | 2 | 3, value: b.value, at: b.at ?? Date.now() }); });
+  paid.forEach((g) => certs.push({ id: `g-${g.id}`, kind: 'gift', title: g.title, amount: g.amount, at: g.confirmedAt ?? g.at }));
+  if (level > 0) certs.push({ id: `l-${level}`, kind: 'level', level, points, at: Date.now() });
+
+  return { points, level, nextNeed, prevNeed: LEVELS[level], badges, certs, counts: { posts: s.posts.length, helps: s.helps.length, paidN: paid.length, rupees, joined: s.joined, approved } };
 }
 
-/** One certificate for every badge earned. */
-export const liveCertificates = (badges: Badge[]): Certificate[] =>
-  badges.filter((b) => b.earned).map((b) => ({ id: `b-${b.id}`, kind: 'badge' as const, badge: b.id, at: b.at ?? Date.now() }));
+/** A short, steady certificate number for one person and one certificate (the same every time it is shown). */
+export function certNo(uid: string | undefined, seed: string): string {
+  let h = 5381;
+  for (const ch of `${uid ?? ''}|${seed}`) h = ((h << 5) + h + ch.charCodeAt(0)) >>> 0;
+  return `GN-${h.toString(36).toUpperCase().padStart(7, '0').slice(-7)}`;
+}

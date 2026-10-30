@@ -24,7 +24,7 @@ function translate(lang: Lang, key: string, vars: Record<string, string | number
   let s = (firebaseReady ? LIVE[lang][key] : undefined) ?? (STRINGS[lang] as Dict)[key] ?? NATIVE[lang][key] ?? FEATURES[lang][key];
   if (s === undefined) {
     if (__DEV__) console.warn('Missing translation:', lang, key);
-    s = (STRINGS.en as Dict)[key] ?? NATIVE.en[key] ?? FEATURES.en[key] ?? key;
+    s = (firebaseReady ? LIVE.en[key] : undefined) ?? (STRINGS.en as Dict)[key] ?? NATIVE.en[key] ?? FEATURES.en[key] ?? key;
   }
   return s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''));
 }

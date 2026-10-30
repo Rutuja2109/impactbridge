@@ -23,6 +23,7 @@ export async function submitPost(u: User, flow: Flow, data: PostData): Promise<s
   const thumb = pics.find((a) => a.thumb)?.thumb ?? '';
   const ref = await addDoc(collection(db!, 'posts'), { flow, data: pub, ownerId: u.uid, ownerName: u.name, status: 'pending', createdAt: Date.now(), thumb });
   await setDoc(doc(db!, 'posts', ref.id, 'private', 'info'), { ...priv, ownerEmail: u.email });
+  await setDoc(doc(db!, 'users', u.uid!), { posted: true }, { merge: true }).catch(() => {});
   await savePhotos(ref.id, { files: (data.files as Attach[]) ?? [], cover: (data.cover as Attach[]) ?? [], docs: (data.docs as Attach[]) ?? [] });
   return ref.id;
 }
@@ -49,5 +50,6 @@ export async function respond(u: User, postId: string, kind: 'volunteer' | 'item
   const b = writeBatch(db!);
   b.set(doc(db!, 'posts', postId, 'responses', u.uid!), { kind, name: u.name, email: u.email, at });
   b.set(doc(db!, 'users', u.uid!, 'helps', postId), { kind, title, at }); // the person's own record, behind their badge and certificate
+  b.set(doc(db!, 'users', u.uid!), { helped: true }, { merge: true });
   await b.commit();
 }

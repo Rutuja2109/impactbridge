@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PostPhotos from '../components/PostPhotos';
+import SupportersList from '../components/SupportersList';
 import { firebaseReady } from '../firebase';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import { CTA_HEIGHT, DetailTop, NotFound, Row, StickyCta, detailStyles as d } from '../components/Detail';
@@ -120,7 +121,9 @@ export default function CampaignScreen({ id }: { id: string }) {
           </Panel>
 
           <Panel>
-            <PanelTitle>{t('cd.donors')}</PanelTitle>
+            <PanelTitle>{t(firebaseReady ? 'sp.title' : 'cd.donors')}</PanelTitle>
+            {firebaseReady ? <SupportersList postId={c.id} /> : (
+              <>
             {ds.map((x, i) => ({ x, i })).reverse().map(({ x, i }) => {
               const who = x.mine ? `${x.n || t('cd.anon')} · ${t('cd.you')}` : x.n || t('cd.anon');
               return (
@@ -138,6 +141,8 @@ export default function CampaignScreen({ id }: { id: string }) {
               );
             })}
             <Text style={d.small}>{t('cd.earlier', { n: c.base.donors })}</Text>
+              </>
+            )}
           </Panel>
 
           <Button label={t('b.report')} variant="ghost" small onPress={() => showSheet({ kind: 'report', id: c.id })} style={styles.report} />

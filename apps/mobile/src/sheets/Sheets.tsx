@@ -10,6 +10,7 @@ import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pl
 import { firebaseReady } from '../firebase';
 import LiveDonateSheet from './LiveDonateSheet';
 import { inr } from '../format';
+import { useMyGives } from '../state/donations';
 import { report, respond } from '../state/posts';
 import { Rich, useT } from '../i18n';
 import type { Flow } from '../state/post';
@@ -49,7 +50,8 @@ function PostSheet() {
 
 function UpdatesSheet() {
   const { t } = useT();
-  const { closeSheet, open, notes, markRead } = useStore();
+  const { closeSheet, open, notes, markRead, user } = useStore();
+  const gives = useMyGives(firebaseReady ? user?.uid : undefined).filter((g) => g.status !== 'pledged');
   useEffect(() => { markRead(); }, [markRead]);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
   return (
@@ -58,7 +60,10 @@ function UpdatesSheet() {
       {notes.map((n) => (
         <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
       ))}
-      {firebaseReady && !notes.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
+      {gives.map((g) => (
+        <View key={g.id} style={styles.update}><Text style={s.note}>{t(g.status === 'received' ? 'nt.gave.ok' : 'nt.gave.no', { c: g.title, a: inr(g.amount) })}</Text></View>
+      ))}
+      {firebaseReady && !notes.length && !gives.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
       {items.map(({ c, u }, i) => (
         <Pressable key={`${c.id}-${i}`} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t('cd.ago', { n: u.ago })}</Text>
