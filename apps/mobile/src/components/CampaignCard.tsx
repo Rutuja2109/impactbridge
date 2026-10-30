@@ -13,7 +13,7 @@ import { Badge, Button, CauseBadge, ProgressBar, SampleTag, UntrTag, VerifyBadge
 export default function CampaignCard({ campaign: c, support }: { campaign: Campaign; support?: boolean }) {
   const { t, tr } = useT();
   const { open, showSheet, donations } = useStore();
-  const ds = donations[c.id];
+  const ds = donations[c.id] ?? [];
   const received = campaignReceived(c, ds);
   const pledged = campaignPledged(ds);
   const pct = fundPct(c, ds);

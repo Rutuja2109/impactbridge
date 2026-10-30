@@ -21,7 +21,7 @@ export default function CampaignScreen({ id }: { id: string }) {
   const c = campaignOf(id);
   if (!c) return <NotFound onBack={() => openDiscover({ kind: 'fund' })} />;
 
-  const ds = donations[c.id];
+  const ds = donations[c.id] ?? [];
   const r = fundPct(c, ds);
   const p = pledgePct(c, ds);
   const o = orgOf(c.org);

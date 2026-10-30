@@ -152,7 +152,7 @@ function OrgSheet({ id }: { id: string }) {
       ))}
       {funds.length ? <Text style={styles.h3}>{t('comm.fundOrg')}</Text> : null}
       {funds.map((c) => {
-        const ds = donations[c.id];
+        const ds = donations[c.id] ?? [];
         return (
           <Pressable key={c.id} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.pp}>
             <Text style={styles.updTitle}>{c.title}</Text>

@@ -62,13 +62,13 @@ export const receivedPct = (p: Project) => Math.min(100, Math.round((p.received 
 
 // Campaigns: only donations marked received count; pledges stay separate until the (simulated) organiser confirms.
 // `donations` comes from app state so demo donations and confirmations made in this session are included.
-export const campaignReceived = (c: Campaign, donations: Donation[]) =>
+export const campaignReceived = (c: Campaign, donations: Donation[] = []) =>
   c.base.received + donations.filter((d) => d.s === 'received').reduce((a, d) => a + d.a, 0);
-export const campaignPledged = (donations: Donation[]) =>
+export const campaignPledged = (donations: Donation[] = []) =>
   donations.filter((d) => d.s === 'pledged').reduce((a, d) => a + d.a, 0);
-export const campaignSupporters = (c: Campaign, donations: Donation[]) => c.base.donors + donations.length;
-export const fundPct = (c: Campaign, donations: Donation[]) => Math.min(100, Math.round((campaignReceived(c, donations) / c.goal) * 100));
-export const pledgePct = (c: Campaign, donations: Donation[]) =>
+export const campaignSupporters = (c: Campaign, donations: Donation[] = []) => c.base.donors + donations.length;
+export const fundPct = (c: Campaign, donations: Donation[] = []) => Math.min(100, Math.round((campaignReceived(c, donations) / c.goal) * 100));
+export const pledgePct = (c: Campaign, donations: Donation[] = []) =>
   Math.min(100 - fundPct(c, donations), Math.round((campaignPledged(donations) / c.goal) * 100));
 
 /** What an approved post document looks like in Firestore (written by the post forms, approved by an admin). */

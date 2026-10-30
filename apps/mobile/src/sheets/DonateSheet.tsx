@@ -43,7 +43,7 @@ export default function DonateSheet({ id }: { id: string }) {
     else store.donate(id, value, name.trim(), msg.trim());
     setStep(4);
   };
-  const ds = store.donations[id];
+  const ds = store.donations[id] ?? [];
 
   return (
     <Sheet visible onClose={store.closeSheet} title={t('dn.title')} subtitle={c.title}>

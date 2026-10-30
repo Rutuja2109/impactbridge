@@ -9,13 +9,14 @@ import { Button } from './ui';
 
 export default function AdminMetrics() {
   const [tick, setTick] = useState(0);
-  const { m, err } = useMetrics(tick);
+  const { m, failed } = useMetrics(tick);
+  const show = (v: number | undefined, money = false) => (v === undefined ? '—' : money ? inr(v) : v);
   const groups: [string, [string, string | number][]][] = m ? [
-    ['People', [['Accounts', m.users], ['New this week', m.users7], ['Active this week', m.active7]]],
-    ['Posts', [['Total', m.posts], ['Waiting for review', m.pending], ['Live', m.approved], ['Rejected', m.rejected], ['Problems', m.problems], ['Projects', m.projects], ['Fundraisers', m.funds]]],
-    ['Help given', [['Offers of help (time or items)', m.helps], ['Payments reported', m.donations], ['Payments confirmed', m.donors], ['Money confirmed', inr(m.money)]]],
-    ['Communities', [['Communities', m.communities], ['Joins', m.members], ['Organisations verified', m.orgsVerified], ['Organisations waiting', m.orgsPending]]],
-    ['Safety', [['Reports received', m.reports]]],
+    ['People', [['Accounts', show(m.users)], ['New this week', show(m.users7)], ['Active this week', show(m.active7)]]],
+    ['Posts', [['Total', show(m.posts)], ['Waiting for review', show(m.pending)], ['Live', show(m.approved)], ['Rejected', show(m.rejected)], ['Problems', show(m.problems)], ['Projects', show(m.projects)], ['Fundraisers', show(m.funds)]]],
+    ['Help given', [['Offers of help (time or items)', show(m.helps)], ['Payments reported', show(m.donations)], ['Payments confirmed', show(m.donors)], ['Money confirmed', show(m.money, true)]]],
+    ['Communities', [['Communities', show(m.communities)], ['Joins', show(m.members)], ['Organisations verified', show(m.orgsVerified)], ['Organisations waiting', show(m.orgsPending)]]],
+    ['Safety', [['Reports received', show(m.reports)]]],
   ] : [];
   return (
     <View>
@@ -23,8 +24,8 @@ export default function AdminMetrics() {
         <Text style={styles.h}>Dashboard</Text>
         <Button label="Refresh" small variant="ghost" onPress={() => setTick((x) => x + 1)} />
       </View>
-      {err ? <Text style={styles.meta}>Could not load the numbers. Publish the latest Firestore rules and check your connection.</Text> : null}
-      {!m && !err ? <Text style={styles.meta}>Loading…</Text> : null}
+      {failed.length ? <Text style={styles.meta}>Could not count: {failed.join(', ')}. Publish the latest Firestore rules and check your connection.</Text> : null}
+      {!m ? <Text style={styles.meta}>Loading…</Text> : null}
       {groups.map(([title, rows]) => (
         <View key={title} style={styles.card}>
           <Text style={styles.title}>{title}</Text>
