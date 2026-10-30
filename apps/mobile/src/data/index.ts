@@ -19,7 +19,7 @@ export type Outcome = { k: string; reported: number; verified: number };
 export type Donation = { n: string; a: number; m: string; s: 'received' | 'pledged'; mine?: boolean };
 export type Campaign = {
   id: string; type: 'individual' | 'org'; cat: CauseId; org: string | null; urgent?: boolean; featured?: boolean;
-  verify: 'docs' | 'pending' | 'unverified'; goal: number; days: number; x: number; y: number; lat?: number; lng?: number; at?: number; ownerId?: string;
+  verify: 'docs' | 'pending' | 'unverified'; goal: number; days: number; x: number; y: number; lat?: number; lng?: number; at?: number; ownerId?: string; use?: string;
   title: string; short: string; story: string; beneficiary: string; benAbout: string; organizer: string;
   base: { received: number; donors: number };
   updates: { ago: number; text: string }[];
@@ -99,7 +99,7 @@ export function applyLive(posts: PostDoc[]) {
         verify: 'unverified', goal: num(d.goal) || 1000, days: daysLeft(str(d.deadline)), x: spot(p.id, 1), y: spot(p.id, 2), lat: coord(d.lat, 90), lng: coord(d.lng, 180), at: p.reviewedAt ?? p.createdAt, ownerId: p.ownerId,
         title: str(d.title), short: str(d.story).slice(0, 120), story: str(d.story), beneficiary: str(d.benName), benAbout: str(d.benAbout),
         organizer: str(d.display), base: { received: p.received ?? 0, donors: p.donors ?? 0 }, updates: [], funds: [], donations: [],
-        payLink: str(d.payLink) || undefined,
+        payLink: str(d.payLink) || undefined, use: str(d.use),
       });
     } else {
       proj.push({

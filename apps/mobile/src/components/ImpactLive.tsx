@@ -82,7 +82,7 @@ function CertCard({ cert, who, uid }: { cert: LiveCert; who: string; uid?: strin
         <Text style={styles.certTitle}>{title}</Text>
         <View style={[styles.certRule, { backgroundColor: TIER_COLOR[tier] }]} />
         <Text style={styles.small}>{t('n.certTo')}</Text>
-        <Text style={styles.certName}>{who}</Text>
+        <Text style={styles.certName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{who}</Text>
         <Medal icon={icon} tier={tier} size={64} />
         <Text style={styles.certBody}>{body}</Text>
         <View style={styles.certFoot}>

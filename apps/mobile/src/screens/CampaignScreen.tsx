@@ -83,6 +83,12 @@ export default function CampaignScreen({ id }: { id: string }) {
             <Text style={d.body}>{typeLabel}</Text>
           </Panel>
 
+          {firebaseReady && !c.funds.length ? (c.use ? (
+            <Panel>
+              <PanelTitle>{t('cd.funds')}</PanelTitle>
+              <Text style={d.body}>{c.use}</Text>
+            </Panel>
+          ) : null) : (
           <Panel>
             <PanelTitle>{t('cd.funds')}</PanelTitle>
             {c.funds.map((f) => (
@@ -95,7 +101,9 @@ export default function CampaignScreen({ id }: { id: string }) {
               </View>
             ))}
           </Panel>
+          )}
 
+          {firebaseReady && !c.updates.length ? null : (
           <Panel>
             <PanelTitle>{t('cd.updates')}</PanelTitle>
             {c.updates.map((u) => (
@@ -105,6 +113,7 @@ export default function CampaignScreen({ id }: { id: string }) {
               </View>
             ))}
           </Panel>
+          )}
 
           <Panel>
             <PanelTitle>{t('v.title')}</PanelTitle>

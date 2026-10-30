@@ -42,7 +42,7 @@ export default function MyPostSheet({ post, onClose }: { post: MyPost; onClose: 
     loadForEdit(post.id)
       .then((r) => {
         if (!r) { toast(t('n.cm.fail')); return; }
-        setPost(r.flow, () => ({ ...freshPost(), data: r.data, editId: post.id, max: 5, restored: true }));
+        setPost(r.flow, () => ({ ...freshPost(), data: r.data, editId: post.id, max: 5, restored: false }));
         onClose();
         open({ name: 'post', flow: r.flow });
       })
