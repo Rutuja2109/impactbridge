@@ -5,7 +5,8 @@ import {
   GoogleAuthProvider, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithCredential,
   sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type getAuth,
 } from '@react-native-firebase/auth';
-import { collection, deleteDoc, doc, getDocs, query, where } from '@react-native-firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from '@react-native-firebase/firestore';
+import * as Notifications from 'expo-notifications';
 
 import { auth, db, googleWebClientId } from './firebase';
 import type { User } from './screens/Welcome';
@@ -83,6 +84,23 @@ export async function deleteAccount() {
       }
       await deleteDoc(p.ref).catch(() => {});
     }
+    // Offers of help they made on other people's posts, with the messages they wrote there.
+    const helped = await getDocs(collection(db, 'users', u.uid, 'helps')).catch(() => null);
+    for (const h of helped?.docs ?? []) {
+      const act = await getDocs(collection(db, 'posts', h.id, 'responses', u.uid, 'activity')).catch(() => null);
+      await Promise.all((act?.docs ?? []).map((d) => deleteDoc(d.ref).catch(() => {})));
+      await deleteDoc(doc(db, 'posts', h.id, 'responses', u.uid)).catch(() => {});
+    }
+    // Communities they joined, and the monthly gifts they started (cancelled; the payment records stay for accounting).
+    const profile = await getDoc(doc(db, 'users', u.uid)).catch(() => null);
+    for (const cid of (profile?.data()?.joined as string[] | undefined) ?? []) await deleteDoc(doc(db, 'communities', cid, 'members', u.uid)).catch(() => {});
+    const gifts = await getDocs(query(collection(db, 'sips'), where('uid', '==', u.uid))).catch(() => null);
+    for (const g of gifts?.docs ?? []) {
+      const cid = String(g.data().causeId ?? '');
+      if (cid) await deleteDoc(doc(db, 'sipCauses', cid, 'donors', u.uid)).catch(() => {});
+      if (g.data().status !== 'cancelled' && g.data().mode === 'reminder') await updateDoc(g.ref, { status: 'cancelled', cancelledAt: Date.now() }).catch(() => {});
+    }
+    await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     // Their own records: help given, notifications, joined communities and the profile itself.
     for (const sub of ['helps', 'notifications', 'gives']) {
       const rows = await getDocs(collection(db, 'users', u.uid, sub)).catch(() => null);

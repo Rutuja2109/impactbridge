@@ -101,7 +101,7 @@ service cloud.firestore {
           || (request.auth.uid == uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusAt', 'lastBy', 'lastAt', 'lastText'])
             && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) || request.resource.data.status == 'withdrawn')));
-        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+        allow delete: if isAdmin() || (signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid));
 
         match /activity/{aid} {
           allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
