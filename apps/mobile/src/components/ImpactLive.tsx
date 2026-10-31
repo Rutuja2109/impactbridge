@@ -244,7 +244,7 @@ export default function ImpactLive() {
               <Text style={styles.itemTitle} numberOfLines={2}>{g.title || '—'}</Text>
               <Text style={styles.small}>{inr(g.amount)} · {formatDate(iso(g.at), { day: 'numeric', month: 'short' })}</Text>
               <Text style={[styles.gv, g.status === 'received' && styles.gvOk, g.status === 'not_received' && styles.gvNo]}>
-                {g.via === 'sip' ? `✓ ${t('gv.sip')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
+                {g.via === 'sip' && g.status === 'pledged' ? t('gv.sipWait') : g.via === 'sip' && g.status === 'not_received' ? t('gv.no') : g.via === 'sip' ? `✓ ${t('gv.sip')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
               </Text>
             </View>
           </View>

@@ -4,6 +4,8 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'gv.sip': 'Monthly gift confirmed by the admin team',
+    'gv.sipWait': 'Waiting for the admin team to confirm',
     'va.all': 'View all ({n})',
     'va.less': 'Show less',
     'tk.earlier': 'Show {n} earlier',
@@ -160,7 +162,6 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sip.stopT': 'Stop this monthly gift?',
     'sip.stopD': 'No more payments will be taken. Past payments are not refunded.',
     'sip.stopped': 'Monthly gift stopped.',
-    'gv.sip': 'Monthly gift charged automatically',
     'mp.edit': 'Edit and send for review again',
     'mp.editWarn': 'If you edit a live post, it is hidden until a reviewer approves your changes.',
     'ed.banner': 'You are editing a saved post. After you send it, a reviewer checks it again.',
@@ -323,6 +324,8 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'gv.sip': 'मासिक दान की पुष्टि एडमिन टीम ने की',
+    'gv.sipWait': 'एडमिन टीम की पुष्टि का इंतज़ार',
     'va.all': 'सभी देखें ({n})',
     'va.less': 'कम दिखाएँ',
     'tk.earlier': '{n} पुराने दिखाएँ',
@@ -479,7 +482,6 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sip.stopT': 'यह मासिक दान रोकें?',
     'sip.stopD': 'आगे कोई भुगतान नहीं कटेगा। पिछले भुगतान वापस नहीं होंगे।',
     'sip.stopped': 'मासिक दान रोक दिया गया।',
-    'gv.sip': 'मासिक दान अपने-आप कटा',
     'mp.edit': 'बदलें और फिर समीक्षा के लिए भेजें',
     'mp.editWarn': 'प्रकाशित पोस्ट बदलने पर वह तब तक छिप जाती है जब तक समीक्षक आपके बदलाव मंज़ूर न करे।',
     'ed.banner': 'आप सहेजी हुई पोस्ट बदल रहे हैं। भेजने के बाद समीक्षक उसे फिर जाँचेगा।',
@@ -642,6 +644,8 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'gv.sip': 'मासिक देणगीची अॅडमिन टीमने खात्री केली',
+    'gv.sipWait': 'अॅडमिन टीमच्या खात्रीची वाट',
     'va.all': 'सर्व पाहा ({n})',
     'va.less': 'कमी दाखवा',
     'tk.earlier': '{n} जुने दाखवा',
@@ -798,7 +802,6 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sip.stopT': 'ही मासिक देणगी थांबवायची?',
     'sip.stopD': 'पुढे कोणतेही पेमेंट कापले जाणार नाही. मागील पेमेंट परत मिळणार नाहीत.',
     'sip.stopped': 'मासिक देणगी थांबवली.',
-    'gv.sip': 'मासिक देणगी आपोआप कापली',
     'mp.edit': 'बदल करा आणि पुन्हा पुनरावलोकनासाठी पाठवा',
     'mp.editWarn': 'प्रसिद्ध पोस्ट बदलल्यास पुनरावलोकनकर्ता तुमचे बदल मंजूर करेपर्यंत ती लपते.',
     'ed.banner': 'तुम्ही जतन केलेली पोस्ट बदलत आहात. पाठवल्यानंतर पुनरावलोकनकर्ता ती पुन्हा तपासेल.',
