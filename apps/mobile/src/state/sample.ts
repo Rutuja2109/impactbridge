@@ -34,6 +34,11 @@ export async function loadSample(admin: User): Promise<number> {
 export async function removeSample(): Promise<number> {
   const posts = await getDocs(query(collection(db!, 'posts'), where('sample', '==', true)));
   for (const p of posts.docs) {
+    const tickets = await getDocs(collection(db!, 'posts', p.id, 'responses'));
+    for (const tk of tickets.docs) {
+      const act = await getDocs(collection(db!, 'posts', p.id, 'responses', tk.id, 'activity'));
+      await Promise.all(act.docs.map((d) => deleteDoc(d.ref)));
+    }
     for (const sub of SUB) {
       const docs = await getDocs(collection(db!, 'posts', p.id, sub));
       await Promise.all(docs.docs.map((d) => deleteDoc(d.ref)));

@@ -15,7 +15,7 @@ import { inr } from '../format';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useFeed } from '../state/feed';
-import { useHelpRequests } from '../state/requests';
+import { useHelpRequests, useMyTickets } from '../state/requests';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
 
@@ -27,7 +27,9 @@ export default function HomeScreen() {
   const { t } = useT();
   const { showSheet, goTab, openDiscover, donations, unread: notesUnread, user } = useStore();
   const feed = useFeed(firebaseReady ? user?.uid : undefined);
-  const reqs = useHelpRequests(firebaseReady ? user?.uid : undefined);
+  const asOwner = useHelpRequests(firebaseReady ? user?.uid : undefined);
+  const asHelper = useMyTickets(firebaseReady ? user?.uid : undefined);
+  const reqs = { waiting: asOwner.waiting + asHelper.waiting, unread: asOwner.unread + asHelper.unread };
   const unread = notesUnread + (firebaseReady ? feed.unread + reqs.unread : 0);
   const needs = projects.filter((p) => p.status !== 'Completed');
   const causeW = Math.min(180, Math.round(width * 0.46));
@@ -47,8 +49,8 @@ export default function HomeScreen() {
         <Pressable onPress={() => goTab('impact')} accessibilityRole="button" style={({ pressed }) => [styles.reqBanner, pressed && styles.pressed]}>
           <Icon name="hand" size={24} color={colors.white} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.reqTitle}>{t('hr.banner', { n: reqs.waiting })}</Text>
-            <Text style={styles.reqSub}>{t('hr.bannerSub')}</Text>
+            <Text style={styles.reqTitle}>{t('tk.banner', { n: reqs.waiting })}</Text>
+            <Text style={styles.reqSub}>{t('tk.bannerSub')}</Text>
           </View>
           <Icon name="chev" size={20} color={colors.white} />
         </Pressable>

@@ -89,18 +89,33 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create, delete: if signedIn() && (get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
       }
-      // Offers of help: the person writes their own; the post's author can read them.
+      // Help tickets: the person who offers writes their own; the post's author and the helper can follow it, change its status within the
+      // allowed moves, and write in its activity thread. Only the author can accept, complete, decline or reopen; only the helper can withdraw.
       match /responses/{uid} {
-        allow update: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'contactedAt']);
-        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
         allow create: if signedIn() && request.auth.uid == uid;
         allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
+        allow update: if signedIn() && (
+          (get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusAt', 'lastBy', 'lastAt', 'lastText'])
+            && request.resource.data.status in ['requested', 'accepted', 'completed', 'declined'])
+          || (request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusAt', 'lastBy', 'lastAt', 'lastText'])
+            && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) || request.resource.data.status == 'withdrawn')));
+        allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+
+        match /activity/{aid} {
+          allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());
+          allow create: if signedIn() && request.resource.data.by == request.auth.uid
+            && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid)
+            && request.resource.data.text.size() <= 1000;
+          allow delete: if isAdmin() || (signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid));
+        }
       }
     }
 
     // Counts for the admin dashboard across every post's offers of help, payments and community members.
     match /{path=**}/responses/{x} { allow read: if isAdmin(); }
+    match /{path=**}/activity/{x} { allow read: if isAdmin(); }
     match /{path=**}/donations/{x} { allow read: if isAdmin(); }
     match /{path=**}/members/{x} { allow read: if isAdmin(); }
 

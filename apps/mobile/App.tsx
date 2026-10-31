@@ -16,7 +16,7 @@ import { useLiveSync } from './src/state/posts';
 import * as Notifications from 'expo-notifications';
 import { LangProvider, useT } from './src/i18n';
 import { useFeed } from './src/state/feed';
-import { useHelpRequests } from './src/state/requests';
+import { useHelpRequests, useMyTickets } from './src/state/requests';
 import AdminScreen from './src/screens/AdminScreen';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
@@ -52,17 +52,19 @@ function Shell() {
     AsyncStorage.getItem(USER_KEY).then((v) => { if (v) setUser(JSON.parse(v) as User); }).catch(() => {}).finally(() => setLoaded(true));
   }, [setUser]);
   const { showSheet } = useStore();
-  const reqList = useHelpRequests(firebaseReady ? user?.uid : undefined).items;
-  const lastReq = useRef<number | null>(null);
+  const owned = useHelpRequests(firebaseReady ? user?.uid : undefined).items;
+  const offered = useMyTickets(firebaseReady ? user?.uid : undefined).items;
+  const lastTk = useRef<number | null>(null);
   useEffect(() => {
     if (!firebaseReady || !user) return;
-    const newest = reqList.reduce((m, r) => Math.max(m, r.at), 0);
-    if (lastReq.current !== null && newest > lastReq.current) {
-      const r = reqList.find((x) => x.at === newest);
-      if (r) toast(t('hr.toast', { n: r.name || t('hr.someone'), k: t(r.kind === 'volunteer' ? 'hr.volShort' : 'hr.itemsShort') }));
+    const theirs = [...owned, ...offered].filter((x) => x.lastBy !== user.uid);
+    const newest = theirs.reduce((m, x) => Math.max(m, x.lastAt), 0);
+    if (lastTk.current !== null && newest > lastTk.current) {
+      const x = theirs.find((y) => y.lastAt === newest);
+      if (x) toast(t(x.ownerId === user.uid ? 'hr.toast' : 'tk.toast', { n: x.ownerId === user.uid ? x.name || t('hr.someone') : x.ownerName || t('ho.organiser'), k: t(x.kind === 'volunteer' ? 'hr.volShort' : 'hr.itemsShort'), p: x.postTitle }));
     }
-    if (reqList.length || lastReq.current === null) lastReq.current = Math.max(newest, lastReq.current ?? 0);
-  }, [reqList]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (lastTk.current === null || newest > lastTk.current) lastTk.current = Math.max(newest, lastTk.current ?? 0);
+  }, [owned, offered]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!firebaseReady) return undefined;
     const open = (d: Record<string, unknown> | undefined) => { if (d?.sipId && d.sipPost) showSheet({ kind: 'donate', id: String(d.sipPost), sip: String(d.sipId) }); };

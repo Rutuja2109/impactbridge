@@ -76,13 +76,3 @@ export function useLiveSync(uid: string | undefined, onChange: () => void) {
 /** A person reports a post, community or person; an admin reviews the reports in the Firebase console. */
 export const report = (u: User, targetType: 'post' | 'community', targetId: string, reason: string) =>
   addDoc(collection(db!, 'reports'), { targetType, targetId, reason, by: u.uid, at: Date.now() });
-
-/** Someone offers help on an approved post (time or items). The organiser gets a notification and sees the name and email. */
-export async function respond(u: User, postId: string, kind: 'volunteer' | 'items', title = '') {
-  const at = Date.now();
-  const b = writeBatch(db!);
-  b.set(doc(db!, 'posts', postId, 'responses', u.uid!), { kind, name: u.name, email: u.email, at, status: 'new' });
-  b.set(doc(db!, 'users', u.uid!, 'helps', postId), { kind, title, at }); // the person's own record, behind their badge and certificate
-  b.set(doc(db!, 'users', u.uid!), { helped: true }, { merge: true });
-  await b.commit();
-}

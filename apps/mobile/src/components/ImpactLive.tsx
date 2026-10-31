@@ -16,7 +16,7 @@ import { markRequestsSeen } from '../state/requests';
 import { stopSip, useMySips } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
-import HelpRequests from './HelpRequests';
+import HelpRequests, { MyHelpTickets } from './HelpRequests';
 import Icon, { type IconName } from './Icon';
 import { LogoMark } from './Logo';
 import MyPostSheet from './MyPostSheet';
@@ -154,6 +154,7 @@ export default function ImpactLive() {
       </View>
 
       <HelpRequests />
+      <MyHelpTickets />
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.imp.posts')}</Text>

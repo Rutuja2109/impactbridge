@@ -8,12 +8,13 @@ import Sheet, { sheetStyles as s } from '../components/Sheet';
 import { Button, ProgressBar, SampleTag, TwoLayerBar, UntrTag, StatGrid } from '../components/ui';
 import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pledgePct, pledgedPct, projectOf, projects } from '../data';
 import { firebaseReady } from '../firebase';
+import HelpOffer from './HelpOffer';
 import LiveDonateSheet from './LiveDonateSheet';
 import { inr } from '../format';
 import { useMyGives } from '../state/donations';
 import { markFeedSeen, useFeed } from '../state/feed';
-import { useHelpRequests } from '../state/requests';
-import { report, respond } from '../state/posts';
+import { STATUS, useHelpRequests, useMyTickets } from '../state/requests';
+import { report } from '../state/posts';
 import { Rich, useT } from '../i18n';
 import type { Flow } from '../state/post';
 import { useStore } from '../state/store';
@@ -55,7 +56,9 @@ function UpdatesSheet() {
   const { closeSheet, open, notes, markRead, user } = useStore();
   const gives = useMyGives(firebaseReady ? user?.uid : undefined).filter((g) => g.status !== 'pledged');
   const feed = useFeed(firebaseReady ? user?.uid : undefined).items;
-  const reqs = useHelpRequests(firebaseReady ? user?.uid : undefined).items.filter((r) => r.status === 'new').slice(0, 10);
+  const asOwner = useHelpRequests(firebaseReady ? user?.uid : undefined).items;
+  const asHelper = useMyTickets(firebaseReady ? user?.uid : undefined).items;
+  const reqs = [...asOwner, ...asHelper].filter((r) => r.lastBy !== user?.uid && (r.status === 'requested' || r.status === 'accepted')).sort((a, b) => b.lastAt - a.lastAt).slice(0, 10);
   const { goTab } = useStore();
   useEffect(() => { markRead(); if (firebaseReady) markFeedSeen(); }, [markRead]);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
@@ -65,12 +68,12 @@ function UpdatesSheet() {
       {notes.map((n) => (
         <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
       ))}
-      {firebaseReady && reqs.length ? <Text style={styles.h3}>{t('hr.title')}</Text> : null}
+      {firebaseReady && reqs.length ? <Text style={styles.h3}>{t('tk.notifTitle')}</Text> : null}
       {firebaseReady ? reqs.map((r) => (
         <Pressable key={r.id} onPress={() => { closeSheet(); goTab('impact'); }} accessibilityRole="button" style={styles.update}>
-          <Text style={styles.when}>{t(r.kind === 'volunteer' ? 'hr.vol' : 'hr.items')}</Text>
-          <Text style={styles.updTitle}>{t('hr.line', { n: r.name || t('hr.someone') })}</Text>
-          <Text style={s.note} numberOfLines={2}>{r.postTitle}</Text>
+          <Text style={styles.when}>{t(r.ownerId === user?.uid ? 'tk.asOrganiser' : 'tk.asHelper')} · {t(STATUS[r.status].key)}</Text>
+          <Text style={styles.updTitle}>{r.ownerId === user?.uid ? t('hr.line', { n: r.name || t('hr.someone') }) : t('tk.update', { n: r.ownerName || t('ho.organiser') })}</Text>
+          <Text style={s.note} numberOfLines={2}>{r.postTitle}{r.lastText ? ` — ${r.lastText}` : ''}</Text>
         </Pressable>
       )) : null}
       {firebaseReady && feed.length ? <Text style={styles.h3}>{t('fd.title')}</Text> : null}
@@ -101,18 +104,16 @@ function HelpSheet({ id }: { id: string }) {
   const { closeSheet, toast, user } = useStore();
   const p = projectOf(id);
   if (!p) return null;
-  const pick = (key: string, kind?: 'volunteer' | 'items') => {
+  const pick = (key: string) => {
     closeSheet();
-    // Installed app: the offer is really sent to the organiser. Expo Go keeps the demo toast.
-    if (firebaseReady && kind && user?.uid) respond(user, id, kind, p.title).then(() => toast(t('n.rs.sent', { e: user.email }))).catch(() => toast(t('n.cm.fail')));
-    else toast(t(key));
+    toast(t(key));
   };
   return (
     <Sheet visible onClose={closeSheet} title={t('help.title')} subtitle={p.title}>
-      {firebaseReady ? null : <Option icon="coin" title={t('help.pledgeT')} desc={t('help.pledgeD')} onPress={() => pick('help.pledgeToast')} />}
-      <Option icon="hand" title={t('help.volT')} desc={firebaseReady && p.volsNeeded - p.vols <= 0 ? t('hr.volOpen') : t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast', 'volunteer')} />
-      <Option icon="tool" title={t('help.giveT')} desc={t('help.giveD')} onPress={() => pick('help.giveToast', 'items')} />
-      <Text style={s.note}>{firebaseReady ? t('n.rs.consent') : t('help.note')}</Text>
+      <Option icon="coin" title={t('help.pledgeT')} desc={t('help.pledgeD')} onPress={() => pick('help.pledgeToast')} />
+      <Option icon="hand" title={t('help.volT')} desc={firebaseReady && p.volsNeeded - p.vols <= 0 ? t('hr.volOpen') : t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast')} />
+      <Option icon="tool" title={t('help.giveT')} desc={t('help.giveD')} onPress={() => pick('help.giveToast')} />
+      <Text style={s.note}>{t('help.note')}</Text>
     </Sheet>
   );
 }
@@ -204,7 +205,7 @@ export default function SheetHost() {
   switch (sheet.kind) {
     case 'post': return <PostSheet />;
     case 'updates': return <UpdatesSheet />;
-    case 'help': return <HelpSheet id={sheet.id} />;
+    case 'help': return firebaseReady ? <HelpOffer id={sheet.id} /> : <HelpSheet id={sheet.id} />;
     case 'report': return <ReportSheet id={sheet.id} />;
     case 'org': return <OrgSheet id={sheet.id} />;
     case 'share': return <ShareSheet id={sheet.id} />;

@@ -72,6 +72,11 @@ export async function deleteAccount() {
     // Posts the person shared, with their photos, private contact, offers of help and reports of payments.
     const mine = await getDocs(query(collection(db, 'posts'), where('ownerId', '==', u.uid))).catch(() => null);
     for (const p of mine?.docs ?? []) {
+      const tickets = await getDocs(collection(db, 'posts', p.id, 'responses')).catch(() => null);
+      for (const tk of tickets?.docs ?? []) {
+        const act = await getDocs(collection(db, 'posts', p.id, 'responses', tk.id, 'activity')).catch(() => null);
+        await Promise.all((act?.docs ?? []).map((d) => deleteDoc(d.ref).catch(() => {})));
+      }
       for (const sub of ['files', 'private', 'responses', 'donations', 'supporters']) {
         const rows = await getDocs(collection(db, 'posts', p.id, sub)).catch(() => null);
         await Promise.all((rows?.docs ?? []).map((d) => deleteDoc(d.ref).catch(() => {})));

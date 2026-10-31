@@ -52,15 +52,32 @@ exports.onMemberLeft = onDocumentDeleted('communities/{cid}/members/{uid}', asyn
   await db.doc(`communities/${event.params.cid}`).update({ memberCount: FieldValue.increment(-1) }).catch(() => {});
 });
 
-// Someone offered help on a post: tell the person who posted it.
+// Someone offered help on a post (a new ticket): tell the person who posted it.
 exports.onHelpOffered = onDocumentCreated('posts/{pid}/responses/{uid}', async (event) => {
   const r = event.data.data();
   const post = (await db.doc(`posts/${event.params.pid}`).get()).data();
   if (!post) return;
-  const title = r.kind === 'volunteer' ? 'A neighbour can volunteer' : 'A neighbour can give items';
-  const body = `${r.name || 'Someone'} (${r.email}) offered help on "${post.data?.title || 'your post'}"`;
+  const what = r.kind === 'volunteer' ? `${r.qty || 1} volunteer(s)` : `${r.qty || 1} item(s) or skills`;
+  const title = 'New help ticket';
+  const body = `${r.name || 'Someone'} offered ${what} on "${post.data?.title || 'your post'}": ${(r.what || '').slice(0, 80)}`;
   await db.collection(`users/${post.ownerId}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
   await push(await tokensFor([post.ownerId]), title, body, { pid: event.params.pid });
+});
+
+// Something changed on a help ticket (a message, shared contact details or a new status): tell the other person.
+exports.onTicketActivity = onDocumentUpdated('posts/{pid}/responses/{uid}', async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (!after || before.lastAt === after.lastAt) return;
+  const post = (await db.doc(`posts/${event.params.pid}`).get()).data();
+  if (!post) return;
+  const toUid = after.lastBy === post.ownerId ? event.params.uid : post.ownerId;
+  const LABEL = { requested: 'Open', accepted: 'In progress', completed: 'Done', declined: 'Declined', withdrawn: 'Withdrawn' };
+  const changed = before.status !== after.status;
+  const title = changed ? `Help ticket: ${LABEL[after.status] || after.status}` : 'New message on your help ticket';
+  const body = changed ? `"${post.data?.title || 'A post'}" is now ${LABEL[after.status] || after.status}` : `${(after.lastText || '').slice(0, 100)}`;
+  await db.collection(`users/${toUid}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
+  await push(await tokensFor([toUid]), title, body, { pid: event.params.pid });
 });
 
 // A post was approved: tell the author, and tell everyone else who has notifications on that there is something new to see.
