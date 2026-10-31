@@ -12,6 +12,7 @@ import { useStore } from '../state/store';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
 import AdminReview from './AdminReview';
+import { ViewAll, useCap } from './Capped';
 import DonationsList from './DonationsList';
 import { Button } from './ui';
 
@@ -32,6 +33,7 @@ export function PostCard({ p, review, others = [] }: { p: PostRow; review: boole
   const [resp, setResp] = useState<Response[]>([]);
   const [busy, setBusy] = useState(false);
   const [full, setFull] = useState(false);
+  const capResp = useCap(resp, 3);
   const photos = usePostPhotos(p.id);
   useEffect(() => {
     if (review) return undefined;
@@ -62,7 +64,8 @@ export function PostCard({ p, review, others = [] }: { p: PostRow; review: boole
         <>
           {p.flow === 'fund' ? <DonationsList postId={p.id} /> : null}
           <Text style={styles.meta}>{resp.length} help ticket{resp.length === 1 ? '' : 's'}</Text>
-          {resp.map((r) => <Text key={r.uid} style={styles.meta}>• {r.name} ({r.kind}) {r.email}</Text>)}
+          {capResp.shown.map((r) => <Text key={r.uid} style={styles.meta}>• {r.name} ({r.kind}) {r.email}</Text>)}
+          <ViewAll cap={capResp} en />
           <View style={styles.row}>
             <View style={styles.flex}><Button label="Details" small block variant="ghost" onPress={() => setFull(true)} /></View>
             <View style={styles.flex}><Button label="Take down" small block variant="ghost" disabled={busy} onPress={() => act('rejected')} /></View>
@@ -80,12 +83,13 @@ export function Orgs() {
     (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<OrgRow, 'id'>) }))),
     () => {},
   ) : null, [], []);
+  const cap = useCap(rows, 3);
   const set = (id: string, ok: boolean) => updateDoc(doc(db!, 'orgs', id), ok ? { verified: true, status: 'verified' } : { verified: false, status: 'rejected' }).catch(() => {});
   return (
     <>
       <Text style={styles.h}>Organisations to verify ({rows.length})</Text>
       {rows.length ? null : <Text style={styles.meta}>None waiting.</Text>}
-      {rows.map((o) => (
+      {cap.shown.map((o) => (
         <View key={o.id} style={styles.card}>
           <Text style={styles.title}>{o.orgName}</Text>
           <Text style={styles.meta}>{o.kind} · reg {o.regNo || '—'}</Text>
@@ -96,6 +100,7 @@ export function Orgs() {
           </View>
         </View>
       ))}
+      <ViewAll cap={cap} en />
     </>
   );
 }
@@ -106,17 +111,19 @@ export function Reports() {
     (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ReportRow, 'id'>) }))),
     () => {},
   ) : null, [], []);
+  const cap = useCap(rows, 3);
   return (
     <>
       <Text style={styles.h}>Reports ({rows.length})</Text>
       {rows.length ? null : <Text style={styles.meta}>No reports.</Text>}
-      {rows.slice(0, 20).map((r) => (
+      {cap.shown.map((r) => (
         <View key={r.id} style={styles.card}>
           <Text style={styles.title}>{r.targetType} {r.targetId.slice(0, 8)}</Text>
           <Text style={styles.body}>{r.reason}</Text>
           {r.targetType === 'post' ? <Button label="Take post down" small variant="ghost" onPress={() => { setStatus(r.targetId, 'rejected').catch(() => {}); }} /> : null}
         </View>
       ))}
+      <ViewAll cap={cap} en />
     </>
   );
 }

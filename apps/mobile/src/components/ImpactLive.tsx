@@ -18,6 +18,7 @@ import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import HelpRequests, { MyHelpTickets } from './HelpRequests';
 import Icon, { type IconName } from './Icon';
+import { ViewAll, useCap } from './Capped';
 import { LogoMark } from './Logo';
 import MyPostSheet from './MyPostSheet';
 import Sheet from './Sheet';
@@ -123,11 +124,16 @@ export default function ImpactLive() {
   const sips = useMySips(uid).filter((x) => x.status !== 'created');
   const [shown, setShown] = useState<Shown>(null);
   const [tab, setTab] = useState<Tab>('overview');
+  const capPosts = useCap(posts, 3);
+  const capSips = useCap(sips, 3);
+  const capGives = useCap(gives, 3);
   const [open, setOpen] = useState<MyPost | null>(null);
   const card = useRef<ComponentRef<typeof View>>(null);
 
   useEffect(() => { markRequestsSeen(); }, []);
   const s = liveStats({ posts, helps, joined: joined.length, gives });
+  const capBadges = useCap(s.badges, 4);
+  const capCerts = useCap(s.certs, 3);
   const share = () => {
     if (!shown) return;
     const label = shown.kind === 'badge' ? `${t(`ab.${shown.badge.id}`)} · ${t(`tier.${shown.badge.tier}`)}` : t(shown.cert.kind === 'tier' ? 'ct.t.tier' : shown.cert.kind === 'gift' ? 'ct.t.gift' : 'ct.t.level');
@@ -172,7 +178,7 @@ export default function ImpactLive() {
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.imp.posts')}</Text>
-        {posts.length ? posts.map((p) => {
+        {posts.length ? capPosts.shown.map((p) => {
           const st = p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending';
           return (
             <Pressable key={p.id} onPress={() => setOpen(p)} accessibilityRole="button" accessibilityLabel={p.title} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
@@ -185,6 +191,7 @@ export default function ImpactLive() {
             </Pressable>
           );
         }) : <Text style={styles.small}>{t('n.imp.postsNone')}</Text>}
+        {posts.length ? <ViewAll cap={capPosts} /> : null}
         {posts.length ? <Text style={styles.small}>{t('mp.hint')}</Text> : null}
       </View>
 
@@ -203,7 +210,7 @@ export default function ImpactLive() {
         <>
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('sip.title')}</Text>
-        {sips.length ? sips.map((x) => {
+        {sips.length ? capSips.shown.map((x) => {
           const live = ['authenticated', 'active', 'pending', 'halted', 'paused'].includes(x.status);
           return (
             <View key={x.id} style={styles.item}>
@@ -226,11 +233,12 @@ export default function ImpactLive() {
             </View>
           );
         }) : <Text style={styles.small}>{t('sip.none')}</Text>}
+        {sips.length ? <ViewAll cap={capSips} /> : null}
       </View>
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('ip.giving')}</Text>
-        {gives.length ? gives.map((g: Give) => (
+        {gives.length ? capGives.shown.map((g: Give) => (
           <View key={g.id} style={styles.item}>
             <View style={styles.grow}>
               <Text style={styles.itemTitle} numberOfLines={2}>{g.title || '—'}</Text>
@@ -241,6 +249,7 @@ export default function ImpactLive() {
             </View>
           </View>
         )) : <Text style={styles.small}>{t('gv.none')}</Text>}
+        {gives.length ? <ViewAll cap={capGives} /> : null}
       </View>
 
         </>
@@ -250,7 +259,7 @@ export default function ImpactLive() {
         <>
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.myBadges')}</Text>
-        {s.badges.map((b) => {
+        {capBadges.shown.map((b) => {
           const nextT = b.tier < 3 ? (b.tiers[b.tier as 0 | 1 | 2] ?? 0) : 0;
           return (
             <View key={b.id} style={[styles.badge, { backgroundColor: b.tier ? TIER_SOFT[b.tier] : colors.paper }, !b.tier && styles.badgeLocked]}>
@@ -271,11 +280,12 @@ export default function ImpactLive() {
             </View>
           );
         })}
+        <ViewAll cap={capBadges} />
       </View>
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.myCerts')}</Text>
-        {s.certs.length ? s.certs.map((c) => (
+        {s.certs.length ? capCerts.shown.map((c) => (
           <Pressable key={c.id} onPress={() => setShown({ kind: 'cert', cert: c })} accessibilityRole="button" style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
             <Icon name="check" size={20} color={colors.tealDark} />
             <View style={styles.grow}>
@@ -285,6 +295,7 @@ export default function ImpactLive() {
             <Text style={styles.link}>{t('n.certView')}</Text>
           </Pressable>
         )) : <Text style={styles.small}>{t('n.certNone2')}</Text>}
+        {s.certs.length ? <ViewAll cap={capCerts} /> : null}
       </View>
 
         </>

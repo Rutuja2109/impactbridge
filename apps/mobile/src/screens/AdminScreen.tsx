@@ -10,6 +10,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AdminSip from '../components/AdminSip';
+import { ViewAll, useCap } from '../components/Capped';
 import { Orgs, PostCard, Reports, SampleData, postsBy } from '../components/AdminPanel';
 import { NAV_HEIGHT } from '../components/BottomNav';
 import Icon from '../components/Icon';
@@ -65,6 +66,9 @@ export default function AdminScreen() {
   const pending = postsBy('pending');
   const live = postsBy('approved');
   const payments = usePendingSipPayments();
+  const capPending = useCap(pending, 3);
+  const capLive = useCap(live, 4);
+  const capTop = useCap(top, 3);
 
   const v = (k: string): number => m?.[k] ?? 0;
   const dash = (k: string): string | number => (m?.[k] === undefined ? '—' : m[k]!);
@@ -187,7 +191,8 @@ export default function AdminScreen() {
                 <Mini n={dash('members')} label="Joins" />
                 <Mini n={dash('orgsVerified')} label="Verified orgs" />
               </View>
-              {top.length ? top.map((c) => <Bar key={c.id} label={c.name} value={c.members} max={top[0].members} color="#5B21B6" />) : null}
+              {top.length ? capTop.shown.map((c) => <Bar key={c.id} label={c.name} value={c.members} max={top[0].members} color="#5B21B6" />) : null}
+              <ViewAll cap={capTop} en />
             </Card>
           </>
         ) : null}
@@ -195,7 +200,8 @@ export default function AdminScreen() {
         {tab === 'review' ? (
           <>
             <Text style={s.h2}>Posts to review ({pending.length})</Text>
-            {pending.length ? pending.map((p) => <PostCard key={p.id} p={p} review others={[...pending, ...live]} />) : <Text style={s.empty}>Nothing waiting. Nice work.</Text>}
+            {pending.length ? capPending.shown.map((p) => <PostCard key={p.id} p={p} review others={[...pending, ...live]} />) : <Text style={s.empty}>Nothing waiting. Nice work.</Text>}
+            <ViewAll cap={capPending} en />
             <Orgs />
             <Reports />
           </>
@@ -204,7 +210,8 @@ export default function AdminScreen() {
         {tab === 'live' ? (
           <>
             <Text style={s.h2}>Live posts ({live.length})</Text>
-            {live.length ? live.map((p) => <PostCard key={p.id} p={p} review={false} others={[...pending, ...live]} />) : <Text style={s.empty}>No live posts yet. Approve one from Review, or add samples in Setup.</Text>}
+            {live.length ? capLive.shown.map((p) => <PostCard key={p.id} p={p} review={false} others={[...pending, ...live]} />) : <Text style={s.empty}>No live posts yet. Approve one from Review, or add samples in Setup.</Text>}
+            <ViewAll cap={capLive} en />
           </>
         ) : null}
 

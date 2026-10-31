@@ -33,6 +33,7 @@ export default function TicketSheet({ ticket, role, onClose }: { ticket: Ticket;
   const tk = useTicket(ticket);
   const activity = useActivity(tk);
   const [text, setText] = useState('');
+  const [allAct, setAllAct] = useState(false);
   const [asContact, setAsContact] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => { markRequestsSeen(); }, [tk.lastAt]);
@@ -92,7 +93,8 @@ export default function TicketSheet({ ticket, role, onClose }: { ticket: Ticket;
       </View>
 
       <Text style={styles.h}>{t('tk.activity')}</Text>
-      {activity.map((a) => {
+      {activity.length > 5 && !allAct ? <Text style={styles.earlier} onPress={() => setAllAct(true)} accessibilityRole="button">{t('tk.earlier', { n: activity.length - 5 })}</Text> : null}
+      {(allAct ? activity : activity.slice(-5)).map((a) => {
         const mine = a.by === user?.uid;
         if (a.type === 'status') {
           return <Text key={a.id} style={styles.event}>{a.from ? t('tk.moved', { n: mine ? t('tk.you') : a.byName || who, f: t(STATUS[a.from as TicketStatus]?.key ?? 'tk.st.requested'), s: t(STATUS[a.to as TicketStatus]?.key ?? 'tk.st.requested') }) : t('tk.opened', { n: mine ? t('tk.you') : a.byName || who })} · {when(a.at)}</Text>;
@@ -137,6 +139,7 @@ const styles = StyleSheet.create({
   line: { ...type.body, color: colors.ink },
   reach: { gap: 2, marginTop: 4 },
   link: { fontSize: 15, fontWeight: '700', color: colors.tealDark },
+  earlier: { alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.tealSoft, fontSize: 13, fontWeight: '800', color: colors.tealDark, overflow: 'hidden' },
   event: { fontSize: 12, color: colors.slate, textAlign: 'center' },
   bubble: { gap: 2, padding: space.m, borderRadius: radius.m, maxWidth: '92%' },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.tealSoft },

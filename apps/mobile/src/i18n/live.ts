@@ -4,6 +4,9 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'va.all': 'View all ({n})',
+    'va.less': 'Show less',
+    'tk.earlier': 'Show {n} earlier',
     'mp.reason': 'REASON FROM THE REVIEWER',
     'mp.changes': 'The reviewer asked for changes. Tap Edit below, fix what they mention and send it again.',
     'ip.tab.overview': 'Overview',
@@ -320,6 +323,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'va.all': 'सभी देखें ({n})',
+    'va.less': 'कम दिखाएँ',
+    'tk.earlier': '{n} पुराने दिखाएँ',
     'mp.reason': 'समीक्षक का कारण',
     'mp.changes': 'समीक्षक ने बदलाव माँगे हैं। नीचे “बदलें” दबाएँ, बताई बातें ठीक करें और फिर भेजें।',
     'ip.tab.overview': 'अवलोकन',
@@ -636,6 +642,9 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'va.all': 'सर्व पाहा ({n})',
+    'va.less': 'कमी दाखवा',
+    'tk.earlier': '{n} जुने दाखवा',
     'mp.reason': 'पुनरावलोकनकर्त्याचे कारण',
     'mp.changes': 'पुनरावलोकनकर्त्याने बदल मागितले आहेत. खाली “बदल करा” दाबा, सांगितलेल्या गोष्टी दुरुस्त करा आणि पुन्हा पाठवा.',
     'ip.tab.overview': 'आढावा',

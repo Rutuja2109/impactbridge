@@ -4,20 +4,23 @@ import { StyleSheet, Text, View } from 'react-native';
 import { inr } from '../format';
 import { useT } from '../i18n';
 import { useSupporters } from '../state/donations';
+import { ViewAll, useCap } from './Capped';
 import { colors, space } from '../theme';
 
 export default function SupportersList({ postId }: { postId: string }) {
   const { t } = useT();
   const rows = useSupporters(postId);
+  const cap = useCap(rows, 4);
   return (
     <View style={styles.wrap}>
       <Text style={styles.sub}>{t('sp.sub')}</Text>
-      {rows.length ? rows.map((r) => (
+      {rows.length ? cap.shown.map((r) => (
         <View key={r.id} style={styles.row}>
           <Text style={styles.name}>✓ {(r.name || t('cd.anon')).split(' ')[0]}</Text>
           <Text style={styles.amt}>{inr(r.amount)}</Text>
         </View>
       )) : <Text style={styles.sub}>{t('sp.none')}</Text>}
+      <ViewAll cap={cap} />
     </View>
   );
 }

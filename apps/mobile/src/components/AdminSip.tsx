@@ -13,6 +13,7 @@ import { saveSipConfig, settleSipPayment, usePendingSipPayments, useSipConfig, t
 import { useStore } from '../state/store';
 import { colors, radius, space } from '../theme';
 import { Button } from './ui';
+import { ViewAll, useCap } from './Capped';
 
 type Payout = { id: string; postId: string; amount: number };
 
@@ -44,6 +45,9 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
     payouts.forEach((p) => { const r = perPost.get(p.postId); if (r) r.passed += p.amount; });
     return { active: live.length, monthly: live.reduce((a, x) => a + x.amount, 0), collected: sips.reduce((a, x) => a + (x.totalPaid || 0), 0), perPost: [...perPost.entries()] };
   }, [sips, payouts]);
+
+  const capWaiting = useCap(waiting, 3);
+  const capPer = useCap(stats.perPost, 3);
 
   const save = () => {
     setBusy(true);
@@ -80,7 +84,7 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
       {waiting.length ? (
         <View style={styles.card}>
           <Text style={styles.title}>Monthly payments waiting to be confirmed ({waiting.length})</Text>
-          {waiting.map((w) => (
+          {capWaiting.shown.map((w) => (
             <View key={w.id} style={styles.pay}>
               <Text style={styles.label} numberOfLines={2}>{w.name || 'Donor'} · {inr(w.amount)} · {w.title}</Text>
               <Text style={styles.meta}>{new Date(w.at).toLocaleString()}</Text>
@@ -90,6 +94,7 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
               </View>
             </View>
           ))}
+          <ViewAll cap={capWaiting} en />
         </View>
       ) : null}
 
@@ -100,7 +105,8 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
         <View style={styles.line}><Text style={styles.label}>Collected so far</Text><Text style={styles.val}>{inr(stats.collected)}</Text></View>
       </View>
 
-      {stats.perPost.map(([postId, r]) => <PayoutRow key={postId} postId={postId} title={r.title} collected={r.collected} passed={r.passed} adminId={user?.uid ?? ''} />)}
+      {capPer.shown.map(([postId, r]) => <PayoutRow key={postId} postId={postId} title={r.title} collected={r.collected} passed={r.passed} adminId={user?.uid ?? ''} />)}
+      <ViewAll cap={capPer} en />
     </View>
   );
 }

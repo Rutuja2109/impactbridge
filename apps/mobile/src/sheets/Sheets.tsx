@@ -5,6 +5,7 @@ import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import Icon, { type IconName } from '../components/Icon';
 import Sheet, { sheetStyles as s } from '../components/Sheet';
+import { ViewAll, useCap } from '../components/Capped';
 import { Button, ProgressBar, SampleTag, TwoLayerBar, UntrTag, StatGrid } from '../components/ui';
 import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pledgePct, pledgedPct, projectOf, projects } from '../data';
 import { firebaseReady } from '../firebase';
@@ -61,32 +62,40 @@ function UpdatesSheet() {
   const reqs = [...asOwner, ...asHelper].filter((r) => r.lastBy !== user?.uid && (r.status === 'requested' || r.status === 'accepted')).sort((a, b) => b.lastAt - a.lastAt).slice(0, 10);
   const { goTab } = useStore();
   useEffect(() => { markRead(); if (firebaseReady) markFeedSeen(); }, [markRead]);
+  const capNotes = useCap(notes, 3);
+  const capReqs = useCap(reqs, 3);
+  const capFeed = useCap(feed, 4);
+  const capGives = useCap(gives, 3);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
   return (
     <Sheet visible onClose={closeSheet} title={t('upd.title')} subtitle={<View style={styles.subRow}><Text style={s.note}>{t('upd.sub')}</Text>{firebaseReady ? null : <><SampleTag label={t('c.sample')} /><UntrTag /></>}</View>}>
       {notes.length ? <Text style={styles.h3}>{t('n.nt.title')}</Text> : null}
-      {notes.map((n) => (
+      {capNotes.shown.map((n) => (
         <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
       ))}
+      <ViewAll cap={capNotes} />
       {firebaseReady && reqs.length ? <Text style={styles.h3}>{t('tk.notifTitle')}</Text> : null}
-      {firebaseReady ? reqs.map((r) => (
+      {firebaseReady ? capReqs.shown.map((r) => (
         <Pressable key={r.id} onPress={() => { closeSheet(); goTab('impact'); }} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t(r.ownerId === user?.uid ? 'tk.asOrganiser' : 'tk.asHelper')} · {t(STATUS[r.status].key)}</Text>
           <Text style={styles.updTitle}>{r.ownerId === user?.uid ? t('hr.line', { n: r.name || t('hr.someone') }) : t('tk.update', { n: r.ownerName || t('ho.organiser') })}</Text>
           <Text style={s.note} numberOfLines={2}>{r.postTitle}{r.lastText ? ` — ${r.lastText}` : ''}</Text>
         </Pressable>
       )) : null}
+      {firebaseReady ? <ViewAll cap={capReqs} /> : null}
       {firebaseReady && feed.length ? <Text style={styles.h3}>{t('fd.title')}</Text> : null}
-      {firebaseReady ? feed.map((f) => (
+      {firebaseReady ? capFeed.shown.map((f) => (
         <Pressable key={`${f.kind}-${f.id}`} onPress={() => { if (f.kind === 'community') { closeSheet(); goTab('community'); } else open({ name: f.kind, id: f.id }); }} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t(`fd.${f.kind}`)}</Text>
           <Text style={styles.updTitle}>{f.title}</Text>
           {f.sub ? <Text style={s.note}>{f.sub}</Text> : null}
         </Pressable>
       )) : null}
-      {gives.map((g) => (
+      {firebaseReady ? <ViewAll cap={capFeed} /> : null}
+      {capGives.shown.map((g) => (
         <View key={g.id} style={styles.update}><Text style={s.note}>{t(g.status === 'received' ? 'nt.gave.ok' : 'nt.gave.no', { c: g.title, a: inr(g.amount) })}</Text></View>
       ))}
+      <ViewAll cap={capGives} />
       {firebaseReady && !notes.length && !gives.length && !feed.length && !reqs.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
       {items.map(({ c, u }, i) => (
         <Pressable key={`${c.id}-${i}`} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.update}>

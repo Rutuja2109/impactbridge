@@ -3,6 +3,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { inr } from '../format';
+import { ViewAll, useCap } from './Capped';
 import { settleDonation, useDonations } from '../state/donations';
 import { colors, space } from '../theme';
 import { Button } from './ui';
@@ -11,11 +12,12 @@ export default function DonationsList({ postId }: { postId: string }) {
   const rows = useDonations(postId);
   const got = rows.filter((r) => r.status === 'received');
   const total = got.reduce((a, r) => a + r.amount, 0);
+  const cap = useCap(rows, 3);
   if (!rows.length) return <Text style={styles.meta}>No payments reported yet.</Text>;
   return (
     <View style={styles.wrap}>
       <Text style={styles.sum}>{inr(total)} confirmed from {got.length} supporter{got.length === 1 ? '' : 's'} · {rows.length - got.length - rows.filter((r) => r.status === 'not_received').length} waiting</Text>
-      {rows.map((r) => (
+      {cap.shown.map((r) => (
         <View key={r.id} style={styles.row}>
           <Text style={styles.line}>{r.name || 'Supporter'} · {inr(r.amount)}{r.ref ? ` · ref ${r.ref}` : ''}</Text>
           <Text style={styles.meta}>{new Date(r.at).toLocaleString()} · {r.status === 'received' ? 'Confirmed' : r.status === 'not_received' ? 'Not received' : 'Waiting for confirmation'}</Text>
@@ -27,6 +29,7 @@ export default function DonationsList({ postId }: { postId: string }) {
           ) : null}
         </View>
       ))}
+      <ViewAll cap={cap} en />
     </View>
   );
 }

@@ -10,6 +10,7 @@ import { ticketRef, useHelpRequests, useMyTickets, type Ticket } from '../state/
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 import Icon from './Icon';
+import { ViewAll, useCap } from './Capped';
 import TicketSheet, { StatusPill } from './TicketSheet';
 
 function Rows({ items, role, title, sub, empty }: { items: Ticket[]; role: 'owner' | 'helper'; title: string; sub: string; empty?: string }) {
@@ -17,6 +18,7 @@ function Rows({ items, role, title, sub, empty }: { items: Ticket[]; role: 'owne
   const { user } = useStore();
   const [open, setOpen] = useState<Ticket | null>(null);
   const fresh = items.filter((x) => x.lastBy !== user?.uid && (x.status === 'requested' || x.status === 'accepted')).length;
+  const cap = useCap(items, 3);
   if (!items.length && !empty) return null;
   return (
     <View style={styles.sec}>
@@ -25,7 +27,7 @@ function Rows({ items, role, title, sub, empty }: { items: Ticket[]; role: 'owne
         {fresh ? <View style={styles.count}><Text style={styles.countText}>{fresh}</Text></View> : null}
       </View>
       <Text style={styles.small}>{items.length ? sub : empty}</Text>
-      {items.slice(0, 30).map((r) => {
+      {cap.shown.map((r) => {
         const theirs = r.lastBy !== user?.uid;
         return (
           <Pressable key={r.id} onPress={() => setOpen(r)} accessibilityRole="button" accessibilityLabel={r.postTitle} style={({ pressed }) => [styles.card, theirs && (r.status === 'requested' || r.status === 'accepted') && styles.cardNew, pressed && styles.pressed]}>
@@ -43,6 +45,7 @@ function Rows({ items, role, title, sub, empty }: { items: Ticket[]; role: 'owne
           </Pressable>
         );
       })}
+      <ViewAll cap={cap} />
       {open ? <TicketSheet ticket={open} role={role} onClose={() => setOpen(null)} /> : null}
     </View>
   );
