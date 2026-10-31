@@ -57,8 +57,9 @@ export const campaignOf = (id: string) => campaigns.find((c) => c.id === id);
 export const fundsOfOrg = (orgId: string) => campaigns.filter((c) => c.org === orgId);
 
 // Projects: pledged vs received are separate; received never exceeds what was confirmed.
-export const pledgedPct = (p: Project) => Math.min(100, Math.round((p.raised / p.goal) * 100));
-export const receivedPct = (p: Project) => Math.min(100, Math.round((p.received / p.goal) * 100));
+const ratio = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
+export const pledgedPct = (p: Project) => ratio(p.raised, p.goal);
+export const receivedPct = (p: Project) => ratio(p.received, p.goal);
 
 // Campaigns: only donations marked received count; pledges stay separate until the (simulated) organiser confirms.
 // `donations` comes from app state so demo donations and confirmations made in this session are included.

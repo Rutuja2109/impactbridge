@@ -24,6 +24,7 @@ export default function ProjectScreen({ id }: { id: string }) {
 
   const done = p.status === 'Completed';
   const reached = firebaseReady ? (p.raised > 0 || p.vols > 0 ? 4 : 3) : done ? (p.verified ? 7 : 6) : p.status === 'In progress' ? 5 : 4;
+  const noMoney = firebaseReady && !(p.goal > 0);
   const pl = pledgedPct(p);
   const rc = receivedPct(p);
   // "by {o}" puts the name first in Hindi and Marathi, so split around it; the name links to Community, as in the prototype.
@@ -78,13 +79,15 @@ export default function ProjectScreen({ id }: { id: string }) {
           </Panel>
 
           <Panel>
-            <PanelTitle>{t('proj.head', { p: pl, r: rc })}</PanelTitle>
-            <TwoLayerBar id={`p-${p.id}`} solid={rc} hatched={Math.max(0, pl - rc)} label={t('proj.barAria', { p: pl, r: rc })} />
-            <Legend items={[{ label: t('leg.pledged'), kind: 'hatched' }, { label: t('leg.received'), kind: 'solid' }]} />
+            <PanelTitle>{noMoney ? t('lv.noMoney') : t('proj.head', { p: pl, r: rc })}</PanelTitle>
+            {noMoney ? null : <TwoLayerBar id={`p-${p.id}`} solid={rc} hatched={Math.max(0, pl - rc)} label={t('proj.barAria', { p: pl, r: rc })} />}
+            {noMoney ? null : <Legend items={[{ label: t('leg.pledged'), kind: 'hatched' }, { label: t('leg.received'), kind: 'solid' }]} />}
             <StatGrid
               items={[
-                { value: inr(p.raised), label: t('proj.pledgedOf', { g: inr(p.goal) }) },
-                { value: inr(p.received), label: t('proj.receivedBy') },
+                ...(noMoney ? [] : [
+                  { value: inr(p.raised), label: t('proj.pledgedOf', { g: inr(p.goal) }) },
+                  { value: inr(p.received), label: t('proj.receivedBy') },
+                ]),
                 { value: t('proj.volsOf', { a: p.vols, b: p.volsNeeded }), label: t('proj.volsSigned') },
                 { value: t('proj.hrs', { n: p.hours }), label: p.verified ? t('proj.hrsDoneV') : t('proj.hrsDone') },
               ]}
