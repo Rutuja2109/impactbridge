@@ -237,7 +237,7 @@ const s = StyleSheet.create({
   grow: { flex: 1 },
   h1: { fontSize: 22, fontWeight: '800', color: colors.ink },
   sub: { fontSize: 12, color: colors.slate },
-  tabsWrap: { flexGrow: 0, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.line },
+  tabsWrap: { flexGrow: 0, flexShrink: 0, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.line },
   tabs: { paddingHorizontal: space.l, paddingVertical: space.s, gap: space.s },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   tabOn: { backgroundColor: colors.tealDark, borderColor: colors.tealDark },

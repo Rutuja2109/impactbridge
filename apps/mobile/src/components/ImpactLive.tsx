@@ -315,7 +315,7 @@ export default function ImpactLive() {
 }
 
 const styles = StyleSheet.create({
-  chipsWrap: { flexGrow: 0, marginTop: space.m },
+  chipsWrap: { flexGrow: 0, flexShrink: 0, marginTop: space.m },
   chips: { paddingHorizontal: space.l, gap: space.s },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   chipOn: { backgroundColor: colors.tealDark, borderColor: colors.tealDark },
