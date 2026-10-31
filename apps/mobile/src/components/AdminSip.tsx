@@ -16,7 +16,7 @@ import { Button } from './ui';
 
 type Payout = { id: string; postId: string; amount: number };
 
-export default function AdminSip() {
+export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
   const { toast, user } = useStore();
   const cfg = useSipConfig();
   const [name, setName] = useState('');
@@ -53,7 +53,7 @@ export default function AdminSip() {
       .finally(() => setBusy(false));
   };
 
-  return (
+  if (part === 'settings') return (
     <View>
       <Text style={styles.h}>Monthly giving (SIP)</Text>
       <View style={styles.card}>
@@ -71,7 +71,12 @@ export default function AdminSip() {
           <View style={styles.flex}><Button label="Save" small block disabled={busy} onPress={save} /></View>
         </View>
       </View>
+    </View>
+  );
 
+  return (
+    <View>
+      <Text style={styles.h}>Monthly giving: money</Text>
       {waiting.length ? (
         <View style={styles.card}>
           <Text style={styles.title}>Monthly payments waiting to be confirmed ({waiting.length})</Text>

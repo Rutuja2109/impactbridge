@@ -15,6 +15,7 @@ import { inr } from '../format';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
 import { useFeed } from '../state/feed';
+import { useHelpRequests } from '../state/requests';
 import { useStore } from '../state/store';
 import { colors, radius, shadow, space, type } from '../theme';
 
@@ -26,7 +27,8 @@ export default function HomeScreen() {
   const { t } = useT();
   const { showSheet, goTab, openDiscover, donations, unread: notesUnread, user } = useStore();
   const feed = useFeed(firebaseReady ? user?.uid : undefined);
-  const unread = notesUnread + (firebaseReady ? feed.unread : 0);
+  const reqs = useHelpRequests(firebaseReady ? user?.uid : undefined);
+  const unread = notesUnread + (firebaseReady ? feed.unread + reqs.unread : 0);
   const needs = projects.filter((p) => p.status !== 'Completed');
   const causeW = Math.min(180, Math.round(width * 0.46));
 
@@ -40,6 +42,17 @@ export default function HomeScreen() {
         {unread ? <View style={styles.dot}><Text style={styles.dotText}>{unread}</Text></View> : null}
         <Icon name="chev" size={20} color={colors.slate} />
       </Pressable>
+
+      {firebaseReady && reqs.waiting > 0 ? (
+        <Pressable onPress={() => goTab('impact')} accessibilityRole="button" style={({ pressed }) => [styles.reqBanner, pressed && styles.pressed]}>
+          <Icon name="hand" size={24} color={colors.white} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reqTitle}>{t('hr.banner', { n: reqs.waiting })}</Text>
+            <Text style={styles.reqSub}>{t('hr.bannerSub')}</Text>
+          </View>
+          <Icon name="chev" size={20} color={colors.white} />
+        </Pressable>
+      ) : null}
 
       {/* "Choose a cause" feature panel */}
       <View style={styles.feat}>
@@ -118,6 +131,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.xl, padding: 14,
     borderRadius: radius.m, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, boxShadow: shadow.card,
   },
+  reqBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: space.l, marginTop: space.m, padding: space.m, borderRadius: radius.m, backgroundColor: colors.tealDark },
+  reqTitle: { fontSize: 16, fontWeight: '800', color: colors.white },
+  reqSub: { fontSize: 13, color: '#CFEFEE' },
   dot: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: colors.brick, alignItems: 'center', justifyContent: 'center' },
   dotText: { fontSize: 12, fontWeight: '800', color: colors.white },
   updatesText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.ink },

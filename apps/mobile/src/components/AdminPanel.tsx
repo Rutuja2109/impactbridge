@@ -1,4 +1,4 @@
-// Admin tools, shown in the profile drawer to people who have a document in /admins/{uid}. English only (staff screen).
+// Pieces of the Admin screen (src/screens/AdminScreen.tsx) for people who have a document in /admins/{uid}. English only (staff screen).
 // Review new posts and organisations, see who offered help on each live post, and read reports. Firestore rules do the
 // real checking; this screen only shows buttons.
 import { collection, doc, getDoc, onSnapshot, orderBy, query, updateDoc, where } from '@react-native-firebase/firestore';
@@ -11,8 +11,6 @@ import { loadSample, removeSample } from '../state/sample';
 import { useStore } from '../state/store';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
-import AdminMetrics from './AdminMetrics';
-import AdminSip from './AdminSip';
 import DonationsList from './DonationsList';
 import { Button } from './ui';
 
@@ -21,7 +19,7 @@ type OrgRow = { id: string; orgName: string; kind: string; regNo: string; contac
 type ReportRow = { id: string; targetType: string; targetId: string; reason: string; at: number };
 type Response = { uid: string; name: string; email: string; kind: string };
 
-const postsBy = (status: string) => useLive<PostRow[]>(db ? () => (cb) => onSnapshot(
+export const postsBy = (status: string) => useLive<PostRow[]>(db ? () => (cb) => onSnapshot(
   query(collection(db!, 'posts'), where('status', '==', status)),
   (s) => cb(s.docs.map((d) => { const x = d.data(); return { id: d.id, flow: x.flow, status: x.status, ownerName: x.ownerName, at: Number(x.createdAt ?? 0), data: x.data ?? {} } as PostRow; }).sort((a, b) => b.at - a.at)),
   () => {},
@@ -29,7 +27,7 @@ const postsBy = (status: string) => useLive<PostRow[]>(db ? () => (cb) => onSnap
 
 const setStatus = (id: string, status: string) => updateDoc(doc(db!, 'posts', id), { status, reviewedAt: Date.now() });
 
-function PostCard({ p, review }: { p: PostRow; review: boolean }) {
+export function PostCard({ p, review }: { p: PostRow; review: boolean }) {
   const [contact, setContact] = useState('');
   const [resp, setResp] = useState<Response[]>([]);
   const [busy, setBusy] = useState(false);
@@ -77,7 +75,7 @@ function PostCard({ p, review }: { p: PostRow; review: boolean }) {
   );
 }
 
-function Orgs() {
+export function Orgs() {
   const rows = useLive<OrgRow[]>(db ? () => (cb) => onSnapshot(
     query(collection(db!, 'orgs'), where('status', '==', 'pending')),
     (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<OrgRow, 'id'>) }))),
@@ -103,7 +101,7 @@ function Orgs() {
   );
 }
 
-function Reports() {
+export function Reports() {
   const rows = useLive<ReportRow[]>(db ? () => (cb) => onSnapshot(
     query(collection(db!, 'reports'), orderBy('at', 'desc')),
     (s) => cb(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ReportRow, 'id'>) }))),
@@ -124,7 +122,7 @@ function Reports() {
   );
 }
 
-function SampleData() {
+export function SampleData() {
   const { user, toast } = useStore();
   const [busy, setBusy] = useState(false);
   const run = (job: () => Promise<number>, done: string) => { setBusy(true); job().then((n) => toast(`${done}: ${n}`)).catch(() => toast('Could not finish. Publish the latest rules.')).finally(() => setBusy(false)); };
@@ -136,25 +134,6 @@ function SampleData() {
         <View style={styles.flex}><Button label="Add samples" small block disabled={busy} onPress={() => user && run(() => loadSample(user), 'Added')} /></View>
         <View style={styles.flex}><Button label="Remove samples" small block variant="ghost" disabled={busy} onPress={() => run(removeSample, 'Removed')} /></View>
       </View>
-    </>
-  );
-}
-
-export default function AdminPanel() {
-  const pending = postsBy('pending');
-  const live = postsBy('approved');
-  return (
-    <>
-      <AdminMetrics />
-      <Text style={styles.h}>Posts to review ({pending.length})</Text>
-      {pending.length ? null : <Text style={styles.meta}>Nothing waiting.</Text>}
-      {pending.map((p) => <PostCard key={p.id} p={p} review />)}
-      <Orgs />
-      <Text style={styles.h}>Live posts ({live.length})</Text>
-      {live.map((p) => <PostCard key={p.id} p={p} review={false} />)}
-      <Reports />
-      <AdminSip />
-      <SampleData />
     </>
   );
 }

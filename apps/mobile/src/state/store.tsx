@@ -13,7 +13,7 @@ import type { User } from '../screens/Welcome';
 import { freshPost, type Flow, type PostState } from './post';
 
 export type TabId = 'home' | 'discover' | 'community' | 'impact';
-export type Route = { name: 'project'; id: string } | { name: 'campaign'; id: string } | { name: 'post'; flow: Flow };
+export type Route = { name: 'project'; id: string } | { name: 'campaign'; id: string } | { name: 'post'; flow: Flow } | { name: 'admin' };
 export type Sheet =
   | { kind: 'post' }
   | { kind: 'updates' }

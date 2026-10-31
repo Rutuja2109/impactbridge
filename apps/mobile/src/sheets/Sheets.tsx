@@ -12,6 +12,7 @@ import LiveDonateSheet from './LiveDonateSheet';
 import { inr } from '../format';
 import { useMyGives } from '../state/donations';
 import { markFeedSeen, useFeed } from '../state/feed';
+import { useHelpRequests } from '../state/requests';
 import { report, respond } from '../state/posts';
 import { Rich, useT } from '../i18n';
 import type { Flow } from '../state/post';
@@ -54,6 +55,7 @@ function UpdatesSheet() {
   const { closeSheet, open, notes, markRead, user } = useStore();
   const gives = useMyGives(firebaseReady ? user?.uid : undefined).filter((g) => g.status !== 'pledged');
   const feed = useFeed(firebaseReady ? user?.uid : undefined).items;
+  const reqs = useHelpRequests(firebaseReady ? user?.uid : undefined).items.filter((r) => r.status === 'new').slice(0, 10);
   const { goTab } = useStore();
   useEffect(() => { markRead(); if (firebaseReady) markFeedSeen(); }, [markRead]);
   const items = campaigns.flatMap((c) => c.updates.map((u) => ({ c, u }))).sort((a, b) => a.u.ago - b.u.ago).slice(0, 8);
@@ -63,6 +65,14 @@ function UpdatesSheet() {
       {notes.map((n) => (
         <View key={n.id} style={styles.update}><Text style={s.note}>{t(n.key, n.p)}</Text></View>
       ))}
+      {firebaseReady && reqs.length ? <Text style={styles.h3}>{t('hr.title')}</Text> : null}
+      {firebaseReady ? reqs.map((r) => (
+        <Pressable key={r.id} onPress={() => { closeSheet(); goTab('impact'); }} accessibilityRole="button" style={styles.update}>
+          <Text style={styles.when}>{t(r.kind === 'volunteer' ? 'hr.vol' : 'hr.items')}</Text>
+          <Text style={styles.updTitle}>{t('hr.line', { n: r.name || t('hr.someone') })}</Text>
+          <Text style={s.note} numberOfLines={2}>{r.postTitle}</Text>
+        </Pressable>
+      )) : null}
       {firebaseReady && feed.length ? <Text style={styles.h3}>{t('fd.title')}</Text> : null}
       {firebaseReady ? feed.map((f) => (
         <Pressable key={`${f.kind}-${f.id}`} onPress={() => { if (f.kind === 'community') { closeSheet(); goTab('community'); } else open({ name: f.kind, id: f.id }); }} accessibilityRole="button" style={styles.update}>
@@ -74,7 +84,7 @@ function UpdatesSheet() {
       {gives.map((g) => (
         <View key={g.id} style={styles.update}><Text style={s.note}>{t(g.status === 'received' ? 'nt.gave.ok' : 'nt.gave.no', { c: g.title, a: inr(g.amount) })}</Text></View>
       ))}
-      {firebaseReady && !notes.length && !gives.length && !feed.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
+      {firebaseReady && !notes.length && !gives.length && !feed.length && !reqs.length ? <Text style={s.note}>{t('upd.none')}</Text> : null}
       {items.map(({ c, u }, i) => (
         <Pressable key={`${c.id}-${i}`} onPress={() => open({ name: 'campaign', id: c.id })} accessibilityRole="button" style={styles.update}>
           <Text style={styles.when}>{t('cd.ago', { n: u.ago })}</Text>

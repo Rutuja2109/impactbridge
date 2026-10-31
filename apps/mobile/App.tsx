@@ -16,6 +16,8 @@ import { useLiveSync } from './src/state/posts';
 import * as Notifications from 'expo-notifications';
 import { LangProvider, useT } from './src/i18n';
 import { useFeed } from './src/state/feed';
+import { useHelpRequests } from './src/state/requests';
+import AdminScreen from './src/screens/AdminScreen';
 import CampaignScreen from './src/screens/CampaignScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
 import DiscoverScreen from './src/screens/DiscoverScreen';
@@ -50,6 +52,17 @@ function Shell() {
     AsyncStorage.getItem(USER_KEY).then((v) => { if (v) setUser(JSON.parse(v) as User); }).catch(() => {}).finally(() => setLoaded(true));
   }, [setUser]);
   const { showSheet } = useStore();
+  const reqList = useHelpRequests(firebaseReady ? user?.uid : undefined).items;
+  const lastReq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!firebaseReady || !user) return;
+    const newest = reqList.reduce((m, r) => Math.max(m, r.at), 0);
+    if (lastReq.current !== null && newest > lastReq.current) {
+      const r = reqList.find((x) => x.at === newest);
+      if (r) toast(t('hr.toast', { n: r.name || t('hr.someone'), k: t(r.kind === 'volunteer' ? 'hr.volShort' : 'hr.itemsShort') }));
+    }
+    if (reqList.length || lastReq.current === null) lastReq.current = Math.max(newest, lastReq.current ?? 0);
+  }, [reqList]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!firebaseReady) return undefined;
     const open = (d: Record<string, unknown> | undefined) => { if (d?.sipId && d.sipPost) showSheet({ kind: 'donate', id: String(d.sipPost), sip: String(d.sipId) }); };
@@ -73,6 +86,7 @@ function Shell() {
   if (top?.name === 'project') screen = <ProjectScreen key={top.id} id={top.id} />;
   else if (top?.name === 'campaign') screen = <CampaignScreen key={top.id} id={top.id} />;
   else if (top?.name === 'post') screen = <PostScreen key={top.flow} flow={top.flow} />;
+  else if (top?.name === 'admin') screen = <AdminScreen />;
   else if (tab === 'discover') screen = <DiscoverScreen />;
   else if (tab === 'community') screen = <CommunityScreen />;
   else if (tab === 'impact') screen = <ImpactScreen />;

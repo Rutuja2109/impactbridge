@@ -91,6 +91,8 @@ service cloud.firestore {
       }
       // Offers of help: the person writes their own; the post's author can read them.
       match /responses/{uid} {
+        allow update: if signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'contactedAt']);
         allow delete: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
         allow create: if signedIn() && request.auth.uid == uid;
         allow read: if signedIn() && (request.auth.uid == uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid || isAdmin());

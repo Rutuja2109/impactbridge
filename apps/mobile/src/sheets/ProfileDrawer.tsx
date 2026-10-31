@@ -6,7 +6,6 @@ import { Alert, Animated, Linking, Modal, Pressable, ScrollView, Share, StyleShe
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Icon, { type IconName } from '../components/Icon';
-import AdminPanel from '../components/AdminPanel';
 import { Button, Notice } from '../components/ui';
 import { myVolunteering } from '../data';
 import { PHOTOS } from '../data/photos';
@@ -23,7 +22,7 @@ import { firebaseReady } from '../firebase';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
 
-type View_ = 'menu' | 'support' | 'legal' | 'admin' | 'account';
+type View_ = 'menu' | 'support' | 'legal' | 'account';
 
 export default function ProfileDrawer() {
   const { t } = useT();
@@ -63,7 +62,6 @@ export default function ProfileDrawer() {
         <Button label={t('n.del.btn')} variant="ghost" block disabled={typed.trim().toUpperCase() !== "DELETE"} onPress={() => confirmDelete()} />
       </>
     )],
-    admin: ['Admin', <AdminPanel key="admin" />],
     support: [t('n.support'), (
       <>
         <Notice tone="blue" text={t('n.sup.d')} />
@@ -92,7 +90,7 @@ export default function ProfileDrawer() {
     ['chart', t('n.myCerts'), toImpact],
     ['bell', t('n.support'), () => setView('support')],
     ...(firebaseReady && store.user?.uid ? [['people', t('ac.title'), () => { setTyped(''); setView('account'); }] as [IconName, string, () => void]] : []),
-    ...(isAdmin ? [['check', 'Admin', () => setView('admin')] as [IconName, string, () => void]] : []),
+    ...(isAdmin ? [['chart', 'Admin', () => store.open({ name: 'admin' })] as [IconName, string, () => void]] : []),
     ['share', t('n.refer'), () => { Share.share({ message: t('n.referText') }).catch(() => undefined); }],
   ];
 

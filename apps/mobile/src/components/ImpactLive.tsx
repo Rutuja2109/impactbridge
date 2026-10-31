@@ -2,7 +2,7 @@
 // waits for review), their giving with the organiser's confirmation, tiered badges and certificates. Everything is read live
 // from their account, and any badge or certificate can be shared as a picture.
 import * as Sharing from 'expo-sharing';
-import { useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View, findNodeHandle } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
@@ -12,9 +12,11 @@ import { TIER_COLOR, TIER_SOFT, certNo, liveStats, type LiveBadge, type LiveCert
 import { useJoined } from '../state/communities';
 import { useMyGives, type Give } from '../state/donations';
 import { useMyHelps, useMyPosts, type MyPost } from '../state/mine';
+import { markRequestsSeen } from '../state/requests';
 import { stopSip, useMySips } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
+import HelpRequests from './HelpRequests';
 import Icon, { type IconName } from './Icon';
 import { LogoMark } from './Logo';
 import MyPostSheet from './MyPostSheet';
@@ -122,6 +124,7 @@ export default function ImpactLive() {
   const [open, setOpen] = useState<MyPost | null>(null);
   const card = useRef<ComponentRef<typeof View>>(null);
 
+  useEffect(() => { markRequestsSeen(); }, []);
   const s = liveStats({ posts, helps, joined: joined.length, gives });
   const share = () => {
     if (!shown) return;
@@ -149,6 +152,8 @@ export default function ImpactLive() {
           <View key={k} style={styles.tile}><Text style={styles.tileN}>{n}</Text><Text style={styles.tileL}>{t(k)}</Text></View>
         ))}
       </View>
+
+      <HelpRequests />
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.imp.posts')}</Text>
