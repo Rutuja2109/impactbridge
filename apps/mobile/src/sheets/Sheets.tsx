@@ -11,6 +11,7 @@ import { campaignOf, campaignReceived, campaigns, fundPct, fundsOfOrg, orgOf, pl
 import { firebaseReady } from '../firebase';
 import HelpOffer from './HelpOffer';
 import LiveDonateSheet from './LiveDonateSheet';
+import MonthlySheet from './MonthlySheet';
 import { inr } from '../format';
 import { useMyGives } from '../state/donations';
 import { markFeedSeen, useFeed } from '../state/feed';
@@ -219,9 +220,10 @@ export default function SheetHost() {
     case 'org': return <OrgSheet id={sheet.id} />;
     case 'share': return <ShareSheet id={sheet.id} />;
     case 'sip': return <SipSheet cause={sheet.cause} />;
+    case 'monthly': return <MonthlySheet id={sheet.id} sip={sheet.sip} />;
     case 'profile': return <ProfileDrawer />;
     case 'filters': return <FilterSheet />;
-    case 'donate': return campaignOf(sheet.id) ? (firebaseReady ? <LiveDonateSheet id={sheet.id} sip={sheet.sip} /> : <DonateSheet id={sheet.id} />) : null;
+    case 'donate': return campaignOf(sheet.id) ? (firebaseReady ? <LiveDonateSheet id={sheet.id} /> : <DonateSheet id={sheet.id} />) : null;
   }
 }
 

@@ -37,10 +37,11 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
     const live = sips.filter((x) => x.status === 'active' || x.status === 'authenticated');
     const perPost = new Map<string, { title: string; collected: number; passed: number; donors: Set<string> }>();
     sips.forEach((x) => {
-      const r = perPost.get(x.postId) ?? { title: x.title, collected: 0, passed: 0, donors: new Set<string>() };
+      const key = x.causeId || x.postId;
+      const r = perPost.get(key) ?? { title: x.title, collected: 0, passed: 0, donors: new Set<string>() };
       r.collected += x.totalPaid || 0;
       if (x.status === 'active') r.donors.add(x.id);
-      perPost.set(x.postId, r);
+      perPost.set(key, r);
     });
     payouts.forEach((p) => { const r = perPost.get(p.postId); if (r) r.passed += p.amount; });
     return { active: live.length, monthly: live.reduce((a, x) => a + x.amount, 0), collected: sips.reduce((a, x) => a + (x.totalPaid || 0), 0), perPost: [...perPost.entries()] };
@@ -61,9 +62,9 @@ export default function AdminSip({ part }: { part: 'settings' | 'money' }) {
     <View>
       <Text style={styles.h}>Monthly giving (SIP)</Text>
       <View style={styles.card}>
-        <Text style={styles.title}>Who receives monthly gifts</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Receiver's name (donors see this)" placeholderTextColor={colors.slate} />
-        <TextInput style={styles.input} value={upi} onChangeText={setUpi} placeholder="UPI ID donors pay to, e.g. name@okbank" placeholderTextColor={colors.slate} autoCapitalize="none" />
+        <Text style={styles.title}>Monthly giving: on or off</Text>
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Fallback receiver's name (old plans only)" placeholderTextColor={colors.slate} />
+        <TextInput style={styles.input} value={upi} onChangeText={setUpi} placeholder="Fallback UPI ID (old plans only)" placeholderTextColor={colors.slate} autoCapitalize="none" />
         <TextInput style={styles.input} value={note} onChangeText={setNote} placeholder="Private note (optional)" placeholderTextColor={colors.slate} />
         <View style={styles.row}>
           <View style={styles.flex}><Button label="Reminder mode (free)" small block variant={mode === 'reminder' ? 'primary' : 'ghost'} onPress={() => setMode('reminder')} /></View>

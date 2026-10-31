@@ -130,6 +130,17 @@ service cloud.firestore {
       allow read, create, delete: if signedIn() && request.auth.uid == uid;
     }
 
+    // Monthly giving causes (Health, Education ...): set up by an admin, read by everyone signed in. Each person giving monthly adds
+    // their own small document under donors/ so the card can show how many monthly donors it has.
+    match /sipCauses/{cid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+      match /donors/{uid} {
+        allow read: if signedIn();
+        allow create, delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
     // Monthly giving (SIP). Only the server (Cloud Functions) creates and changes these, after Razorpay confirms; people can only read their own.
     match /sips/{sid} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());

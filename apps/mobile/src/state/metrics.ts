@@ -60,7 +60,7 @@ export function useMetrics(tick: number) {
       sipCharges: n(collectionGroup(db!, 'charges')),
       sipPaid: n(query(collection(db!, 'sipPayments'), where('status', '==', 'received'))),
       sipRun: () => getDocs(query(collection(db!, 'sips'), where('status', '==', 'active'))).then((s) => s.docs.reduce((a, d) => a + Number(d.data().amount ?? 0), 0)),
-      sipCollected: () => getAggregateFromServer(posts, { t: sum('sipTotal') }).then((s) => Number(s.data().t ?? 0)),
+      sipCollected: () => Promise.all([getAggregateFromServer(posts, { t: sum('sipTotal') }).then((s) => Number(s.data().t ?? 0)), getAggregateFromServer(collection(db!, 'sipCauses'), { t: sum('total') }).then((s) => Number(s.data().t ?? 0))]).then(([a, b]) => a + b),
       ...Object.fromEntries(CAUSES.map((c) => [`cause_${c}`, n(query(posts, where('data.cat', '==', c)))])),
     };
     const keys = Object.keys(jobs);

@@ -14,6 +14,7 @@ import { campaignReceived, campaigns, campaignSupporters, categories, projects, 
 import { inr } from '../format';
 import { firebaseReady } from '../firebase';
 import { useT } from '../i18n';
+import MonthlyGiving from '../components/MonthlyGiving';
 import { useFeed } from '../state/feed';
 import { useHelpRequests, useMyTickets } from '../state/requests';
 import { useStore } from '../state/store';
@@ -108,7 +109,7 @@ export default function HomeScreen() {
         </>
       ) : null}
 
-      {firebaseReady ? null : <SipPanel />}
+      {firebaseReady ? <MonthlyGiving /> : <SipPanel />}
 
       {stories.length ? (
         <>

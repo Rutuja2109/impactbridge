@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AdminCauses from '../components/AdminCauses';
 import AdminSip from '../components/AdminSip';
 import { ViewAll, useCap } from '../components/Capped';
 import { Orgs, PostCard, Reports, SampleData, postsBy } from '../components/AdminPanel';
@@ -219,6 +220,7 @@ export default function AdminScreen() {
 
         {tab === 'setup' ? (
           <>
+            <AdminCauses />
             <AdminSip part="settings" />
             <SampleData />
           </>

@@ -11,12 +11,13 @@ import { Platform } from 'react-native';
 import { auth, db } from '../firebase';
 import type { User } from '../screens/Welcome';
 import { useLive } from './communities';
+import { joinCause, leaveCause } from './sipCauses';
 
 export type SipStatus = 'created' | 'authenticated' | 'active' | 'pending' | 'halted' | 'paused' | 'cancelled' | 'completed';
-export type Sip = { id: string; postId: string; title: string; amount: number; status: SipStatus; mode?: 'reminder' | 'autopay'; day?: number; paidCount: number; totalPaid: number; nextChargeAt?: number; createdAt: number };
+export type Sip = { id: string; uid?: string; postId: string; causeId?: string; title: string; amount: number; status: SipStatus; mode?: 'reminder' | 'autopay'; day?: number; paidCount: number; totalPaid: number; nextChargeAt?: number; createdAt: number };
 export type SipMode = 'reminder' | 'autopay';
 export type SipConfig = { enabled: boolean; mode: SipMode; payeeName: string; payeeUpi: string; payeeHint: string };
-export type SipPayment = { id: string; sipId: string; uid: string; name: string; postId: string; title: string; amount: number; status: 'pledged' | 'received' | 'not_received'; at: number };
+export type SipPayment = { id: string; sipId: string; uid: string; name: string; postId: string; causeId?: string; title: string; amount: number; status: 'pledged' | 'received' | 'not_received'; at: number };
 
 export const SIP_MIN = 100;
 export const SIP_MAX = 15000;
@@ -91,21 +92,22 @@ async function dropReminder(sipId: string) {
   } catch { /* nothing to cancel */ }
 }
 
-/** Reminder mode: saves the monthly plan. Returns its id. */
-export async function startReminder(u: User, postId: string, title: string, amount: number, day: number): Promise<string> {
+/** Reminder mode: saves the monthly plan for a cause (or, for old plans, a fundraiser). Returns its id. */
+export async function startReminder(u: User, target: { causeId?: string; postId?: string }, title: string, amount: number, day: number): Promise<string> {
   const ref = await addDoc(collection(db!, 'sips'), {
-    uid: u.uid, name: u.name, email: u.email, postId, title, amount, mode: 'reminder', day, status: 'active', paidCount: 0, totalPaid: 0, createdAt: Date.now(),
+    uid: u.uid, name: u.name, email: u.email, postId: target.postId ?? '', causeId: target.causeId ?? '', title, amount, mode: 'reminder', day, status: 'active', paidCount: 0, totalPaid: 0, createdAt: Date.now(),
   });
+  if (target.causeId) await joinCause(target.causeId, u.uid!, u.name).catch(() => undefined);
   return ref.id;
 }
 
 /** The donor says they paid this month's gift in their UPI app; the admin confirms it. */
-export async function recordMonthlyPayment(u: User, sip: { id: string; postId: string; title: string; amount: number }) {
+export async function recordMonthlyPayment(u: User, sip: { id: string; postId?: string; causeId?: string; title: string; amount: number }) {
   const at = Date.now();
   const pay = doc(collection(db!, 'sipPayments'));
   const b = writeBatch(db!);
-  b.set(pay, { sipId: sip.id, uid: u.uid, name: u.name, postId: sip.postId, title: sip.title, amount: sip.amount, status: 'pledged', at });
-  b.set(doc(db!, 'users', u.uid!, 'gives', pay.id), { postId: sip.postId, title: sip.title, amount: sip.amount, status: 'pledged', via: 'sip', at });
+  b.set(pay, { sipId: sip.id, uid: u.uid, name: u.name, postId: sip.postId ?? '', causeId: sip.causeId ?? '', title: sip.title, amount: sip.amount, status: 'pledged', at });
+  b.set(doc(db!, 'users', u.uid!, 'gives', pay.id), { postId: sip.postId ?? '', causeId: sip.causeId ?? '', title: sip.title, amount: sip.amount, status: 'pledged', via: 'sip', at });
   b.set(doc(db!, 'users', u.uid!), { gave: true }, { merge: true });
   await b.commit();
 }
@@ -114,6 +116,7 @@ export async function recordMonthlyPayment(u: User, sip: { id: string; postId: s
 export async function stopSip(sip: Sip) {
   if (sip.mode === 'reminder') {
     await updateDoc(doc(db!, 'sips', sip.id), { status: 'cancelled', cancelledAt: Date.now() });
+    if (sip.causeId && sip.uid) await leaveCause(sip.causeId, sip.uid).catch(() => undefined);
     await dropReminder(sip.id);
     return;
   }
@@ -137,7 +140,8 @@ export async function settleSipPayment(p: SipPayment, received: boolean) {
   b.update(doc(db!, 'users', p.uid, 'gives', p.id), { status: received ? 'received' : 'not_received', confirmedAt: now });
   if (received) {
     b.update(doc(db!, 'sips', p.sipId), { paidCount: increment(1), totalPaid: increment(p.amount), lastChargedAt: now });
-    b.update(doc(db!, 'posts', p.postId), { sipTotal: increment(p.amount), sipCharges: increment(1) });
+    if (p.causeId) b.update(doc(db!, 'sipCauses', p.causeId), { total: increment(p.amount), payments: increment(1) });
+    else if (p.postId) b.update(doc(db!, 'posts', p.postId), { sipTotal: increment(p.amount), sipCharges: increment(1) });
   }
   await b.commit();
 }

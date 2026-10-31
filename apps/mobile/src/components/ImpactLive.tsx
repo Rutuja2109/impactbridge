@@ -223,7 +223,7 @@ export default function ImpactLive() {
               </View>
               {live ? (
                 <View style={styles.sipBtns}>
-                  {x.mode === 'reminder' ? <Button small label={t('sip.payMonth')} onPress={() => store.showSheet({ kind: 'donate', id: x.postId, sip: x.id })} /> : null}
+                  {x.mode === 'reminder' ? <Button small label={t('sip.payMonth')} onPress={() => store.showSheet({ kind: 'monthly', id: x.causeId ?? '', sip: x.id })} /> : null}
                   <Button small variant="ghost" label={t('sip.stop')} onPress={() => Alert.alert(t('sip.stopT'), t('sip.stopD'), [
                     { text: t('c.close'), style: 'cancel' },
                     { text: t('sip.stop'), style: 'destructive', onPress: () => { stopSip(x).then(() => store.toast(t('sip.stopped'))).catch((e: Error) => store.toast(e.message)); } },

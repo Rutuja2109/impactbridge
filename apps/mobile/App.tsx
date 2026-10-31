@@ -67,7 +67,7 @@ function Shell() {
   }, [owned, offered]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!firebaseReady) return undefined;
-    const open = (d: Record<string, unknown> | undefined) => { if (d?.sipId && d.sipPost) showSheet({ kind: 'donate', id: String(d.sipPost), sip: String(d.sipId) }); };
+    const open = (d: Record<string, unknown> | undefined) => { if (d?.sipId) showSheet({ kind: 'monthly', id: String(d.sipPost ?? ''), sip: String(d.sipId) }); };
     const sub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data as Record<string, unknown> | undefined));
     Notifications.getLastNotificationResponseAsync().then((r) => open(r?.notification.request.content.data as Record<string, unknown> | undefined)).catch(() => undefined);
     return () => sub.remove();

@@ -18,7 +18,8 @@ export type Sheet =
   | { kind: 'post' }
   | { kind: 'updates' }
   | { kind: 'help'; id: string }
-  | { kind: 'donate'; id: string; sip?: string }
+  | { kind: 'donate'; id: string }
+  | { kind: 'monthly'; id: string; sip?: string }
   | { kind: 'report'; id?: string }
   | { kind: 'share'; id: string }
   | { kind: 'sip'; cause?: CauseId }
