@@ -110,7 +110,7 @@ function HelpSheet({ id }: { id: string }) {
   return (
     <Sheet visible onClose={closeSheet} title={t('help.title')} subtitle={p.title}>
       {firebaseReady ? null : <Option icon="coin" title={t('help.pledgeT')} desc={t('help.pledgeD')} onPress={() => pick('help.pledgeToast')} />}
-      <Option icon="hand" title={t('help.volT')} desc={t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast', 'volunteer')} />
+      <Option icon="hand" title={t('help.volT')} desc={firebaseReady && p.volsNeeded - p.vols <= 0 ? t('hr.volOpen') : t('help.volD', { n: p.volsNeeded - p.vols })} onPress={() => pick('help.volToast', 'volunteer')} />
       <Option icon="tool" title={t('help.giveT')} desc={t('help.giveD')} onPress={() => pick('help.giveToast', 'items')} />
       <Text style={s.note}>{firebaseReady ? t('n.rs.consent') : t('help.note')}</Text>
     </Sheet>

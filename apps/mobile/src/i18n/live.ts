@@ -4,6 +4,7 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'hr.volOpen': 'Offer your time. The organiser will contact you.',
     'hr.title': 'Help requests',
     'hr.sub': 'Neighbours who offered help on your posts. Reach out to them directly.',
     'hr.someone': 'A neighbour',
@@ -240,6 +241,7 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'hr.volOpen': 'अपना समय दें। आयोजक आपसे संपर्क करेंगे।',
     'hr.title': 'मदद के अनुरोध',
     'hr.sub': 'आपकी पोस्ट पर मदद देने वाले पड़ोसी। सीधे उनसे संपर्क करें।',
     'hr.someone': 'एक पड़ोसी',
@@ -476,6 +478,7 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'hr.volOpen': 'तुमचा वेळ द्या. आयोजक तुमच्याशी संपर्क करतील.',
     'hr.title': 'मदतीच्या विनंत्या',
     'hr.sub': 'तुमच्या पोस्टवर मदत देऊ केलेले शेजारी. थेट त्यांच्याशी संपर्क करा.',
     'hr.someone': 'एक शेजारी',
