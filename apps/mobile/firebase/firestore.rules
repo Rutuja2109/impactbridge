@@ -57,7 +57,7 @@ service cloud.firestore {
       allow update: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['received', 'donors']))
         || (signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'status', 'thumb', 'editedAt']));
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'status', 'thumb', 'editedAt', 'reviewNote', 'reviewKind']));
       // ^ the author may edit their own post, but only into "pending": a reviewer must approve it again.
 
       // The author's private contact: only the author can read or write it.

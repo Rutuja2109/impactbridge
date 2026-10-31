@@ -57,7 +57,8 @@ export default function MyPostSheet({ post, onClose }: { post: MyPost; onClose: 
         <Pill label={t(`n.imp.st.${st}`)} tone={st === 'approved' ? 'leaf' : st === 'rejected' ? 'brick' : 'amber'} />
         <Text style={styles.small}>{formatDate(new Date(post.at || Date.now()).toISOString().slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
       </View>
-      <Notice tone={st === 'approved' ? 'green' : st === 'rejected' ? 'red' : 'blue'} text={t(`mp.${st}`)} />
+      <Notice tone={st === 'approved' ? 'green' : st === 'rejected' ? 'red' : 'blue'} text={t(st === 'rejected' && post.kind === 'changes' ? 'mp.changes' : `mp.${st}`)} />
+      {st === 'rejected' && post.note ? <View style={styles.reason}><Text style={styles.reasonL}>{t('mp.reason')}</Text><Text style={styles.line}>{post.note}</Text></View> : null}
 
       {photos.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -99,5 +100,7 @@ const styles = StyleSheet.create({
   small: { ...type.small, color: colors.slate },
   line: { ...type.body, color: colors.ink },
   body: { ...type.body, color: colors.ink },
+  reason: { gap: 2, padding: space.m, borderRadius: radius.m, backgroundColor: colors.brickSoft },
+  reasonL: { fontSize: 12, fontWeight: '800', color: colors.brick },
   h3: { fontSize: 16, fontWeight: '800', color: colors.ink, marginTop: space.m },
 });

@@ -54,7 +54,7 @@ export async function updatePost(u: User, id: string, data: PostData): Promise<v
   }
   const pics = [...((data.cover as Attach[]) ?? []), ...((data.files as Attach[]) ?? [])];
   const thumb = pics.find((a) => a.thumb)?.thumb;
-  await updateDoc(doc(db!, 'posts', id), { data: pub, status: 'pending', editedAt: Date.now(), ...(thumb ? { thumb } : {}) });
+  await updateDoc(doc(db!, 'posts', id), { data: pub, status: 'pending', editedAt: Date.now(), reviewNote: '', reviewKind: '', ...(thumb ? { thumb } : {}) });
   await setDoc(doc(db!, 'posts', id, 'private', 'info'), { ...priv, ownerEmail: u.email });
   const old = await getDocs(collection(db!, 'posts', id, 'files'));
   await Promise.all(old.docs.map((d) => deleteDoc(d.ref)));

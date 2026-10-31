@@ -4,6 +4,12 @@ type Dict = Record<string, string>;
 
 export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
   en: {
+    'mp.reason': 'REASON FROM THE REVIEWER',
+    'mp.changes': 'The reviewer asked for changes. Tap Edit below, fix what they mention and send it again.',
+    'ip.tab.overview': 'Overview',
+    'ip.tab.help': 'Help',
+    'ip.tab.giving': 'Giving',
+    'ip.tab.badges': 'Badges',
     'tk.st.requested': 'Open',
     'tk.st.accepted': 'In progress',
     'tk.st.completed': 'Done',
@@ -314,6 +320,12 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'Please support “{t}” on GoodNeighbour:',
   },
   hi: {
+    'mp.reason': 'समीक्षक का कारण',
+    'mp.changes': 'समीक्षक ने बदलाव माँगे हैं। नीचे “बदलें” दबाएँ, बताई बातें ठीक करें और फिर भेजें।',
+    'ip.tab.overview': 'अवलोकन',
+    'ip.tab.help': 'मदद',
+    'ip.tab.giving': 'दान',
+    'ip.tab.badges': 'बैज',
     'tk.st.requested': 'खुला',
     'tk.st.accepted': 'जारी है',
     'tk.st.completed': 'पूरा',
@@ -624,6 +636,12 @@ export const LIVE: Record<'en' | 'hi' | 'mr', Dict> = {
     'sh.text': 'कृपया GoodNeighbour पर “{t}” की मदद करें:',
   },
   mr: {
+    'mp.reason': 'पुनरावलोकनकर्त्याचे कारण',
+    'mp.changes': 'पुनरावलोकनकर्त्याने बदल मागितले आहेत. खाली “बदल करा” दाबा, सांगितलेल्या गोष्टी दुरुस्त करा आणि पुन्हा पाठवा.',
+    'ip.tab.overview': 'आढावा',
+    'ip.tab.help': 'मदत',
+    'ip.tab.giving': 'देणगी',
+    'ip.tab.badges': 'बॅज',
     'tk.st.requested': 'खुले',
     'tk.st.accepted': 'सुरू आहे',
     'tk.st.completed': 'पूर्ण',

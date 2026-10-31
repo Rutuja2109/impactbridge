@@ -3,7 +3,7 @@
 // from their account, and any badge or certificate can be shared as a picture.
 import * as Sharing from 'expo-sharing';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Alert, Pressable, Share, StyleSheet, Text, View, findNodeHandle } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, findNodeHandle } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { inr } from '../format';
@@ -12,7 +12,7 @@ import { TIER_COLOR, TIER_SOFT, certNo, liveStats, type LiveBadge, type LiveCert
 import { useJoined } from '../state/communities';
 import { useMyGives, type Give } from '../state/donations';
 import { useMyHelps, useMyPosts, type MyPost } from '../state/mine';
-import { markRequestsSeen } from '../state/requests';
+import { markRequestsSeen, useHelpRequests, useMyTickets } from '../state/requests';
 import { stopSip, useMySips } from '../state/sip';
 import { useStore } from '../state/store';
 import { colors, radius, space, type } from '../theme';
@@ -105,6 +105,7 @@ function CertCard({ cert, who, uid }: { cert: LiveCert; who: string; uid?: strin
   );
 }
 
+type Tab = 'overview' | 'help' | 'giving' | 'badges';
 type Shown = { kind: 'badge'; badge: LiveBadge } | { kind: 'cert'; cert: LiveCert } | null;
 
 const certName = (c: LiveCert, t: (k: string, v?: Record<string, string | number>) => string) =>
@@ -121,6 +122,7 @@ export default function ImpactLive() {
   const joined = useJoined(uid);
   const sips = useMySips(uid).filter((x) => x.status !== 'created');
   const [shown, setShown] = useState<Shown>(null);
+  const [tab, setTab] = useState<Tab>('overview');
   const [open, setOpen] = useState<MyPost | null>(null);
   const card = useRef<ComponentRef<typeof View>>(null);
 
@@ -131,11 +133,26 @@ export default function ImpactLive() {
     const label = shown.kind === 'badge' ? `${t(`ab.${shown.badge.id}`)} · ${t(`tier.${shown.badge.tier}`)}` : t(shown.cert.kind === 'tier' ? 'ct.t.tier' : shown.cert.kind === 'gift' ? 'ct.t.gift' : 'ct.t.level');
     shareView(card.current, t('n.shareMsg', { b: label }));
   };
+  const owned = useHelpRequests(uid);
+  const offered = useMyTickets(uid);
+  const helpCount = owned.waiting + offered.waiting;
+  const givingCount = sips.filter((x) => ['active', 'authenticated', 'pending'].includes(x.status)).length + gives.filter((g) => g.status === 'pledged').length;
   const toNext = s.nextNeed ? s.nextNeed - s.points : 0;
   const tiles: [string | number, string][] = [[s.counts.posts, 'n.imp.tPosts'], [s.counts.helps, 'n.imp.tHelp'], [inr(s.counts.rupees), 'ip.tGiven'], [s.counts.joined, 'n.imp.tComm']];
 
   return (
     <>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips}>
+        {([['overview', 'ip.tab.overview', 0], ['help', 'ip.tab.help', helpCount], ['giving', 'ip.tab.giving', givingCount], ['badges', 'ip.tab.badges', s.badges.filter((b) => b.tier > 0).length]] as [Tab, string, number][]).map(([id, key, n]) => (
+          <Pressable key={id} onPress={() => setTab(id)} accessibilityRole="tab" accessibilityState={{ selected: tab === id }} style={[styles.chip, tab === id && styles.chipOn]}>
+            <Text style={[styles.chipText, tab === id && styles.chipTextOn]}>{t(key)}</Text>
+            {n > 0 ? <View style={[styles.chipCount, tab === id && styles.chipCountOn]}><Text style={[styles.chipCountText, tab === id && styles.chipCountTextOn]}>{n}</Text></View> : null}
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {tab === 'overview' ? (
+        <>
       <View style={styles.levelCard}>
         <Medal icon={LEVEL_ICON[s.level]} tier={Math.max(1, Math.min(3, s.level)) as Tier} size={64} />
         <View style={styles.grow}>
@@ -152,9 +169,6 @@ export default function ImpactLive() {
           <View key={k} style={styles.tile}><Text style={styles.tileN}>{n}</Text><Text style={styles.tileL}>{t(k)}</Text></View>
         ))}
       </View>
-
-      <HelpRequests />
-      <MyHelpTickets />
 
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.imp.posts')}</Text>
@@ -174,21 +188,19 @@ export default function ImpactLive() {
         {posts.length ? <Text style={styles.small}>{t('mp.hint')}</Text> : null}
       </View>
 
-      <View style={styles.sec}>
-        <Text accessibilityRole="header" style={styles.h2}>{t('ip.giving')}</Text>
-        {gives.length ? gives.map((g: Give) => (
-          <View key={g.id} style={styles.item}>
-            <View style={styles.grow}>
-              <Text style={styles.itemTitle} numberOfLines={2}>{g.title || '—'}</Text>
-              <Text style={styles.small}>{inr(g.amount)} · {formatDate(iso(g.at), { day: 'numeric', month: 'short' })}</Text>
-              <Text style={[styles.gv, g.status === 'received' && styles.gvOk, g.status === 'not_received' && styles.gvNo]}>
-                {g.via === 'sip' ? `✓ ${t('gv.sip')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
-              </Text>
-            </View>
-          </View>
-        )) : <Text style={styles.small}>{t('gv.none')}</Text>}
-      </View>
+        </>
+      ) : null}
 
+      {tab === 'help' ? (
+        <>
+      <HelpRequests />
+      <MyHelpTickets />
+
+        </>
+      ) : null}
+
+      {tab === 'giving' ? (
+        <>
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('sip.title')}</Text>
         {sips.length ? sips.map((x) => {
@@ -216,6 +228,26 @@ export default function ImpactLive() {
         }) : <Text style={styles.small}>{t('sip.none')}</Text>}
       </View>
 
+      <View style={styles.sec}>
+        <Text accessibilityRole="header" style={styles.h2}>{t('ip.giving')}</Text>
+        {gives.length ? gives.map((g: Give) => (
+          <View key={g.id} style={styles.item}>
+            <View style={styles.grow}>
+              <Text style={styles.itemTitle} numberOfLines={2}>{g.title || '—'}</Text>
+              <Text style={styles.small}>{inr(g.amount)} · {formatDate(iso(g.at), { day: 'numeric', month: 'short' })}</Text>
+              <Text style={[styles.gv, g.status === 'received' && styles.gvOk, g.status === 'not_received' && styles.gvNo]}>
+                {g.via === 'sip' ? `✓ ${t('gv.sip')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'received' ? `✓ ${t('gv.ok')}${g.confirmedAt ? ` · ${formatDate(iso(g.confirmedAt), { day: 'numeric', month: 'short' })}` : ''}` : g.status === 'not_received' ? t('gv.no') : t('gv.wait')}
+              </Text>
+            </View>
+          </View>
+        )) : <Text style={styles.small}>{t('gv.none')}</Text>}
+      </View>
+
+        </>
+      ) : null}
+
+      {tab === 'badges' ? (
+        <>
       <View style={styles.sec}>
         <Text accessibilityRole="header" style={styles.h2}>{t('n.myBadges')}</Text>
         {s.badges.map((b) => {
@@ -255,6 +287,9 @@ export default function ImpactLive() {
         )) : <Text style={styles.small}>{t('n.certNone2')}</Text>}
       </View>
 
+        </>
+      ) : null}
+
       {shown ? (
         <Sheet visible onClose={() => setShown(null)} title={shown.kind === 'badge' ? t(`ab.${shown.badge.id}`) : t(shown.cert.kind === 'tier' ? 'ct.t.tier' : shown.cert.kind === 'gift' ? 'ct.t.gift' : 'ct.t.level')}>
           <View ref={card} collapsable={false} style={styles.capture}>
@@ -269,6 +304,16 @@ export default function ImpactLive() {
 }
 
 const styles = StyleSheet.create({
+  chipsWrap: { flexGrow: 0, marginTop: space.m },
+  chips: { paddingHorizontal: space.l, gap: space.s },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  chipOn: { backgroundColor: colors.tealDark, borderColor: colors.tealDark },
+  chipText: { fontSize: 14, fontWeight: '700', color: colors.slate },
+  chipTextOn: { color: colors.white },
+  chipCount: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.heart, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  chipCountOn: { backgroundColor: colors.white },
+  chipCountText: { fontSize: 11, fontWeight: '800', color: colors.white },
+  chipCountTextOn: { color: colors.tealDark },
   levelCard: { flexDirection: 'row', gap: 14, alignItems: 'center', marginHorizontal: space.l, marginTop: space.l, padding: space.l, borderRadius: radius.l, backgroundColor: colors.tealDeep },
   levelKicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.5, color: '#BFE9E7' },
   levelName: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.white },
@@ -280,7 +325,7 @@ const styles = StyleSheet.create({
   tile: { width: '48%', flexGrow: 1, backgroundColor: colors.tealSoft, borderRadius: radius.m, paddingVertical: 12, alignItems: 'center' },
   tileN: { fontSize: 26, lineHeight: 32, fontWeight: '800', color: colors.tealDeep },
   tileL: { fontSize: 12, lineHeight: 16, color: colors.tealDeep, textAlign: 'center', marginTop: 2, paddingHorizontal: 4 },
-  sec: { paddingHorizontal: space.l, marginTop: space.xl, gap: space.s },
+  sec: { paddingHorizontal: space.l, marginTop: space.l, gap: space.s },
   h2: { ...type.title, color: colors.ink },
   link: { fontSize: 15, fontWeight: '700', color: colors.tealDark },
   small: { ...type.small, color: colors.slate },

@@ -3,7 +3,7 @@
 // real checking; this screen only shows buttons.
 import { collection, doc, getDoc, onSnapshot, orderBy, query, updateDoc, where } from '@react-native-firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { db } from '../firebase';
 import { useLive } from '../state/communities';
@@ -11,64 +11,63 @@ import { loadSample, removeSample } from '../state/sample';
 import { useStore } from '../state/store';
 import { usePostPhotos } from '../state/files';
 import { colors, radius, space } from '../theme';
+import AdminReview from './AdminReview';
 import DonationsList from './DonationsList';
 import { Button } from './ui';
 
-type PostRow = { id: string; flow: string; status: string; ownerName: string; at: number; data: Record<string, string> };
+type PostRow = { id: string; ownerId: string; flow: string; status: string; ownerName: string; at: number; data: Record<string, string> };
 type OrgRow = { id: string; orgName: string; kind: string; regNo: string; contact: string; ownerEmail: string };
 type ReportRow = { id: string; targetType: string; targetId: string; reason: string; at: number };
 type Response = { uid: string; name: string; email: string; kind: string };
 
 export const postsBy = (status: string) => useLive<PostRow[]>(db ? () => (cb) => onSnapshot(
   query(collection(db!, 'posts'), where('status', '==', status)),
-  (s) => cb(s.docs.map((d) => { const x = d.data(); return { id: d.id, flow: x.flow, status: x.status, ownerName: x.ownerName, at: Number(x.createdAt ?? 0), data: x.data ?? {} } as PostRow; }).sort((a, b) => b.at - a.at)),
+  (s) => cb(s.docs.map((d) => { const x = d.data(); return { id: d.id, ownerId: String(x.ownerId ?? ''), flow: x.flow, status: x.status, ownerName: x.ownerName, at: Number(x.createdAt ?? 0), data: x.data ?? {} } as PostRow; }).sort((a, b) => b.at - a.at)),
   () => {},
 ) : null, [], [status]);
 
 const setStatus = (id: string, status: string) => updateDoc(doc(db!, 'posts', id), { status, reviewedAt: Date.now() });
 
-export function PostCard({ p, review }: { p: PostRow; review: boolean }) {
-  const [contact, setContact] = useState('');
+export function PostCard({ p, review, others = [] }: { p: PostRow; review: boolean; others?: PostRow[] }) {
   const [resp, setResp] = useState<Response[]>([]);
   const [busy, setBusy] = useState(false);
-  const photos = usePostPhotos(review ? p.id : null);
+  const [full, setFull] = useState(false);
+  const photos = usePostPhotos(p.id);
   useEffect(() => {
-    if (review) getDoc(doc(db!, 'posts', p.id, 'private', 'info')).then((s) => { const x = s.data(); setContact(x ? [x.private, x.ownerEmail].filter(Boolean).join(' · ') : ''); }).catch(() => {});
-    else return onSnapshot(collection(db!, 'posts', p.id, 'responses'), (s) => setResp(s.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Response, 'uid'>) }))), () => {});
-    return undefined;
+    if (review) return undefined;
+    return onSnapshot(collection(db!, 'posts', p.id, 'responses'), (s) => setResp(s.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<Response, 'uid'>) }))), () => {});
   }, [p.id, review]);
   const act = (status: string) => { setBusy(true); setStatus(p.id, status).catch(() => {}).finally(() => setBusy(false)); };
+  const pics = photos.filter((x) => x.field !== 'docs');
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{p.data.title || '(no title)'}</Text>
       <Text style={styles.meta}>{p.flow} · {p.data.city || '—'} · by {p.ownerName || 'unknown'} · {new Date(p.at).toLocaleDateString()}</Text>
-      <Text style={styles.body} numberOfLines={review ? 8 : 2}>{(p.data.desc || p.data.story || '').trim()}</Text>
-      {photos.length ? (
+      <Text style={styles.body} numberOfLines={review ? 3 : 2}>{(p.data.desc || p.data.story || '').trim()}</Text>
+      {pics.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {photos.map((ph) => <Image key={ph.id} source={{ uri: `data:image/jpeg;base64,${ph.b64}` }} style={styles.thumb} />)}
+          {pics.map((ph) => <Image key={ph.id} source={{ uri: `data:image/jpeg;base64,${ph.b64}` }} style={styles.thumb} />)}
         </ScrollView>
-      ) : null}
-      {p.data.lat ? (
-        <>
-          <Text style={styles.meta}>📍 {p.data.geoName || `${p.data.lat}, ${p.data.lng}`}</Text>
-          <Text style={styles.meta}>{p.data.locVia === 'gps' ? 'Poster was at this spot (GPS matched)' : p.data.locDist ? `Poster's phone was ${Number(p.data.locDist) >= 1000 ? `${(Number(p.data.locDist) / 1000).toFixed(1)} km` : `${p.data.locDist} m`} from the pin` : p.data.locVia === 'search' ? 'Found by map search, GPS not used' : 'Placed on the map, GPS not used'}</Text>
-          <Button label="Open in Google Maps" small variant="ghost" onPress={() => { Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.data.lat},${p.data.lng}`).catch(() => {}); }} />
-        </>
       ) : null}
       {review ? (
         <>
-          {contact ? <Text style={styles.meta}>Private contact: {contact}</Text> : null}
+          <Button label="Open full review" block onPress={() => setFull(true)} />
           <View style={styles.row}>
-            <View style={styles.flex}><Button label="Approve" small block disabled={busy} onPress={() => act('approved')} /></View>
-            <View style={styles.flex}><Button label="Reject" small block variant="ghost" disabled={busy} onPress={() => act('rejected')} /></View>
+            <View style={styles.flex}><Button label="Quick approve" small block variant="ghost" disabled={busy} onPress={() => act('approved')} /></View>
           </View>
+          <Text style={styles.meta}>Open the full review to see every detail, the checks, the author and to give a reason if you reject.</Text>
+          {full ? <AdminReview post={p} others={others} onClose={() => setFull(false)} /> : null}
         </>
       ) : (
         <>
           {p.flow === 'fund' ? <DonationsList postId={p.id} /> : null}
-          <Text style={styles.meta}>{resp.length} offer{resp.length === 1 ? '' : 's'} of help</Text>
+          <Text style={styles.meta}>{resp.length} help ticket{resp.length === 1 ? '' : 's'}</Text>
           {resp.map((r) => <Text key={r.uid} style={styles.meta}>• {r.name} ({r.kind}) {r.email}</Text>)}
-          <Button label="Take down" small variant="ghost" disabled={busy} onPress={() => act('rejected')} />
+          <View style={styles.row}>
+            <View style={styles.flex}><Button label="Details" small block variant="ghost" onPress={() => setFull(true)} /></View>
+            <View style={styles.flex}><Button label="Take down" small block variant="ghost" disabled={busy} onPress={() => act('rejected')} /></View>
+          </View>
+          {full ? <AdminReview post={p} others={others} onClose={() => setFull(false)} /> : null}
         </>
       )}
     </View>

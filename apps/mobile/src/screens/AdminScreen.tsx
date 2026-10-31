@@ -195,7 +195,7 @@ export default function AdminScreen() {
         {tab === 'review' ? (
           <>
             <Text style={s.h2}>Posts to review ({pending.length})</Text>
-            {pending.length ? pending.map((p) => <PostCard key={p.id} p={p} review />) : <Text style={s.empty}>Nothing waiting. Nice work.</Text>}
+            {pending.length ? pending.map((p) => <PostCard key={p.id} p={p} review others={[...pending, ...live]} />) : <Text style={s.empty}>Nothing waiting. Nice work.</Text>}
             <Orgs />
             <Reports />
           </>
@@ -204,7 +204,7 @@ export default function AdminScreen() {
         {tab === 'live' ? (
           <>
             <Text style={s.h2}>Live posts ({live.length})</Text>
-            {live.length ? live.map((p) => <PostCard key={p.id} p={p} review={false} />) : <Text style={s.empty}>No live posts yet. Approve one from Review, or add samples in Setup.</Text>}
+            {live.length ? live.map((p) => <PostCard key={p.id} p={p} review={false} others={[...pending, ...live]} />) : <Text style={s.empty}>No live posts yet. Approve one from Review, or add samples in Setup.</Text>}
           </>
         ) : null}
 

@@ -65,7 +65,7 @@ export function MyHelpTickets() {
 }
 
 const styles = StyleSheet.create({
-  sec: { paddingHorizontal: space.l, marginTop: space.xl, gap: space.s },
+  sec: { paddingHorizontal: space.l, marginTop: space.l, gap: space.s },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.s },
   h2: { ...type.title, color: colors.ink },
   count: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: colors.heart, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },

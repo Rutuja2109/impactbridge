@@ -5,14 +5,14 @@ import { collection, onSnapshot, query, where } from '@react-native-firebase/fir
 import { db } from '../firebase';
 import { useLive } from './communities';
 
-export type MyPost = { id: string; title: string; flow: 'problem' | 'project' | 'fund'; status: string; at: number };
+export type MyPost = { id: string; title: string; flow: 'problem' | 'project' | 'fund'; status: string; at: number; note?: string; kind?: string };
 export type MyHelp = { id: string; title: string; kind: string; at: number };
 
 export const useMyPosts = (uid?: string) => useLive<MyPost[]>(
   db && uid ? () => (cb) => onSnapshot(
     query(collection(db!, 'posts'), where('ownerId', '==', uid)),
     (s) => cb(s.docs
-      .map((d) => { const x = d.data(); return { id: d.id, title: String(x.data?.title ?? ''), flow: x.flow, status: String(x.status ?? 'pending'), at: Number(x.createdAt ?? 0) } as MyPost; })
+      .map((d) => { const x = d.data(); return { id: d.id, title: String(x.data?.title ?? ''), flow: x.flow, status: String(x.status ?? 'pending'), at: Number(x.createdAt ?? 0), note: String(x.reviewNote ?? ''), kind: String(x.reviewKind ?? '') } as MyPost; })
       .sort((a, b) => b.at - a.at)),
     () => {},
   ) : null, [], [uid]);

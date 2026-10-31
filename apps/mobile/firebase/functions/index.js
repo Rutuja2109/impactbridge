@@ -96,6 +96,18 @@ exports.onPostApproved = onDocumentUpdated('posts/{pid}', async (event) => {
   await push(everyone, `New ${kind} in ${after.data?.city || 'your area'}`, `${after.data?.title || 'A neighbour needs help'}. Tap to see how you can help.`, { pid: event.params.pid });
 });
 
+// A reviewer did not approve a post (asked for changes or rejected it): tell the author with the reason.
+exports.onPostNotApproved = onDocumentUpdated('posts/{pid}', async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (before.status === 'rejected' || after.status !== 'rejected') return;
+  const changes = after.reviewKind === 'changes';
+  const title = changes ? 'Changes needed on your post' : 'Your post was not approved';
+  const body = `"${after.data?.title || 'Your post'}": ${after.reviewNote || 'Open the app to see why.'}`;
+  await db.collection(`users/${after.ownerId}/notifications`).add({ title, body, pid: event.params.pid, read: false, at: Date.now() });
+  await push(await tokensFor([after.ownerId]), title, body, { pid: event.params.pid });
+});
+
 // The organiser confirmed (or rejected) a payment: tell the donor.
 exports.onGiveSettled = onDocumentUpdated('users/{uid}/gives/{gid}', async (event) => {
   const before = event.data.before.data();
