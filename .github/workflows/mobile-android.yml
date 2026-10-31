@@ -14,6 +14,10 @@ on:
         description: 'Development build (live reload from a computer) instead of the release APK'
         type: boolean
         default: false
+      aab:
+        description: 'Signed Play Store bundle (.aab), signed with your upload key from the ANDROID_* secrets'
+        type: boolean
+        default: false
   push:
     branches: [feature/goodneighbour-mobile-foundation]
     paths: ['apps/mobile/**', '.github/workflows/mobile-android.yml']
@@ -61,10 +65,22 @@ jobs:
       - name: Generate the Android project
         run: CI=1 npx expo prebuild --platform android --clean
 
+      - name: Prepare the upload key (only for the signed bundle)
+        if: ${{ inputs.aab }}
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          [ -n "$KS" ] || { echo "::error::Add the ANDROID_KEYSTORE_BASE64 secret first"; exit 1; }
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          echo "GN_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+          echo "GN_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "GN_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "GN_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
       - name: Build the APK (64-bit ARM phones)
         working-directory: apps/mobile/android
         env:
-          TASK: ${{ inputs.dev && 'assembleDebug' || 'assembleRelease' }}
+          TASK: ${{ inputs.aab && 'bundleRelease' || inputs.dev && 'assembleDebug' || 'assembleRelease' }}
         run: |
           # The runner sometimes fails to download the Android NDK; a second try normally works.
           for try in 1 2; do
@@ -81,6 +97,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.dev && 'goodneighbour-dev-apk' || 'goodneighbour-apk' }}
-          path: apps/mobile/android/app/build/outputs/apk/${{ inputs.dev && 'debug' || 'release' }}/*.apk
+          name: ${{ inputs.aab && 'goodneighbour-aab' || inputs.dev && 'goodneighbour-dev-apk' || 'goodneighbour-apk' }}
+          path: ${{ inputs.aab && 'apps/mobile/android/app/build/outputs/bundle/release/*.aab' || format('apps/mobile/android/app/build/outputs/apk/{0}/*.apk', inputs.dev && 'debug' || 'release') }}
           if-no-files-found: error
